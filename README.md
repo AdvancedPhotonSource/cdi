@@ -19,10 +19,13 @@ Pre-requisites
 ---------------
 - ArrayFire library version 3.5.0 or higher
 - Libconfig library version 1.5 or higher
-- Python packages:
-  - Libconfig
-  - traits
-  - tvtk
+- Python packages installation:
+  - pip install tifffile
+  - pip install pylibconfig2
+  - conda install vtk
+  - conda install traits
+  - conda install traitsui
+  - pip install mayavi
 
 Author(s)
 -------
@@ -33,7 +36,34 @@ License
 Copyright (c) UChicago Argonne, LLC. All rights reserved.
 See LICENSE file.
 
-Libraries
--------
+C++ Libraries
+-------------
 - ArrayFire open source
 - Libconfig open source
+
+How to init
+-----------
+- clone the source from the repository: 
+  - git clone https://github.com/advancedPhotonSource/cdi
+  - cd cdi
+- run interactive script to set enviroment variables and set the project:
+  - source init.sh
+  at the promt enter the following:
+  - enter ArrayFire installation directory > (absolute path to ArrayFire installation dir)
+  - enter LibConfig installation directory > (absolute path to LibConfig installation dir)
+  - enter cuda installation directory > (absolute path to cuda installation dir)
+  - enter data type (float/double) > double
+ 
+How to run
+----------
+- python test.py (proc) (file name) (config file)
+  - (proc) is processing ArrayFire library ('cpu', 'opencl', or 'cuda')
+  - (file name) is data file name. It can be either tif file or numpy file. In the first case the file would contain original data, in the second case the numpy file would hold saved prepared data as ndarray.
+  - (config file) is a name of configuration file. This repository contains 'config.test' configuration foe for your use.
+ 
+example:python test.py 'opencl' '/directory/Staff14-3_S0149.tif' 'config.test'
+  
+How to compile
+--------------
+python setup.py build_ext --inplace
+
