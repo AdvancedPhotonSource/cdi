@@ -114,7 +114,7 @@ def binning(array, binsizes):
     for ax in range(len(binsizes)):
         if binsizes[ax] > 1:
             new_shape[ax] = binsizes[ax]
-            new_shape.insert(ax, array.shape[ax] / binsizes[ax])
+            new_shape.insert(ax, int(array.shape[ax] / binsizes[ax]))
             binned_array = np.reshape(binned_array, tuple(new_shape))
             binned_array = np.sum(binned_array, axis=ax+1)
             new_shape = list(binned_array.shape)
@@ -188,8 +188,9 @@ def adjust_dimensions(arr, pad):
     new_crop = []
     for i in range(len(dims)):
         new_dims.append(get_opencl_dim(dims[i] + 2 * pad[i], 2))
-        new_pad.append(max(0, (new_dims[i] - dims[i]) / 2))
-        new_crop.append(max(0, (dims[i] - new_dims[i]) / 2))
+        new_pad.append(max(0, int((new_dims[i] - dims[i]) / 2)))
+        new_crop.append(max(0, int((dims[i] - new_dims[i]) / 2)))
+
 
     arr = np.lib.pad(arr, ((new_pad[0], new_pad[0]), (new_pad[1], new_pad[1]), (new_pad[2], new_pad[2])), 'constant',
                       constant_values=((0.0, 0.0), (0.0, 0.0), (0.0, 0.0))).copy()
@@ -199,7 +200,7 @@ def adjust_dimensions(arr, pad):
 
 def crop_center(arr, new_size):
     size = arr.shape
-    return arr[ (size[0]-new_size[0])/2 : (size[0]-new_size[0])/2 + new_size[0], (size[1]-new_size[1])/2 : (size[1]-new_size[1])/2 + new_size[1], (size[2]-new_size[2])/2 : (size[2]-new_size[2])/2 + new_size[2]]
+    return arr[ int((size[0]-new_size[0])/2) : int((size[0]-new_size[0])/2) + new_size[0], int((size[1]-new_size[1])/2) : int((size[1]-new_size[1])/2) + new_size[1], int((size[2]-new_size[2])/2) : int((size[2]-new_size[2])/2) + new_size[2]]
 
 
 def flip(m, axis):
