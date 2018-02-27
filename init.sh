@@ -16,7 +16,7 @@ sed -i 's?'$LC'?'$lc_dir'?g' src_py/cyth/*.pyx
 echo -n "enter cuda installation directory > "
 read cuda_dir
 
-export LD_LIBRARY_PATH=$lc_dir/lib/.libs:/usr/local/lib:$af_dir/lib/:$cuda_dir/lib64:$cuda_dir/nvvm/lib64
+export LD_LIBRARY_PATH=$lc_dir/lib:/usr/local/lib:$af_dir/lib/:$cuda_dir/lib64:$cuda_dir/nvvm/lib64
 
 echo -n "enter data type (float/double) > "
 read data_type
