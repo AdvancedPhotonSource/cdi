@@ -8,83 +8,12 @@ See LICENSE file.
 #include "string.h"
 #include "iostream"
 #include "libconfig.h++"
-#include "map"
 #include "algorithm"
 #include "parameters.hpp"
 #include "common.h"
 #include "util.hpp"
 
-
 using namespace libconfig;
-Config cfg;
-
-// maps action name to action number
-std::map<std::string, int> action_id_map;
-
-// maps algorithm name to algorithm number
-std::map<std::string, int> algorithm_id_map;
-// vector holding algorithm run sequence, where algorithm run is a pair of algorithm and number of iterations
-std::vector<alg_switch> alg_switches;
-
-std::string data_type;
-
-d_type amp_threshold;
-bool amp_threshold_fill_zeros;
-
-// d_type phase_min;
-//d_type phase_max;
-float beta;
-
-// support
-std::vector<int> support_area;
-float support_threshold;
-float support_sigma;
-std::vector<int> support_triggers;
-int support_alg;
-
-//partial coherence
-//PartialCoherence *partial_coherence = NULL;
-int pcdi_alg;
-std::vector<int>  pcdi_roi;
-std::vector<int> pcdi_triggers;
-bool pcdi_normalize;
-int pcdi_iter;
-
-bool d_type_precision;
-
-// number of iterates to average
-int avg_iterations;
-
-// calculated number of iterations
-int number_iterations;
-
-int twin;
-
-int regularized_amp;
-
-const char * save_dir;
-
-const char * continue_dir;
-
-int action;
-int action_stage;
-
-bool save_results;
-
-bool plot_errors;
-
-int gc;
-
-int device;
-
-int low_res_iterations;
-
-float iter_low_res_sigma_min;
-
-float iter_low_res_sigma_max;
-
-std::vector<int> update_resolution_triggers;
-
 
 Params::Params(const char* config_file, int stage, std::vector<int> data_dim)
 {

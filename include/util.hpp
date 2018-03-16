@@ -7,11 +7,11 @@ See LICENSE file.
 #ifndef util_hpp
 #define util_hpp
 
-#include "arrayfire.h"
 #include "common.h"
 
 namespace af {
     class array;
+    class dim4;
 }
 
 class Utils

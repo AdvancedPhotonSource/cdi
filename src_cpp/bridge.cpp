@@ -9,7 +9,6 @@ See LICENSE file.
 #include "manager.hpp"
 #include "cstdio"
 
-Manager *mgr;
 
 Bridge::Bridge()
 {

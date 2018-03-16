@@ -5,9 +5,10 @@ See LICENSE file.
 // Created by Barbara Frosik
 
 #include "util.hpp"
+#include "arrayfire.h"
 #include "common.h"
-#include <algorithm>
-#include <vector>
+#include "algorithm"
+#include "vector"
 #include "cstdio"
 
 using namespace af;

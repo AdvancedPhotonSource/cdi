@@ -15,13 +15,6 @@ See LICENSE file.
 
 using namespace af;
 
-af::array kernel_array;
-af::array roi_amplitudes_prev;
-af::array roi_data_abs;
-d_type sum_roi_data;
-af::dim4 roi_dims;
-af::dim4 dims;
-
 PartialCoherence::PartialCoherence(Params *params, af::array coherence_array)
 {
     roi= params->GetPcdiRoi();

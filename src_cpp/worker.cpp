@@ -11,6 +11,7 @@ See LICENSE file.
 #include "math.h"
 #include "vector"
 #include "map"
+#include "arrayfire.h"
 #include "parameters.hpp"
 #include "support.hpp"
 #include "pcdi.hpp"
@@ -20,19 +21,7 @@ See LICENSE file.
 #include "util.hpp"
 #include "resolution.hpp"
 
-af::array data;   // this is abs
-af::array iter_data;  // if low resolutionis used, data will differ in iterations
-int num_points;
-d_type norm_data;
-int current_iteration; 
-af::array ds_image;
-int aver_iter;
-std::vector<d_type> aver_v;
-std::vector<float> support_vector;
-std::vector<d_type> coherence_vector;
-d_type max_data;
-af::Window * errors_plot;
-
+using namespace af;
 
 Reconstruction::Reconstruction(af::array image_data, af::array guess, Params* params, af::array support_array, af::array coherence_array)
 {

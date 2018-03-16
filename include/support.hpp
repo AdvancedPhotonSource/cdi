@@ -8,12 +8,13 @@ See LICENSE file.
 #define support_hpp
 
 #include "common.h"
-#include "vector"
-#include "arrayfire.h"
 
 class Params;
 
-using namespace af;
+namespace af {
+    class array;
+    class dim4;
+}
 
 class Support
 {

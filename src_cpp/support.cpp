@@ -5,10 +5,13 @@ See LICENSE file.
 // Created by Barbara Frosik
 
 #include "stdio.h"
+#include "vector"
 #include "support.hpp"
 #include "parameters.hpp"
 #include "util.hpp"
+#include "arrayfire.h"
 
+using namespace af;
 
 Support::Support(const af::dim4 data_dim, Params *params, af::array support)
 {

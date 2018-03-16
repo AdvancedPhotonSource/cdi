@@ -16,8 +16,6 @@ See LICENSE file.
 
 using namespace af;
 
-af::array ar;
-
 Manager::~Manager()
 {
     delete rec;

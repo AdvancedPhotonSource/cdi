@@ -8,13 +8,17 @@ See LICENSE file.
 #define algorithm_hpp
 
 class Reconstruction;
-#include "arrayfire.h"
 
-using namespace af;
+namespace af {
+    class array;
+}
 
 class Algorithm
 {
-public:   
+protected:
+    Reconstruction * rec;
+
+public:
     // Using strategy pattern. The RunAlgorihm calls sequence of methods
     // overridden by concrete classes
     void RunAlgorithm(Reconstruction * reconstruction);

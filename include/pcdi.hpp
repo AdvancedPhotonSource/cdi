@@ -13,6 +13,7 @@ class Params;
 
 namespace af {
     class array;
+    class dim4;
 }
 
 class PartialCoherence
@@ -24,7 +25,14 @@ private:
     int algorithm;
     bool normalize;
     int iteration_num;
-
+    
+    af::array kernel_array;
+    af::array roi_amplitudes_prev;
+    af::array roi_data_abs;
+    d_type sum_roi_data;
+    af::dim4 roi_dims;
+    af::dim4 dims;
+    
     void DeconvLucy(af::array image, af::array filter, int iter_num);
     void OnTrigger(af::array abs_image);
     void TuneLucyCoherence(af::array);

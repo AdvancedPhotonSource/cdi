@@ -11,7 +11,6 @@ See LICENSE file.
 #include "vector"
 #include "map"
 #include "common.h"
-#include "arrayfire.h"
 
 class Params;
 class State;
@@ -19,7 +18,11 @@ class Support;
 class PartialCoherence;
 class Resolution;
 
-using namespace af;
+namespace af {
+    class array;
+    class Window;
+}
+
 // This class represents a single image phase reconstruction processing.
 // It constructs the following objects:
 // 1. Params, which is initialized from configuration file, and keeps the attributes that do not change during processing.
@@ -42,6 +45,19 @@ private:
     // A reference to Resolution
     Resolution *resolution;
 
+    af::array data;   // this is abs
+    af::array iter_data;  // if low resolutionis used, data will differ in iterations
+    int num_points;
+    d_type norm_data;
+    int current_iteration;
+    af::array ds_image;
+    int aver_iter;
+    std::vector<d_type> aver_v;
+    std::vector<float> support_vector;
+    std::vector<d_type> coherence_vector;
+    d_type max_data;
+    af::Window * errors_plot;
+    
     // This method returns sum of squares of all elements in the array
     double GetNorm(af::array arr);
     

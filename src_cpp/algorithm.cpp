@@ -5,11 +5,12 @@ See LICENSE file.
 // Created by Barbara Frosik
 
 #include "iostream"
+#include "arrayfire.h"
 #include "algorithm.hpp"
 #include "worker.hpp"
 #include "common.h"
 
-Reconstruction * rec;
+use namespace af;
 
 void Algorithm::RunAlgorithm(Reconstruction * reconstruction)
 {
