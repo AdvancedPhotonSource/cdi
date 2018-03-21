@@ -47,6 +47,11 @@ private:
     // current index in support_triggers vector
     int support_triggers_index;
     
+    // a flag indicating whether to update phase
+    bool update_phase;
+    // current index in phase_triggers vector
+    int phase_triggers_index;
+    
     // partial coherence state
     // a flag indicating whether to update partial coherence
     bool run_convolution;
@@ -91,6 +96,9 @@ public:
     
     // Returns true if the current state should include support update.
     bool IsUpdateSupport();
+
+    // Returns true if the current state should include phase update.
+    bool IsUpdatePhase();
 
     // Returns true if the current state should include partial coherence update.
     bool IsUpdatePartialCoherence();

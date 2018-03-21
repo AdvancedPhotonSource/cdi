@@ -8,17 +8,16 @@ See LICENSE file.
 #define pcdi_hpp
 
 #include "vector"
+#include "arrayfire.h"
+
+using namespace af;
 
 class Params;
-
-namespace af {
-    class array;
-    class dim4;
-}
 
 class PartialCoherence
 {
 private:
+    Params * params;
     std::vector<int> roi;
     std::vector<int> triggers;
     int trigger_index;

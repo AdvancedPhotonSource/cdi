@@ -9,19 +9,18 @@ See LICENSE file.
 #include "support.hpp"
 #include "parameters.hpp"
 #include "util.hpp"
-#include "arrayfire.h"
 
-using namespace af;
-
-Support::Support(const af::dim4 data_dim, Params *params, af::array support)
+Support::Support(const af::dim4 data_dim, Params *parameters, af::array support)
 {
+    params = parameters;
     threshold = params->GetSupportThreshold();
     sigma = params->GetSupportSigma();
     algorithm = params->GetSupportAlg();
+    af::array ones = constant(1, Utils::Int2Dim4(params->GetSupportArea()), u32);
+    init_support_array = Utils::PadAround(ones, data_dim, 0);
     if (Utils::IsNullArray(support))
     {
-        af::array ones = constant(1, Utils::Int2Dim4(params->GetSupportArea()), u32);
-        support_array = Utils::PadAround(ones, data_dim, 0);
+        support_array = init_support_array.copy();
     }
     else
     {
@@ -40,14 +39,33 @@ Support::Support(const af::dim4 data_dim, Params *params, af::array support)
     }    
 }
 
-void Support::Update(const af::array ds_image_abs)
+void Support::Update(const af::array ds_image, bool amp_trigger, bool phase_trigger)
 {
-    printf("updating support\n");
-    af::array convag = GaussConvFft(ds_image_abs);
-    d_type max_convag = af::max<d_type>(convag);
-    convag = convag/max_convag;
-    printf("convag sum max %f \n", sum<d_type>(convag));
-    support_array = (convag >= threshold);
+    if (amp_trigger)
+    {
+        printf("updating support\n");
+        af::array convag = GaussConvFft(abs(ds_image));
+        d_type max_convag = af::max<d_type>(convag);
+        convag = convag/max_convag;
+        support_array = (convag >= threshold);
+    }
+    if (phase_trigger)
+    {
+        af::array phase = atan2(imag(ds_image), real(ds_image));
+        af::array phase_condition = ((phase > params->GetPhaseMin()) && (phase < params->GetPhaseMax()));
+        if (amp_trigger)
+        {
+            support_array *= phase_condition;
+        }
+        else
+        {
+            support_array = phase_condition * init_support_array;
+        }
+    }
+    // set to true (1) elements that are greater than phase min and less than phase max, and support is 1
+    //   af::array phase_condition = (phase > params->GetPhaseMin()) && (phase < params->GetPhaseMax()) || (support->GetSupportArray() == 0);
+    // replace the elements that above condition is 1 with prev_ds_image - ds_image * params->GetBeta()
+//replace(ds_image, phase_condition, (prev_ds_image - ds_image * params->GetBeta()));    }
     
     printf("support sum %f\n", sum<d_type>(support_array));
 }

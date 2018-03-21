@@ -8,6 +8,8 @@ See LICENSE file.
 #define util_hpp
 
 #include "common.h"
+#include "vector"
+#include "string"
 
 namespace af {
     class array;

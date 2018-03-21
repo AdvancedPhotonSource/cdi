@@ -12,8 +12,6 @@ See LICENSE file.
 #include "vector"
 #include "map"
 
-class Config;
-
 struct Trigger_setting
 {
     int start_iteration;
@@ -33,8 +31,6 @@ typedef struct Trigger_setting trigger_setting;
 class Params
 {
 private:
-    Config cfg;
-
     // maps action name to action number
     std::map<std::string, int> action_id_map;
     
@@ -48,8 +44,6 @@ private:
     d_type amp_threshold;
     bool amp_threshold_fill_zeros;
     
-    // d_type phase_min;
-    //d_type phase_max;
     float beta;
     
     // support
@@ -58,7 +52,10 @@ private:
     float support_sigma;
     std::vector<int> support_triggers;
     int support_alg;
-    
+    std::vector<int> phase_triggers;
+    d_type phase_min;
+    d_type phase_max;
+
     //partial coherence
     //PartialCoherence *partial_coherence = NULL;
     int pcdi_alg;
@@ -102,7 +99,7 @@ private:
     
     std::vector<int> update_resolution_triggers;
     
-    std::vector<int> ParseTriggers(std::string trigger_name, int);
+    std::vector<int> CompactTriggers(std::vector<trigger_setting> triggers);
     void BuildAlgorithmMap();
     void BuildActionMap();
 
@@ -122,6 +119,13 @@ public:
     float GetSupportSigma();
     std::vector<int> GetSupportTriggers();
     int GetSupportAlg();
+    // Returns minimum phase value for the HIO processing.
+    d_type GetPhaseMin();
+    
+    // Returns maximum phase value for the HIO processing.
+    d_type GetPhaseMax();
+    
+    std::vector<int> GetPhaseTriggers();
 
     int GetPcdiAlgorithm();
     std::vector<int> GetPcdiRoi();
@@ -140,12 +144,6 @@ public:
     // Returns true if the ER/HIO algorithms should fill the image if not met amplitude threshold condition with zeros.
     // Returns false, if the values should not be modified.
     bool IsAmpThresholdFillZeros();
-    
-    // Returns minimum phase value for the HIO processing.
-    d_type GetPhaseMin();
-    
-    // Returns maximum phase value for the HIO processing.
-    d_type GetPhaseMax();
     
     // Returns beta parameter for the HIO processing.
     float GetBeta();

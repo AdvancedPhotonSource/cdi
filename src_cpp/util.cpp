@@ -8,7 +8,6 @@ See LICENSE file.
 #include "arrayfire.h"
 #include "common.h"
 #include "algorithm"
-#include "vector"
 #include "cstdio"
 
 using namespace af;

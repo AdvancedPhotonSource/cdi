@@ -11,7 +11,6 @@ See LICENSE file.
 #include "math.h"
 #include "vector"
 #include "map"
-#include "arrayfire.h"
 #include "parameters.hpp"
 #include "support.hpp"
 #include "pcdi.hpp"
@@ -21,9 +20,8 @@ See LICENSE file.
 #include "util.hpp"
 #include "resolution.hpp"
 
-using namespace af;
 
-Reconstruction::Reconstruction(af::array image_data, af::array guess, Params* params, af::array support_array, af::array coherence_array)
+Reconstruction::Reconstruction(af::array image_data, af::array guess, Params* parameters, af::array support_array, af::array coherence_array)
 {
     num_points = 0;
     norm_data = 0;
@@ -31,7 +29,7 @@ Reconstruction::Reconstruction(af::array image_data, af::array guess, Params* pa
     aver_iter = 0;
     data = image_data;
     ds_image = guess;
-    params = params;
+    params = parameters;
     state = new State(params);
     support = new Support(data.dims(), params, support_array);
     
@@ -75,7 +73,7 @@ void Reconstruction::Init()
 {
     // initialize other components
     state->Init();
-    if (params->GetPcdiAlgorithm() > 0)
+    if (partialCoherence != NULL)
     {
         partialCoherence->Init(data);
     }
@@ -107,9 +105,9 @@ void Reconstruction::Iterate()
             d_type iter_data_max = af::max<d_type>(iter_data);
             iter_data = iter_data/iter_data_max;
         }
-        if (state->IsUpdateSupport())
+        if (state->IsUpdateSupport() || state->IsUpdatePhase())
         {
-            support->Update(abs(ds_image).copy());
+            support->Update(ds_image.copy(), state->IsUpdateSupport(), state->IsUpdatePhase());
         }
 
         if (params->GetGC() && (current_iteration+1) % params->GetGC() == 0)
@@ -130,7 +128,6 @@ void Reconstruction::Iterate()
 
     if (aver_v.size() > 0)
     {
-        printf("final averaging\n");
         af::array aver_a(ds_image.dims(), &aver_v[0]);
         af::array ratio = Utils::GetRatio(aver_a, abs(ds_image));
         ds_image *= ratio/aver_iter;                    
@@ -163,6 +160,7 @@ af::array Reconstruction::ModulusProjection()
     }  
     else
     {
+printf("current iter, pcdi first trigger, action_stage %i, %i, %i\n", current_iteration, partialCoherence->GetTriggers()[0],params->GetActionStage());
         if ((current_iteration >= partialCoherence->GetTriggers()[0]) || (params->GetActionStage()))
         {
             printf("coherence using lucy\n");            

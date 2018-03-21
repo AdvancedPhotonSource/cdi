@@ -10,7 +10,7 @@ See LICENSE file.
 #include "worker.hpp"
 #include "common.h"
 
-use namespace af;
+using namespace af;
 
 void Algorithm::RunAlgorithm(Reconstruction * reconstruction)
 {

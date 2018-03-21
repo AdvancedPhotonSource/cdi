@@ -25,6 +25,8 @@ State::State(Params* parameters)
     alg_switch_index = 0;
     update_support = false;
     support_triggers_index = 0;
+    update_phase = false;
+    phase_triggers_index = 0;
     run_convolution = false;
     update_kernel = false;
     partial_coherence_triggers_index = 0;
@@ -54,8 +56,6 @@ void State::Init()
         }
     }
     current_alg = algorithm_map[params->GetAlgSwitches()[0].algorithm_id];
-
-    std::vector<int> temp = params->GetUpdateResolutionTriggers();
 }
 
 void State::MapAlgorithmObject(int alg_id)
@@ -95,6 +95,17 @@ int State::Next()
     else
     {
         update_support = false;
+    }
+
+    // check if update phase this iteration
+    if ((params->GetPhaseTriggers().size() > 0) && (params->GetPhaseTriggers()[phase_triggers_index] == current_iter))
+    {
+        update_phase = true;
+        phase_triggers_index++;
+    }
+    else
+    {
+        update_phase = false;
     }
 
     // check if change resolution this iteration
@@ -142,6 +153,11 @@ int State::GetCurrentIteration()
 bool State::IsUpdateSupport()
 {
     return update_support;
+}
+
+bool State::IsUpdatePhase()
+{
+    return update_phase;
 }
 
 bool State::IsUpdatePartialCoherence()

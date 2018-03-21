@@ -92,8 +92,8 @@ gc = 5;
 plot_errors = true           // indicates whether to plot errors during calculations. Plotting will slow down.
 
 //algorithm_sequence = ((3, ("ER",2), ("HIO", 2), ("ER", 2)), (2, ("ER",3), ("HIO",3)))
-//algorithm_sequence = ((1, ("ER",1)))
-algorithm_sequence = ((1, ("ER",19), ("HIO", 10)), (1,("ER",10)))
+//algorithm_sequence = ((1, ("ER",6)))
+algorithm_sequence = ((1, ("ER",19), ("HIO", 10)), (1,("ER",20)))
 //algorithm_sequence = ((1, ("ER",19), ("HIO", 4)), (1,("ER",4)))
 //algorithm_sequence = ((1, ("ER",19), ("HIO", 10)), (1,("ER",10)), (1, ("ER",10), ("HIO", 20)), (1,("ER",10)))
                              // defines algorithm applied in each iteration by a sequence of tuples.
@@ -106,8 +106,10 @@ twin = 2;
                              // it is done in ER/HIO. If don't want to apply twin, set it negative.
 
 //amp_threshold_fill_zeros = true;
-//phase_min = -2.0;
-//phase_max = 2.0;
+phase_triggers = ((1, 1, 32))
+phase_min = -2.0;
+phase_max = 2.0;
+
 beta = .9;
 
 // support
@@ -127,7 +129,7 @@ support_area = [.5,.5,.5];
 // partial coherence
 partial_coherence_type = "LUCY";
                              // if type is not defined, partial coherence is not applied
-partial_coherence_triggers = ((15, 14));
+partial_coherence_triggers = ((5, 14));
                              // trigger contains starting iteration, step, and ending iteration (if missing, run
                              // to the end).
 partial_coherence_iteration_num = 20;

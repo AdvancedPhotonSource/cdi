@@ -7,13 +7,15 @@ See LICENSE file.
 
 #include "string.h"
 #include "iostream"
-#include "libconfig.h++"
 #include "algorithm"
 #include "parameters.hpp"
 #include "common.h"
 #include "util.hpp"
+#include "libconfig.h++"
+#include "math.h"
 
 using namespace libconfig;
+
 
 Params::Params(const char* config_file, int stage, std::vector<int> data_dim)
 {
@@ -28,6 +30,8 @@ Params::Params(const char* config_file, int stage, std::vector<int> data_dim)
     support_sigma = 1.0;
     support_triggers.clear();
     support_alg = -1;
+    phase_min = -atan(1)*2.0;
+    phase_max = atan(1)*2.0;
     pcdi_alg = 0;
     pcdi_roi.clear();
     pcdi_triggers.clear();
@@ -48,11 +52,14 @@ Params::Params(const char* config_file, int stage, std::vector<int> data_dim)
     device = -1;
     low_res_iterations = 0;
     iter_low_res_sigma_min = support_sigma;
+
     iter_low_res_sigma_max = 3.0;
     update_resolution_triggers.clear();
 
     BuildAlgorithmMap();
     BuildActionMap();
+
+    Config cfg;
     
     // Read the file. If there is an error, report.
     try
@@ -100,7 +107,6 @@ Params::Params(const char* config_file, int stage, std::vector<int> data_dim)
     { 
         action_stage = stage;
     }
-
     try {
         save_results = cfg.lookup("save_results");
     }
@@ -181,7 +187,39 @@ Params::Params(const char* config_file, int stage, std::vector<int> data_dim)
     }
     catch ( const SettingNotFoundException &nfex)
     { }
-    support_triggers = ParseTriggers("support", action_stage);
+
+    try {
+        std::vector<trigger_setting> triggers;
+        const Setting& root = cfg.getRoot();
+        const Setting &tmp = root["support_triggers"];
+        for (int i =0; i < tmp.getLength(); i++)
+        {
+            int start = tmp[i][1]; // set the first trigger to step
+            if (action_stage == 0)
+            {
+                start = tmp[i][0];
+            }
+            int step = tmp[i][1];
+            int end_step;
+            if (tmp[i].getLength() > 2)
+            {
+                end_step = tmp[i][2];
+                end_step = std::min(end_step, number_iterations);
+            }
+            else
+            {
+                end_step = number_iterations;
+            }
+            triggers.push_back(Trigger_setting(start, step, end_step));
+        }
+        support_triggers = CompactTriggers(triggers);
+        triggers.clear();
+    }
+    catch ( const SettingNotFoundException &nfex)
+    {
+        printf("No support_triggers' parameter in configuration file.\n");
+    }
+    
     try {
         support_alg = algorithm_id_map[cfg.lookup("support_type")];
     }
@@ -191,13 +229,56 @@ Params::Params(const char* config_file, int stage, std::vector<int> data_dim)
     }
 
     try {
+        std::vector<trigger_setting> triggers;
+        const Setting& root = cfg.getRoot();
+        const Setting &tmp = root["phase_triggers"];
+        for (int i =0; i < tmp.getLength(); i++)
+        {
+            int start = tmp[i][1]; // set the first trigger to step
+            if (action_stage == 0)
+            {
+                start = tmp[i][0];
+            }
+            int step = tmp[i][1];
+            int end_step;
+            if (tmp[i].getLength() > 2)
+            {
+                end_step = tmp[i][2];
+                end_step = std::min(end_step, number_iterations);
+            }
+            else
+            {
+                end_step = number_iterations;
+            }
+            triggers.push_back(Trigger_setting(start, step, end_step));
+        }
+        phase_triggers = CompactTriggers(triggers);
+        triggers.clear();
+        try {
+            phase_min = cfg.lookup("phase_min");
+        }
+        catch (const SettingNotFoundException &nfex)
+        {
+            printf((std::string("No 'phase_min' parameter in configuration file. Set to pi/2.\n")).c_str());
+        }
+        try {
+            phase_max = cfg.lookup("phase_max");
+        }
+        catch (const SettingNotFoundException &nfex)
+        {
+            printf((std::string("No 'phase_max' parameter in configuration file. Set to pi/2.\n")).c_str());
+        }
+    }
+    catch ( const SettingNotFoundException &nfex)
+    { }
+
+    try {
         pcdi_alg = algorithm_id_map[cfg.lookup("partial_coherence_type")];
     }
     catch ( const SettingNotFoundException &nfex)
     {
         printf((std::string("No 'partial_coherence_type' parameter in configuration file.\n")).c_str());
     }
-
     if (pcdi_alg > 0)
     {
         try {
@@ -220,7 +301,39 @@ Params::Params(const char* config_file, int stage, std::vector<int> data_dim)
             printf("No 'partial_coherence_roi' parameter in configuration file.\n");
         }
 
-        pcdi_triggers = ParseTriggers("partial_coherence", action_stage);
+        //pcdi_triggers = ParseTriggers("partial_coherence", action_stage);
+        try {
+            std::vector<trigger_setting> triggers;
+            const Setting& root = cfg.getRoot();
+            const Setting &tmp = root["partial_coherence_triggers"];
+            for (int i =0; i < tmp.getLength(); i++)
+            {
+                int start = tmp[i][1]; // set the first trigger to step
+                if (action_stage == 0)
+                {
+                    start = tmp[i][0];
+                }
+                int step = tmp[i][1];
+                int end_step;
+                if (tmp[i].getLength() > 2)
+                {
+                    end_step = tmp[i][2];
+                    end_step = std::min(end_step, number_iterations);
+                }
+                else
+                {
+                    end_step = number_iterations;
+                }
+                triggers.push_back(Trigger_setting(start, step, end_step));
+            }
+            pcdi_triggers = CompactTriggers(triggers);
+            triggers.clear();
+        }
+        catch ( const SettingNotFoundException &nfex)
+        {
+            printf("No partial_coherence_triggers' parameter in configuration file.\n");
+        }
+    
         try {
             pcdi_normalize = cfg.lookup("partial_coherence_normalize");
         }
@@ -307,23 +420,6 @@ Params::Params(const char* config_file, int stage, std::vector<int> data_dim)
 //        printf("No 'amp_threshold_fill_zeros' parameter in configuration file.\n");
 //    }
 //    
-//    try {
-//        phase_min = cfg.lookup("phase_min");
-//    }
-//    catch (const SettingNotFoundException &nfex)
-//    {
-//          phase_min = 120;
-//        printf("No 'phase_min' parameter in configuration file.\n");
-//    }
-//
-//    try {
-//        phase_max = cfg.lookup("phase_max");
-//    }
-//    catch (const SettingNotFoundException &nfex)
-//    {
-//          phase_max = 10;
-//        printf("No 'phase_max' parameter in configuration file.\n");
-//    }
 
     try
     {
@@ -398,39 +494,9 @@ void Params::BuildActionMap()
     action_id_map.insert(std::pair<char*,int>("continue", ACTION_CONTINUE));
 }
 
-std::vector<int> Params::ParseTriggers(std::string trigger_name, int action_stage)
+std::vector<int> Params::CompactTriggers(std::vector<trigger_setting> triggers)
 {
-    std::vector<int> trigger_iterations;
-    const Setting& root = cfg.getRoot();
-    std::vector<trigger_setting> triggers;
-
-    try {
-        const Setting &tmp = root[(trigger_name + std::basic_string<char>("_triggers")).c_str()];
-        for (int i =0; i < tmp.getLength(); i++)
-        {
-            int start = tmp[i][1]; // set the first trigger to step
-            if (action_stage == 0)
-            {
-                int start = tmp[i][0];
-            }
-            int step = tmp[i][1];
-            int end_step;
-            if (tmp[i].getLength() > 2)
-            {
-                end_step = tmp[i][2];
-                end_step = std::min(end_step, number_iterations);
-            }
-            else
-            {
-                end_step = number_iterations;
-            }
-            triggers.push_back(Trigger_setting(start, step, end_step));
-        }
-    }
-    catch ( const SettingNotFoundException &nfex)
-    {
-        printf((std::string("No ") + trigger_name + std::string("_triggers' parameter in configuration file.")).c_str());
-    }
+    std::vector<int> trigger_iterations;    
 
     for (int i = 0; i < triggers.size(); i++)
     {
@@ -462,16 +528,6 @@ bool Params::IsAmpThresholdFillZeros()
 {
     return amp_threshold_fill_zeros;
 }
-
-//d_type Params::GetPhaseMin()
-//{
-//    return phase_min;
-//}
-
-//d_type Params::GetPhaseMax()
-//{
-//    return phase_max;
-//}
 
 float Params::GetBeta()
 {
@@ -518,10 +574,21 @@ int Params::GetSupportAlg()
     return support_alg;
 }
 
-//PartialCoherence * Params::GetPartialCoherence()
-//{
-//    return partial_coherence;
-//}
+d_type Params::GetPhaseMin()
+{
+    return phase_min;
+}
+
+d_type Params::GetPhaseMax()
+{
+    return phase_max;
+}
+
+std::vector<int> Params::GetPhaseTriggers()
+{
+    return phase_triggers;
+}
+
 int Params::GetPcdiAlgorithm()
 {
     return pcdi_alg;

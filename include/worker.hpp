@@ -10,6 +10,7 @@ See LICENSE file.
 #include "stdio.h"
 #include "vector"
 #include "map"
+#include "arrayfire.h"
 #include "common.h"
 
 class Params;
@@ -18,10 +19,7 @@ class Support;
 class PartialCoherence;
 class Resolution;
 
-namespace af {
-    class array;
-    class Window;
-}
+using namespace af;
 
 // This class represents a single image phase reconstruction processing.
 // It constructs the following objects:

@@ -8,15 +8,13 @@ See LICENSE file.
 #include "common.h"
 #include "pcdi.hpp"
 #include "util.hpp"
-#include "arrayfire.h"
 #include "string"
 #include "sstream"
 #include "parameters.hpp"
 
-using namespace af;
-
-PartialCoherence::PartialCoherence(Params *params, af::array coherence_array)
+PartialCoherence::PartialCoherence(Params *parameters, af::array coherence_array)
 {
+    params = parameters;
     roi= params->GetPcdiRoi();
     triggers = params->GetPcdiTriggers();
     trigger_index = 0;
@@ -52,7 +50,8 @@ void PartialCoherence::Init(af::array data)
     }
     if (Utils::IsNullArray(kernel_array))
     {
-        kernel_array = constant(0.5, roi_dims);
+        d_type c = 0.5;
+        kernel_array = constant(c, roi_dims);
     }
     dim4 kdim = kernel_array.dims();
 }
