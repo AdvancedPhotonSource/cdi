@@ -23,7 +23,7 @@ import scipy.fftpack as sf
 import matplotlib.pyplot as plt
 import src_py.cyth.bridge_cpu as bridge_cpu
 import src_py.cyth.bridge_opencl as bridge_opencl
-import src_py.cyth.bridge_cuda as bridge_cuda
+#import src_py.cyth.bridge_cuda as bridge_cuda
 
 
 __author__ = "Barbara Frosik"
@@ -182,10 +182,10 @@ def reconstruction(proc, conf, data, coh_dims, image, support, coherence):
 
     cx.save_CX(conf, image, support)
 
-    # errors.pop(0)
-    # plt.plot(errors)
-    # plt.ylabel('errors')
-    # plt.show()
+    errors.pop(0)
+    plt.plot(errors)
+    plt.ylabel('errors')
+    plt.show()
 
 
     return image, support, coherence, errors

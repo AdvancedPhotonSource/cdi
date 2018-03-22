@@ -103,20 +103,28 @@ def prepare_data(config_map, data):
     # square root data
     data = np.sqrt(data)
 
+#    # get centered array
+#    try:
+#        center_shift = tuple(config_map.center_shift)
+#    except AttributeError:
+#        center_shift = (0, 0, 0)
+#    data = ut.get_centered1(data, center_shift)
+
+    # adjust the size, either zero pad or crop array
+    print ('data shape before adjust', data.shape)
+    try:
+        pad = tuple(config_map.adjust_dimensions)
+        data = ut.adjust_dimensions(data, pad)
+    except AttributeError:
+        pass
+
     # get centered array
     try:
         center_shift = tuple(config_map.center_shift)
     except AttributeError:
         center_shift = (0, 0, 0)
 
-    data = ut.get_centered(data, center_shift)
-
-    # adjust the size, either zero pad or crop array
-    try:
-        pad = tuple(config_map.adjust_dimensions)
-        data = ut.adjust_dimensions(data, pad)
-    except AttributeError:
-        pass
+    data = ut.get_centered1(data, center_shift)
 
     return data
 

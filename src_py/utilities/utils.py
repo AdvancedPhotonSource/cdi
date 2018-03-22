@@ -121,6 +121,43 @@ def binning(array, binsizes):
     return binned_array
    
 
+def get_centered1(array, center_shift):
+    """
+    This function finds a greatest value in the array, and puts it in a center of a new array. The extra elements in the new 
+    array are set to 0.
+
+    Parameters
+    ----------
+    array : array
+        the original array to be centered
+        
+    center_shift : list
+        a list defining shift of the center
+
+    Returns
+    -------
+    array : array
+        the centered array
+    """
+    # make the dimentions even
+    shape = np.asarray(array.shape)
+    pad = shape % 2
+    if pad.sum() > 0:
+        array = np.lib.pad(array, ((0, pad[0]), (0, pad[1]), (0, pad[2])), 'constant', constant_values=((0.0, 0.0), (0.0, 0.0), (0.0, 0.0))).copy()
+
+    max_coordinates = list(np.unravel_index(np.argmax(array), array.shape))
+    max_coordinates = np.add(max_coordinates, center_shift)
+    shape = np.asarray(array.shape)
+    roll = tuple(shape/2 - max_coordinates)
+
+    array = np.roll(array, roll[0], 0) 
+    array = np.roll(array, roll[1], 1) 
+    centered = np.roll(array, roll[2], 2) 
+
+    max_coordinates = list(np.unravel_index(np.argmax(centered), centered.shape))
+    return centered    
+
+
 def get_centered(array, center_shift):
     """
     This function finds a greatest value in the array, and puts it in a center of a new array. The extra elements in the new 
@@ -183,12 +220,16 @@ def adjust_dimensions(arr, pad):
         the padded/cropped array
     """
     dims = arr.shape
+    print 'shape', dims
     new_dims = []
     new_pad = []
     new_crop = []
     for i in range(len(dims)):
+        print (', dim, no cl, new dim', dims[i], dims[i] + 2 * pad[i], get_opencl_dim(dims[i] + 2 * pad[i], 2))
         new_dims.append(get_opencl_dim(dims[i] + 2 * pad[i], 2))
+        #print ('new pad', max(0, int((new_dims[i] - dims[i]) / 2)))
         new_pad.append(max(0, int((new_dims[i] - dims[i]) / 2)))
+        #print ('new crop', max(0, int((dims[i] - new_dims[i]) / 2)))
         new_crop.append(max(0, int((dims[i] - new_dims[i]) / 2)))
 
 

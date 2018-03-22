@@ -46,10 +46,10 @@ Reconstruction::Reconstruction(af::array image_data, af::array guess, Params* pa
         resolution = new Resolution(params);
     }
     max_data = af::max<d_type>(data);
-    if (params->IsPlotErrors())
-    {
-        errors_plot = new Window(512, 512, "errors");
-    }
+//    if (params->IsPlotErrors())
+//    {
+//        errors_plot = new Window(512, 512, "errors");
+//    }
 }
 
 Reconstruction::~Reconstruction()
@@ -60,10 +60,10 @@ Reconstruction::~Reconstruction()
     {
         delete partialCoherence;
     }
-    if (errors_plot != NULL)
-    {
-        delete errors_plot;
-    }
+//    if (errors_plot != NULL)
+//    {
+//        delete errors_plot;
+//    }
     aver_v.clear();
     support_vector.clear();
     coherence_vector.clear();
@@ -117,10 +117,10 @@ void Reconstruction::Iterate()
         Algorithm * alg  = state->GetCurrentAlg();
         alg->RunAlgorithm(this);
         
-        if (params->IsPlotErrors() && !errors_plot->close())
-        {
-            Plot();
-        }
+//        if (params->IsPlotErrors() && !errors_plot->close())
+//        {
+//            Plot();
+//        }
         
         Average();
     }
@@ -268,17 +268,17 @@ void Reconstruction::VectorizeCoherence()
     delete [] coherence_v;
 }
 
-void Reconstruction::Plot()
-{
-    if (current_iteration > 5 )
-    {
-        // the plot will not show the very first error
-        af::array x = seq(1.0, float(current_iteration-1), 1.0);
-        std::vector<d_type> errors = state->GetErrors();
-        af::array y(dim4(x.elements()), &errors[1]);
-        errors_plot->plot(x,y.as(f32));
-    }
-}
+//void Reconstruction::Plot()
+//{
+//    if (current_iteration > 5 )
+//    {
+//        // the plot will not show the very first error
+//        af::array x = seq(1.0, float(current_iteration-1), 1.0);
+//        std::vector<d_type> errors = state->GetErrors();
+//        af::array y(dim4(x.elements()), &errors[1]);
+//        errors_plot->plot(x,y.as(f32));
+//    }
+//}
 
 int Reconstruction::GetCurrentIteration()
 {

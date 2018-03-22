@@ -65,13 +65,13 @@ aliens = ((170,220,112,195,245,123), (50,96,10,60,110,20))
                              // #0 and #1 and another given by #2,#3. accepts as
                              // many as you like.
 
-binning = [2,2,2]
+binning = [1,1,1]
                              // applied after aliens
 
 center_shift = [0,0,0]
                              // the maximum is centered after binning, and moved according to center_shift
 
-adjust_dimensions = [0, 3, -5]
+adjust_dimensions = [-20, -70, -70]
                              // applied after centering. If number is positive, the array will be padded
                              // with 0s in this dimension by the pad number on each end.
                              // If negative, the array will be cropped by that number on each end in this
@@ -92,8 +92,8 @@ gc = 5;
 plot_errors = true           // indicates whether to plot errors during calculations. Plotting will slow down.
 
 //algorithm_sequence = ((3, ("ER",2), ("HIO", 2), ("ER", 2)), (2, ("ER",3), ("HIO",3)))
-//algorithm_sequence = ((1, ("ER",6)))
-algorithm_sequence = ((1, ("ER",19), ("HIO", 10)), (1,("ER",20)))
+//algorithm_sequence = ((1, ("ER",3)))
+algorithm_sequence = ((2, ("ER",19), ("HIO", 10)), (1,("ER",20)))
 //algorithm_sequence = ((1, ("ER",19), ("HIO", 4)), (1,("ER",4)))
 //algorithm_sequence = ((1, ("ER",19), ("HIO", 10)), (1,("ER",10)), (1, ("ER",10), ("HIO", 20)), (1,("ER",10)))
                              // defines algorithm applied in each iteration by a sequence of tuples.
@@ -106,7 +106,7 @@ twin = 2;
                              // it is done in ER/HIO. If don't want to apply twin, set it negative.
 
 //amp_threshold_fill_zeros = true;
-phase_triggers = ((1, 1, 32))
+phase_triggers = ((1, 1, 30))
 phase_min = -2.0;
 phase_max = 2.0;
 
@@ -114,7 +114,7 @@ beta = .9;
 
 // support
 //support_triggers = ((5, 5, 300), (1, 2));
-support_triggers = ((5, 4, 300));
+support_triggers = ((5, 5, 300));
 //support_triggers = ((1, 5, 300));
                              // trigger contains starting iteration, step, and ending iteration (if missing, run
                              // to the end).
@@ -144,7 +144,7 @@ iter_low_res_sigma_min = 0.0
                              // if iter_low_res_sigma_min is 0 or not defined, the value is assigned to support_sigma
 iter_low_res_sigma_max = 3.0
                              // max sigma, if not defined, default to 3
-update_resolution_triggers = (1, 20)
+update_resolution_triggers = (1, 30)
                              // the data is being modified with calculated mask starting with first iteration. 
                              // the trigger defines step and last iteration for which it is applied
 
@@ -171,5 +171,5 @@ pixel = [55.0e-6, 55.0e-6];
 
 // size to crop the image array
 //crop = [120,120,120]
-crop = [.85, .85, .85]
+crop = [.75, .75, .75]
 

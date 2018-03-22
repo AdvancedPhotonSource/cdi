@@ -54,7 +54,7 @@ private:
     std::vector<float> support_vector;
     std::vector<d_type> coherence_vector;
     d_type max_data;
-    af::Window * errors_plot;
+//    af::Window * errors_plot;
     
     // This method returns sum of squares of all elements in the array
     double GetNorm(af::array arr);
@@ -73,7 +73,7 @@ private:
 
     d_type CalculateError();
  
-    void Plot();
+//    void Plot();
 
 public:
     // The class constructor takes data array, an image guess array in reciprocal space, and configuration file. The image guess
