@@ -124,7 +124,7 @@ def prepare_data(config_map, data):
     except AttributeError:
         center_shift = (0, 0, 0)
 
-    data = ut.get_centered1(data, center_shift)
+    data = ut.get_centered(data, center_shift)
 
     return data
 

@@ -121,7 +121,7 @@ def binning(array, binsizes):
     return binned_array
    
 
-def get_centered1(array, center_shift):
+def get_centered(array, center_shift):
     """
     This function finds a greatest value in the array, and puts it in a center of a new array. The extra elements in the new 
     array are set to 0.
@@ -154,11 +154,10 @@ def get_centered1(array, center_shift):
     array = np.roll(array, roll[1], 1) 
     centered = np.roll(array, roll[2], 2) 
 
-    max_coordinates = list(np.unravel_index(np.argmax(centered), centered.shape))
     return centered    
 
 
-def get_centered(array, center_shift):
+def get_centered1(array, center_shift):
     """
     This function finds a greatest value in the array, and puts it in a center of a new array. The extra elements in the new 
     array are set to 0.
