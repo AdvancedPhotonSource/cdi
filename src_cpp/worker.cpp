@@ -5,6 +5,8 @@ See LICENSE file.
 // Created by Barbara Frosik
 
 #include "fstream"
+#include "unistd.h"
+#include "stdio.h"
 #include "worker.hpp"
 #include "cstdio"
 #include "cstdlib"
@@ -123,6 +125,12 @@ void Reconstruction::Iterate()
 //        }
         
         Average();
+
+        if (access("stopfile", F_OK) == 0)
+        {
+            remove("stopfile");
+            break;
+        }
     }
     printf("final image\n");
 
