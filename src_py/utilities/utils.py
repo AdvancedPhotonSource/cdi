@@ -45,6 +45,45 @@ def get_array_from_tif(filename):
     return tf.imread(filename)
 
 
+def get_good_dim(dim):
+    """
+    This function calculates the dimension supported by opencl library (i.e. is multiplier of 2,3, or 5) and is closest to the 
+    given starting dimension, and spaced by the given step.
+    If the dimension is not supported the function adds step value and verifies the new dimension. It iterates until it finds
+    supported value.
+
+    Parameters
+    ----------
+    dim : int
+        a dimension that needs to be tranformed to one that is supported by the opencl library, if it is not already
+        
+    step : int
+        a delta to increase the dimension
+
+    Returns
+    -------
+    dim : int
+        a dimension that is supported by the opencl library, and closest to the original dimension by n*step
+    """
+
+    def is_correct(x):
+        sub = x
+        if sub%3 == 0:
+            sub = sub/3
+        if sub%3 == 0:
+            sub = sub/3
+        if sub%5 == 0:
+            sub = sub/5
+        while sub%2 == 0:
+            sub = sub/2
+        return sub == 1
+
+    new_dim = dim
+    while not is_correct(new_dim):
+        new_dim += 1
+    return new_dim
+    
+
 def get_opencl_dim(dim, step):
     """
     This function calculates the dimension supported by opencl library (i.e. is multiplier of 2,3, or 5) and is closest to the 
@@ -224,8 +263,8 @@ def adjust_dimensions(arr, pad):
     new_pad = []
     new_crop = []
     for i in range(len(dims)):
-        print (', dim, no cl, new dim', dims[i], dims[i] + 2 * pad[i], get_opencl_dim(dims[i] + 2 * pad[i], 2))
-        new_dims.append(get_opencl_dim(dims[i] + 2 * pad[i], 2))
+        print (', dim, no cl, new dim', dims[i], dims[i] + 2 * pad[i], get_good_dim(dims[i] + 2 * pad[i]))
+        new_dims.append(get_good_dim(dims[i] + 2 * pad[i]))
         #print ('new pad', max(0, int((new_dims[i] - dims[i]) / 2)))
         new_pad.append(max(0, int((new_dims[i] - dims[i]) / 2)))
         #print ('new crop', max(0, int((dims[i] - new_dims[i]) / 2)))

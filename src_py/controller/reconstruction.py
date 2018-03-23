@@ -220,5 +220,6 @@ def reconstruction(proc, filename, conf):
     for g in range(low_resolution_generations, generations):
         image, support, coherence, errors = calc.reconstruction(proc, conf, data, coh_dims, image, support, coherence)
 
+
 #reconstruction('opencl', '/home/phoebus/BFROSIK/CDI/S149/Staff14-3_S0149.tif', '/local/bfrosik/cdi/config.test')
 

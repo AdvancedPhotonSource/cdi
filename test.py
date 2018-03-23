@@ -5,13 +5,12 @@ import os
 import argparse
 from multiprocessing import Process
 from os.path import expanduser
+import subprocess
 
 
 def interrupt_thread(arg):
     def signal_handler(signal, frame):
         open('stopfile', 'a').close()
-        print('You pressed Ctrl+C!')
-        sys.exit(0)
     signal.signal(signal.SIGINT, signal_handler)
     signal.pause()
 
@@ -32,9 +31,10 @@ def main(arg):
 
 
 if __name__ == "__main__":
-        th = Process(target = interrupt_thread, args = (10,))
-        th.start()
+        p = Process(target = interrupt_thread, args = (10,))
+        p.start()
         main(sys.argv[1:])
+        p.terminate()
 
 #python test.py 'opencl' '/home/phoebus/BFROSIK/CDI/S149/Staff14-3_S0149.tif' 'config.test'
         
