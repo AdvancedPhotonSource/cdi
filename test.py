@@ -9,9 +9,14 @@ import subprocess
 
 
 def interrupt_thread(arg):
-    def signal_handler(signal, frame):
+    def int_handler(signal, frame):
         open('stopfile', 'a').close()
-    signal.signal(signal.SIGINT, signal_handler)
+
+    def term_handler(signal, frame):
+        pass
+
+    signal.signal(signal.SIGINT, int_handler)
+    signal.signal(signal.SIGTERM, term_handler)
     signal.pause()
 
 
@@ -31,6 +36,8 @@ def main(arg):
 
 
 if __name__ == "__main__":
+        if os.path.exists('stopfile'):
+            os.remove('stopfile')
         p = Process(target = interrupt_thread, args = (10,))
         p.start()
         main(sys.argv[1:])
