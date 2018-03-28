@@ -71,13 +71,12 @@ binning = [1,1,1]
 center_shift = [0,0,0]
                              // the maximum is centered after binning, and moved according to center_shift
 
-adjust_dimensions = [-20, -70, -70]
-                             // applied after centering. If number is positive, the array will be padded
-                             // with 0s in this dimension by the pad number on each end.
-                             // If negative, the array will be cropped by that number on each end in this
-                             // dimension.
-                             // The final dimensions will adjusted up to the opencl supported dimensions
-                             // i.e. divisible by 2, 3, and 5 only
+adjust_dimensions = [-13, -13, -65, -65, -65, -65]
+                             // If number is positive, the array will be padded. If negative, cropped.
+                             // The parameters correspond to [x left, x right, y left, y right, z left, z right]
+                             // The final dimensions will be adjusted up to the good number for the FFT which
+                             // also is compatible with opencl supported dimensions
+                             // powers of 2 or a*2^n, where a is 3, 5, or 9
 
 
 // RECONSTRUCTION PARAMETERS USED BY FAST MODULE
@@ -92,7 +91,7 @@ gc = 5;
 plot_errors = true           // indicates whether to plot errors during calculations. Plotting will slow down.
 
 //algorithm_sequence = ((3, ("ER",2), ("HIO", 2), ("ER", 2)), (2, ("ER",3), ("HIO",3)))
-//algorithm_sequence = ((1, ("ER",3)))
+//algorithm_sequence = ((1, ("ER",2)))
 algorithm_sequence = ((2, ("ER",19), ("HIO", 10)), (1,("ER",20)))
 //algorithm_sequence = ((1, ("ER",19), ("HIO", 4)), (1,("ER",4)))
 //algorithm_sequence = ((1, ("ER",19), ("HIO", 10)), (1,("ER",10)), (1, ("ER",10), ("HIO", 20)), (1,("ER",10)))

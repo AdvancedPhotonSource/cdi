@@ -79,12 +79,14 @@ def get_good_dim(dim):
         return sub == 1
 
     new_dim = dim
-    while not is_correct(new_dim):
+    if new_dim%2 == 1:
         new_dim += 1
+    while not is_correct(new_dim):
+        new_dim += 2
     return new_dim
     
 
-def get_opencl_dim(dim, step):
+def get_opencl_dim1(dim, step):
     """
     This function calculates the dimension supported by opencl library (i.e. is multiplier of 2,3, or 5) and is closest to the 
     given starting dimension, and spaced by the given step.
@@ -178,13 +180,9 @@ def get_centered(array, center_shift):
     array : array
         the centered array
     """
-    # make the dimentions even
-    shape = np.asarray(array.shape)
-    pad = shape % 2
-    if pad.sum() > 0:
-        array = np.lib.pad(array, ((0, pad[0]), (0, pad[1]), (0, pad[2])), 'constant', constant_values=((0.0, 0.0), (0.0, 0.0), (0.0, 0.0))).copy()
-
+    print 'shape', array.shape
     max_coordinates = list(np.unravel_index(np.argmax(array), array.shape))
+    print 'max_coord', max_coordinates
     max_coordinates = np.add(max_coordinates, center_shift)
     shape = np.asarray(array.shape)
     roll = tuple(shape/2 - max_coordinates)
@@ -235,12 +233,47 @@ def get_centered1(array, center_shift):
     return centered    
 
 
-def adjust_dimensions(arr, pad):
+def adjust_dimensions1(arr, pad):
     """
     This function adds to or subtracts from each dimension of the array elements defined by pad. If the pad is positive,
     the array is padded in this dimension. The elements are added to the beginning of array and end by the same number,
     so the original array is centered. If the pad is negative, the array is cropped. The crop is symmetrical at the
     beginning and end of the array in the related dimension.
+    The dimensions of the new array are supported by the opencl library.
+    Parameters
+    ----------
+    arr : array
+        the array to pad/crop
+    pad : list
+        list of three pad values, for each dimension
+    Returns
+    -------
+    array : array
+        the padded/cropped array
+    """
+    dims = arr.shape
+    print 'shape', dims
+    new_dims = []
+    new_pad = []
+    new_crop = []
+    for i in range(len(dims)):
+        new_dims.append(get_good_dim(dims[i] + 2 * pad[i]))
+        new_pad.append(max(0, int((new_dims[i] - dims[i]) / 2)))
+        new_crop.append(max(0, int((dims[i] - new_dims[i]) / 2)))
+
+    print 'new_pad', new_pad
+    print 'new_crop', new_crop
+
+    arr = np.lib.pad(arr, ((new_pad[0], new_pad[0]), (new_pad[1], new_pad[1]), (new_pad[2], new_pad[2])), 'constant',
+                      constant_values=((0.0, 0.0), (0.0, 0.0), (0.0, 0.0))).copy()
+
+    return arr[new_crop[0]:new_crop[0]+new_dims[0], new_crop[1]:new_crop[1]+new_dims[1], new_crop[2]:new_crop[2]+new_dims[2]]
+
+
+def adjust_dimensions(arr, pad):
+    """
+    This function adds to or subtracts from each dimension of the array elements defined by pad. If the pad is positive,
+    the array is padded in this dimension. If the pad is negative, the array is cropped. 
     The dimensions of the new array are supported by the opencl library.
 
 
@@ -258,21 +291,27 @@ def adjust_dimensions(arr, pad):
         the padded/cropped array
     """
     dims = arr.shape
-    print 'shape', dims
     new_dims = []
     new_pad = []
     new_crop = []
     for i in range(len(dims)):
-        new_dims.append(get_good_dim(dims[i] + 2 * pad[i]))
-        new_pad.append(max(0, int((new_dims[i] - dims[i]) / 2)))
-        new_crop.append(max(0, int((dims[i] - new_dims[i]) / 2)))
+        new_dims.append(get_good_dim(dims[i] + pad[2*i] + pad[2*i+1]))
+        # find what was added as result of getting good dimentions and divide it in half to distribute to both ends
+        good_adj_front = int((1+new_dims[i] - (dims[i] + pad[2*i] + pad[2*i+1]))/2)
+        pad_front = max(0, int(good_adj_front/2) + pad[2*i])
+        new_pad.append(pad_front)
+        new_pad.append(max(0, new_dims[i]-dims[i]-pad_front))
+        crop_front = -pad[2*i] - good_adj_front
+        new_crop.append(max(0, crop_front))
+        #new_crop.append(max(0, -(new_dims[i]-dims[i]+crop_front)))
 
-
-    arr = np.lib.pad(arr, ((new_pad[0], new_pad[0]), (new_pad[1], new_pad[1]), (new_pad[2], new_pad[2])), 'constant',
+    arr = np.lib.pad(arr, ((new_pad[0], new_pad[1]), (new_pad[2], new_pad[3]), (new_pad[4], new_pad[5])), 'constant',
                       constant_values=((0.0, 0.0), (0.0, 0.0), (0.0, 0.0))).copy()
 
-    return arr[new_crop[0]:new_crop[0]+new_dims[0], new_crop[1]:new_crop[1]+new_dims[1], new_crop[2]:new_crop[2]+new_dims[2]]
-
+    #return arr[new_crop[0]:new_crop[1]+new_dims[0], new_crop[2]:new_crop[3]+new_dims[1], new_crop[4]:new_crop[5]+new_dims[1]]
+    arr = arr[new_crop[0]:new_crop[0]+new_dims[0], new_crop[1]:new_crop[1]+new_dims[1], new_crop[2]:new_crop[2]+new_dims[1]]
+    print 'adjusted dim', arr.shape
+    return arr
 
 def crop_center(arr, new_size):
     size = arr.shape

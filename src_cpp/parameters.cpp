@@ -42,8 +42,6 @@ Params::Params(const char* config_file, int stage, std::vector<int> data_dim)
     number_iterations = 0;
     twin = -1;
     regularized_amp = REGULARIZED_AMPLITUDE_NONE;
-    //save_dir = "my_dir";
-    //continue_dir = "my_dir";
     action = 0;
     action_stage = 0;
     save_results = false;

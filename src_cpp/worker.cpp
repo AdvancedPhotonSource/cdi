@@ -232,7 +232,6 @@ void Reconstruction::Average()
         std::vector<d_type> v(image_v, image_v + ds_image.elements());
         if (aver_v.size() == 0)
         {
-            printf("creating aver vector\n");
             for (int i = 0; i < v.size(); i++)
             {
                 aver_v.push_back(v[i]);
@@ -240,7 +239,6 @@ void Reconstruction::Average()
         }
         else
         {
-            printf("adding aver vector\n");
             for (int i = 0; i < v.size(); i++)
             {
                 aver_v[i] += v[i];

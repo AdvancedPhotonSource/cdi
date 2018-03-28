@@ -111,7 +111,6 @@ def prepare_data(config_map, data):
 #    data = ut.get_centered1(data, center_shift)
 
     # adjust the size, either zero pad or crop array
-    print ('data shape before adjust', data.shape)
     try:
         pad = tuple(config_map.adjust_dimensions)
         data = ut.adjust_dimensions(data, pad)
@@ -209,8 +208,6 @@ def reconstruction(proc, filename, conf):
         coh_dims = tuple(config_map.partial_coherence_roi)
     except:
         coh_dims = None
-
-    print coh_dims
 
     image, support, coherence = None, None, None
     gen_obj = Generation(config_map)
