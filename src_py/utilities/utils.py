@@ -180,9 +180,7 @@ def get_centered(array, center_shift):
     array : array
         the centered array
     """
-    print 'shape', array.shape
     max_coordinates = list(np.unravel_index(np.argmax(array), array.shape))
-    print 'max_coord', max_coordinates
     max_coordinates = np.add(max_coordinates, center_shift)
     shape = np.asarray(array.shape)
     roll = tuple(shape/2 - max_coordinates)
@@ -252,7 +250,6 @@ def adjust_dimensions1(arr, pad):
         the padded/cropped array
     """
     dims = arr.shape
-    print 'shape', dims
     new_dims = []
     new_pad = []
     new_crop = []
@@ -260,9 +257,6 @@ def adjust_dimensions1(arr, pad):
         new_dims.append(get_good_dim(dims[i] + 2 * pad[i]))
         new_pad.append(max(0, int((new_dims[i] - dims[i]) / 2)))
         new_crop.append(max(0, int((dims[i] - new_dims[i]) / 2)))
-
-    print 'new_pad', new_pad
-    print 'new_crop', new_crop
 
     arr = np.lib.pad(arr, ((new_pad[0], new_pad[0]), (new_pad[1], new_pad[1]), (new_pad[2], new_pad[2])), 'constant',
                       constant_values=((0.0, 0.0), (0.0, 0.0), (0.0, 0.0))).copy()
@@ -303,15 +297,12 @@ def adjust_dimensions(arr, pad):
         new_pad.append(max(0, new_dims[i]-dims[i]-pad_front))
         crop_front = -pad[2*i] - good_adj_front
         new_crop.append(max(0, crop_front))
-        #new_crop.append(max(0, -(new_dims[i]-dims[i]+crop_front)))
 
     arr = np.lib.pad(arr, ((new_pad[0], new_pad[1]), (new_pad[2], new_pad[3]), (new_pad[4], new_pad[5])), 'constant',
                       constant_values=((0.0, 0.0), (0.0, 0.0), (0.0, 0.0))).copy()
 
-    #return arr[new_crop[0]:new_crop[1]+new_dims[0], new_crop[2]:new_crop[3]+new_dims[1], new_crop[4]:new_crop[5]+new_dims[1]]
-    arr = arr[new_crop[0]:new_crop[0]+new_dims[0], new_crop[1]:new_crop[1]+new_dims[1], new_crop[2]:new_crop[2]+new_dims[1]]
-    print 'adjusted dim', arr.shape
-    return arr
+    return arr[new_crop[0]:new_crop[0]+new_dims[0], new_crop[1]:new_crop[1]+new_dims[1], new_crop[2]:new_crop[2]+new_dims[1]]
+
 
 def crop_center(arr, new_size):
     size = arr.shape
