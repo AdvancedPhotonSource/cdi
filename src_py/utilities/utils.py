@@ -263,11 +263,8 @@ def adjust_dimensions(arr, pad):
     new_pad = []
     new_crop = []
     for i in range(len(dims)):
-        print (', dim, no cl, new dim', dims[i], dims[i] + 2 * pad[i], get_good_dim(dims[i] + 2 * pad[i]))
         new_dims.append(get_good_dim(dims[i] + 2 * pad[i]))
-        #print ('new pad', max(0, int((new_dims[i] - dims[i]) / 2)))
         new_pad.append(max(0, int((new_dims[i] - dims[i]) / 2)))
-        #print ('new crop', max(0, int((dims[i] - new_dims[i]) / 2)))
         new_crop.append(max(0, int((dims[i] - new_dims[i]) / 2)))
 
 

@@ -53,7 +53,7 @@ private:
     std::vector<d_type> aver_v;
     std::vector<float> support_vector;
     std::vector<d_type> coherence_vector;
-    d_type max_data;
+    //d_type max_data;
 //    af::Window * errors_plot;
     
     // This method returns sum of squares of all elements in the array

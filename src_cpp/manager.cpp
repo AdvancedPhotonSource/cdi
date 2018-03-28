@@ -43,10 +43,10 @@ void Manager::StartCalc(std::vector<d_type> data_buffer_r, std::vector<int> dim,
     bool cont = false;        
     if(action == ACTION_CONTINUE)
     {
-        const char * continue_dir = params->GetContinueDir();
-        std::string image_file = Utils::GetFullFilename(continue_dir, "image.af");
-        std::string support_file = Utils::GetFullFilename(continue_dir, "support.af");
-        std::string coherence_file = Utils::GetFullFilename(continue_dir, "coherence.af");
+        std::string continue_dir = params->GetContinueDir();
+        std::string image_file = Utils::GetFullFilename(continue_dir.c_str(), "image.af");
+        std::string support_file = Utils::GetFullFilename(continue_dir.c_str(), "support.af");
+        std::string coherence_file = Utils::GetFullFilename(continue_dir.c_str(), "coherence.af");
         try {
             guess = af::readArray(image_file.c_str(), "image");
             cont = true;
@@ -111,10 +111,10 @@ void Manager::StartCalc(std::vector<d_type> data_buffer_r, std::vector<int> dim,
     
     if (params->IsSaveResults())
     {
-        const char * save_dir = params->GetSaveDir();
-        std::string image_file = Utils::GetFullFilename(save_dir, "image.af");
-        std::string support_file = Utils::GetFullFilename(save_dir, "support.af");
-        std::string coherence_file = Utils::GetFullFilename(save_dir, "coherence.af");
+        std::string save_dir = params->GetSaveDir();
+        std::string image_file = Utils::GetFullFilename(save_dir.c_str(), "image.af");
+        std::string support_file = Utils::GetFullFilename(save_dir.c_str(), "support.af");
+        std::string coherence_file = Utils::GetFullFilename(save_dir.c_str(), "coherence.af");
         
         try {
             af::saveArray("image", rec->GetImage(), image_file.c_str());

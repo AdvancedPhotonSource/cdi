@@ -47,7 +47,7 @@ Reconstruction::Reconstruction(af::array image_data, af::array guess, Params* pa
     {
         resolution = new Resolution(params);
     }
-    max_data = af::max<d_type>(data);
+    //max_data = af::max<d_type>(data);
 //    if (params->IsPlotErrors())
 //    {
 //        errors_plot = new Window(512, 512, "errors");
@@ -83,7 +83,7 @@ void Reconstruction::Init()
     norm_data = GetNorm(data);
     num_points = data.elements();
     // multiply the rs_amplitudes by max element of data array and the norm
-    // d_type max_data = af::max<d_type>(data);
+    d_type max_data = af::max<d_type>(data);
     ds_image *= max_data * GetNorm(ds_image);
 
 // the next two lines are for testing it sets initial guess to initial support    
@@ -132,7 +132,6 @@ void Reconstruction::Iterate()
             break;
         }
     }
-    printf("final image\n");
 
     if (aver_v.size() > 0)
     {

@@ -42,8 +42,8 @@ Params::Params(const char* config_file, int stage, std::vector<int> data_dim)
     number_iterations = 0;
     twin = -1;
     regularized_amp = REGULARIZED_AMPLITUDE_NONE;
-    save_dir = "my_dir";
-    continue_dir = "my_dir";
+    //save_dir = "my_dir";
+    //continue_dir = "my_dir";
     action = 0;
     action_stage = 0;
     save_results = false;
@@ -77,7 +77,8 @@ Params::Params(const char* config_file, int stage, std::vector<int> data_dim)
     
     try
     {
-        save_dir = cfg.lookup("save_dir");
+        std::string save_dir_cp = cfg.lookup("save_dir");
+        save_dir = save_dir_cp;
     }
     catch (const SettingNotFoundException &nfex)
     { }
@@ -94,7 +95,8 @@ Params::Params(const char* config_file, int stage, std::vector<int> data_dim)
     {
         try
         {
-            continue_dir = cfg.lookup("continue_dir");
+            std::string continue_dir_cp = cfg.lookup("continue_dir");
+            continue_dir = continue_dir_cp;
             action_stage = 1;
             // else it is initialized
         }
@@ -472,8 +474,6 @@ Params::~Params()
     support_triggers.clear();
     pcdi_roi.clear();
     pcdi_triggers.clear();
-    delete save_dir;
-    delete continue_dir;
 }
 
 void Params::BuildAlgorithmMap()
@@ -619,12 +619,12 @@ std::vector<alg_switch> Params::GetAlgSwitches()
     return alg_switches;
 }
 
-const char * Params::GetSaveDir()
+std::string Params::GetSaveDir()
 {
     return save_dir;
 }
 
-const char * Params::GetContinueDir()
+std::string Params::GetContinueDir()
 {
     return continue_dir;
 }

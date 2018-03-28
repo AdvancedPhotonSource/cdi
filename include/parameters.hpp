@@ -76,9 +76,9 @@ private:
     
     int regularized_amp;
     
-    const char * save_dir;
+    std::string save_dir;
     
-    const char * continue_dir;
+    std::string continue_dir;
     
     int action;
     int action_stage;
@@ -163,10 +163,10 @@ public:
     int GetRegularizedAmp();
     
     // Returns directory to save results
-    const char * GetSaveDir();
+    std::string GetSaveDir();
 
     // Returns directory to retrieve previous results to continue
-    const char * GetContinueDir();
+    std::string GetContinueDir();
 
     // Returns action the program will perform. Choices are "prep_only", "new_guess", "continue"
     int GetAction();
