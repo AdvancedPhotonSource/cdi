@@ -51,7 +51,7 @@ class Generation:
                 try:
                     self.sigmas = config_map.low_resolution_sigmas
                 except:
-                    print 'low resolution sigmas config parameter is missing, turning off low resolution.'
+                    print ('low resolution sigmas config parameter is missing, turning off low resolution.')
                     self.low_resolution_generations = 0
             elif low_resolution_sigma_alg == 'SIG_SCALE_POWER':
                 try:
