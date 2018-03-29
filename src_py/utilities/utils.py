@@ -182,14 +182,14 @@ def get_centered(array, center_shift):
     """
     max_coordinates = list(np.unravel_index(np.argmax(array), array.shape))
     max_coordinates = np.add(max_coordinates, center_shift)
-    shape = np.asarray(array.shape)
-    roll = tuple(shape/2 - max_coordinates)
+    shape = array.shape
 
-    array = np.roll(array, roll[0], 0) 
-    array = np.roll(array, roll[1], 1) 
-    centered = np.roll(array, roll[2], 2) 
+    array = np.roll(array, int(shape[0]/2)-max_coordinates[0], 0) 
+    array = np.roll(array, int(shape[1]/2)-max_coordinates[1], 1) 
+    centered = np.roll(array, int(shape[2]/2)-max_coordinates[2], 2) 
 
     return centered    
+  
 
 
 def get_centered1(array, center_shift):
