@@ -131,7 +131,6 @@ def fast_module_reconstruction(proc, conf, data, coh_dims, image=None, support=N
     support = np.swapaxes(support, 1, 0)
 
     if coherence.shape[0] > 1:
-        print 'coh dims', coh_dims
         coherence = np.reshape(coherence, coh_dims)
         coherence = np.swapaxes(coherence, 2, 0)
         coherence = np.swapaxes(coherence, 1, 0)
