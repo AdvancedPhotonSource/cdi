@@ -15,9 +15,8 @@ using namespace af;
 
 Resolution::Resolution(Params* param)
 {
-    //int iter = param->GetLowResolutionIter();
-    int iter = param->GetNumberIterations();
-    sigmas = Utils::Linspace(iter, param->GetIterLowResSigmaMax(), param->GetIterLowResSigmaMin()); 
+    int iter = param->GetLowResolutionIter();
+    sigmas = Utils::Linspace(iter, param->GetIterResDetMax(), param->GetIterResDetMin()); 
 }
 
 Resolution::~Resolution()

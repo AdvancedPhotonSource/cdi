@@ -31,9 +31,6 @@ typedef struct Trigger_setting trigger_setting;
 class Params
 {
 private:
-    // maps action name to action number
-    std::map<std::string, int> action_id_map;
-    
     // maps algorithm name to algorithm number
     std::map<std::string, int> algorithm_id_map;
     // vector holding algorithm run sequence, where algorithm run is a pair of algorithm and number of iterations
@@ -76,36 +73,28 @@ private:
     
     int regularized_amp;
     
-    std::string save_dir;
-    
-    std::string continue_dir;
-    
-    int action;
-    int action_stage;
-    
-    bool save_results;
-    
     bool plot_errors;
     
     int gc;
     
-    int device;
-    
     int low_res_iterations;
     
-    float iter_low_res_sigma_min;
+    float iter_res_sigma_min;
     
-    float iter_low_res_sigma_max;
+    float iter_res_sigma_max;
+    
+    float iter_res_det_min;
+    
+    float iter_res_det_max;
     
     std::vector<int> update_resolution_triggers;
     
     std::vector<int> CompactTriggers(std::vector<trigger_setting> triggers);
     void BuildAlgorithmMap();
-    void BuildActionMap();
 
 public:
     // Constructor. Takes in configuration file, parses the configuration and sets the parameters accordingly.
-    Params(const char* config_file, int stage, std::vector<int> data_dim);
+    Params(const char* config_file, std::vector<int> data_dim, bool first);
     ~Params();
        
     // returns data type (float/double). Used by python code
@@ -133,10 +122,12 @@ public:
     bool GetPcdiNormalize();
     int GetPcdiIterations();
 
-    float GetIterLowResSigmaMin();
-    float GetIterLowResSigmaMax();
     std::vector<int> GetUpdateResolutionTriggers();
     int GetLowResolutionIter();
+    float GetIterResSigmaMin();
+    float GetIterResSigmaMax();
+    float GetIterResDetMin();
+    float GetIterResDetMax();
 
     // Returns amplitude threshold. Used by ER and HIO algorithms.
     d_type GetAmpThreshold();
@@ -162,28 +153,11 @@ public:
     // Returns a constant indication a scheme for modifying data when calculation ratio in modulus projection
     int GetRegularizedAmp();
     
-    // Returns directory to save results
-    std::string GetSaveDir();
-
-    // Returns directory to retrieve previous results to continue
-    std::string GetContinueDir();
-
-    // Returns action the program will perform. Choices are "prep_only", "new_guess", "continue"
-    int GetAction();
-
-    // Returns boolean flag indication whether to save the raw results
-    bool IsSaveResults();
-
     // Returns boolean flag indication whether to plot errors in during calculations
     bool IsPlotErrors();
 
     // Returns number of iterations between calling garbage collection.
     int GetGC();
-
-    // Returns ID of target device (cpu or gpu).
-    int GetDeviceId();
-
-    int GetActionStage();
 
 };
 

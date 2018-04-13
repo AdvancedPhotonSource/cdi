@@ -19,129 +19,102 @@ visualization.
 
 import numpy as np
 import src_py.utilities.utils as ut
-import pylibconfig2 as cfg
+import matplotlib.pyplot as plt
 import os
 import src_py.controller.fast_module as calc
-from src_py.controller.generation import Generation
 
 
 __author__ = "Barbara Frosik"
 __copyright__ = "Copyright (c) 2016, UChicago Argonne, LLC."
 __docformat__ = 'restructuredtext en'
 __all__ = ['read_config',
-           'prepare_data',
            'reconstruction']
 
 
-def read_config(config):
-    """
-    This function gets configuration file. It checks if the file exists and parses it into a map.
+def read_results(read_dir):
+    files = []
+    def append_from_dir(file_dir):
+        try:
+            imagefile = file_dir + 'image.npy'
+            image = np.load(imagefile)
 
-    Parameters
-    ----------
-    config : str
-        configuration file name, including path
+            supportfile = file_dir + 'support.npy'
+            support = np.load(supportfile)
 
-    Returns
-    -------
-    config_map : dict
-        a map containing parsed configuration, None if the given file does not exist
-    """
+            try:
+                cohfile = file_dir + 'coherence.npy'
+                coh = np.load(cohfile)
+            except:
+                coh = None
 
-    if os.path.isfile(config):
-        with open(config, 'r') as f:
-            config_map = cfg.Config(f.read())
-            return config_map;
+            files.append((image, support, coh))
+        except:
+            pass
+
+    append_from_dir(read_dir)
+    if len(files) > 0:
+        return files
+
+    for sub in os.listdir(read_dir):
+        append_from_dir(os.path.join(read_dir, sub)+'/')
+
+    return files
+
+    
+def save_results(results, save_dir):
+    def save_rec(res, file_dir):
+        if not os.path.exists(file_dir):
+            os.makedirs(file_dir)
+
+        #data_file = data_dir + 'datafile%s.npy' % str(prep_no)
+        np.save(file_dir + 'image', res[0])
+        np.save(file_dir + 'support', res[1])
+        if not res[2] is None:
+            np.save(file_dir + 'coherence', res[2])
+
+    if len(results) == 1:
+        save_rec(results[0], save_dir)
     else:
-        return None
+        for i in range(len(results)):
+            save_rec(results[i], save_dir + str(i) + '/')
 
 
-def prepare_data(config_map, data):
-    """
-    This function prepares raw data for reconstruction. It uses configured parameters. The preparation consists of the following steps:
-    1. clearing the noise - the values below an amplitude threshold are set to zero
-    2. removing the "aliens" - aliens are areas that are effect of interference. The area is manually set in a configuration file
-    after inspecting the data.
-    3. binning - adding amplitudes of several consecutive points. Binning can be done in any dimension.
-    4. amplitudes are set to sqrt
-    5. centering - finding the greatest amplitude and locating it at a center of new array. Typically several new rows/columns/slices
-    are added. These are filled with zeros. When changing the dimension the code finds the smallest possible dimension that is
-    supported by opencl library (multiplier of 2, 3, and 5).
+def assign_devices(devices, threads):
+    print 'devices, threads', devices, threads
+    dev_no = len(devices)
+    dev = []
+    for thread in range(threads):
+        if thread < dev_no:
+            dev.append(devices[thread])
+        else:
+            dev.append[-1]
+    return dev
 
-    Parameters
-    ----------
-    config_map : dict
-        configuration map
 
-    data : array
-        a 3D np array containing experiment data
-
-    Returns
-    -------
-    data : array
-        a 3D np array containing data after the preprocessing
-    """
-
-    # zero out the noise
-    data = np.where(data < config_map.amp_threshold, 0, data)
-
-    # zero out the aliens
+def rec(proc, data, conf, config_map, previous):
     try:
-        aliens = config_map.aliens
-        for alien in aliens:
-            data[alien[0]:alien[3], alien[1]:alien[4], alien[2]:alien[5]] = 0
-    except AttributeError:
-        pass
+        devices = config_map.device
+    except:
+        devices = [-1]
 
-    # do binning
+    # assign device for each thread
+    threads = len(previous)
+    devices = assign_devices(devices, threads)
+
     try:
-        binsizes = config_map.binning
-        data = ut.binning(data, binsizes)
-    except AttributeError:
-        pass
+        coh_dims = tuple(config_map.partial_coherence_roi)
+    except:
+        coh_dims = None
 
-    # square root data
-    data = np.sqrt(data)
-
-#    # get centered array
-#    try:
-#        center_shift = tuple(config_map.center_shift)
-#    except AttributeError:
-#        center_shift = (0, 0, 0)
-#    data = ut.get_centered1(data, center_shift)
-
-    # adjust the size, either zero pad or crop array
-    try:
-        pad = tuple(config_map.adjust_dimensions)
-        data = ut.adjust_dimensions(data, pad)
-    except AttributeError:
-        pass
-
-    # get centered array
-    try:
-        center_shift = tuple(config_map.center_shift)
-    except AttributeError:
-        center_shift = (0, 0, 0)
-
-    data = ut.get_centered(data, center_shift)
-
-    return data
+    results = []
+    for i in range(threads):
+        res = previous[i]
+        image, support, coherence, errors = calc.fast_module_reconstruction(proc, devices[i], conf, data, coh_dims, res[0], res[1], res[2])
+        results.append((image, support, coherence, errors))
+    return results
 
 
-def save_prepared_data(data, config_map):
-    try:
-        save_dir = config_map.save_dir
-        if not save_dir.endswith('/'):
-            save_dir = save_dir + '/'
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
-    except AttributeError:
-        print ("save_dir not configured")
-
-    np.save(save_dir + '/data.npy', data)
-
-
-def reconstruction(proc, filename, conf):
+def reconstruction(proc, data, conf, config_map):
     """
     This function is called by the user. It checks whether the data is valid and configuration file exists.
     It calls function to pre-process the data, and then to run reconstruction.
@@ -151,9 +124,6 @@ def reconstruction(proc, filename, conf):
     ----------
     proc : str
         a string indicating the processor type
-
-    filename : str
-        name of a file containing experiment data
 
     conf : str
         configuration file name
@@ -167,56 +137,45 @@ def reconstruction(proc, filename, conf):
         a vector containing mean error for each iteration
     """
 
-    data = ut.get_array_from_tif(filename)
+    # how many reconstructions to start
+    try:
+        threads = config_map.threads
+    except:
+        threads = 1
 
-    config_map = read_config(conf)
-    if config_map is None:
-        print ("can't read configuration file")
-        return None, None
+    # if continue, find the previous results from the continue_dir
+    if config_map.cont:
+        try:
+            continue_dir = config_map.continue_dir
+            if not continue_dir.endswith('/'):
+                continue_dir = continue_dir + '/'
+        except:
+            print ("continue_dir not configured")
+            return None
+        previous = read_results(continue_dir)
+    else:
+        previous = []
+        for _ in range(threads):
+            previous.append((None, None, None))
 
-    print ('data dimensions before prep', data.shape)
-    data = prepare_data(config_map, data)
-    print ('data dimensions after prep', data.shape)
+    results = rec(proc, data, conf, config_map, previous)
 
     try:
-        action = config_map.action
+        save_dir = config_map.save_dir
+        if not save_dir.endswith('/'):
+            save_dir = save_dir + '/'
     except AttributeError:
-        action = 'new_guess'
+        save_dir = 'results/'
 
-    try:
-        save_results = config_map.save_results
-    except AttributeError:
-        save_results = False
+    save_results(results, save_dir)
 
-    if action == 'prep_only':
-        save_prepared_data(data, config_map)
-        return
+    if len(results) == 1:
+        errors = results[0][3]
+        errors.pop(0)
+        plt.plot(errors)
+        plt.ylabel('errors')
+        plt.show()
 
-    if save_results:
-        save_prepared_data(data, config_map)
+    return results    
 
-    try:
-        generations = config_map.generations
-    except:
-        generations = 1
-    try:
-        low_resolution_generations = config_map.low_resolution_generations
-    except:
-        low_resolution_generations = 0
-
-    try:
-        coh_dims = tuple(config_map.partial_coherence_roi)
-    except:
-        coh_dims = None
-
-    image, support, coherence = None, None, None
-    gen_obj = Generation(config_map)
-    for g in range(low_resolution_generations):
-        gen_data = gen_obj.get_data(g, data)
-        image, support, coherence, errors = calc.reconstruction(proc, conf, gen_data, coh_dims, image, support, coherence)
-    for g in range(low_resolution_generations, generations):
-        image, support, coherence, errors = calc.reconstruction(proc, conf, data, coh_dims, image, support, coherence)
-
-
-#reconstruction('opencl', '/home/phoebus/BFROSIK/CDI/S149/Staff14-3_S0149.tif', '/local/bfrosik/cdi/config.test')
 

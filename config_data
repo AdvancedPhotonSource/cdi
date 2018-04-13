@@ -1,0 +1,72 @@
+// GENERAL
+data_dir = "data"
+                             // directory where prepared data is saved, default "data"
+
+// PARAMETER FOR DATA PREPARATION
+aliens = ((170,220,112,195,245,123), (50,96,10,60,110,20))
+                             // aliens are common for all preps
+                             // comment out aliens for no removal, otherwise input them as
+                             // aliens=[[x0,y0,z0,x1,y1,z1],[x2,y2,z2,x3,y3,z3]]
+                             // will remove two instances of aliens given by the pairs
+                             // #0 and #1 and another given by #2,#3. accepts as
+                             // many as you like.
+
+//amp_threshold = (2.0, 2.1)
+amp_threshold = (2.0)
+                             // mandatory 
+                             // enter a value for each prep
+                             // min data threshold.  Values below this are set to 0. The threshold is applied
+                             // before removing aliens and binning.
+
+binning = ((1,1,1), (1,1,1))
+                             // optional 
+                             // enter binning tuple for each prep
+                             // defines binning values in all dimensions, (1,1,1) has no effect
+
+center_shift = ((0,0,0), (0,0,0))
+                             // optional 
+                             // enter center shift tuple for each prep
+                             // the maximum is centered after binning, and moved according to center_shift, 
+                             // (0,0,0) has no effect
+
+adjust_dimensions = ((-13, -13, -65, -65, -65, -65), (-7, -13, -55, -65, -55, -65))
+                             // optional 
+                             // enter adjust dimensions tuple for each prep
+                             // If number is positive, the array will be padded. If negative, cropped.
+                             // The parameters correspond to [x left, x right, y left, y right, z left, z right]
+                             // The final dimensions will be adjusted up to the good number for the FFT which
+                             // also is compatible with opencl supported dimensions
+                             // powers of 2 or a*2^n, where a is 3, 5, or 9
+
+
+// RECONSTRUCTION PARAMETERS USED BY FAST MODULE
+device = 0
+                   // ID of the target device
+
+algorithm_sequence = ((1, ("ER",19), ("HIO", 10)), (1,("ER",10)))
+
+// support
+support_triggers = ((5, 5, 300));
+support_type = "GAUSS";
+
+avg_iterations = 15;
+
+// PARAMETERS FOR VISUALISATION
+// wavelength
+lamda = .13933;
+// delta (degrees)
+delta = 30.1;
+// gamma (degrees)
+gamma = 14.0;
+// camera distance (m)
+arm=0.6350;
+// angular step size
+dth=0.000174532925199;
+
+// detector pixel sixe
+pixel = [55.0e-6, 55.0e-6];
+
+// size to crop the image array
+//crop = [120,120,120]
+crop = [.75, .75, .75]
+

@@ -18,7 +18,11 @@ visualization.
 """
 
 import numpy as np
+import matplotlib.pyplot as plt
+import os
+import src_py.controller.reconstruction as rec
 import src_py.utilities.utils as ut
+
 
 __author__ = "Barbara Frosik"
 __copyright__ = "Copyright (c) 2016, UChicago Argonne, LLC."
@@ -105,3 +109,80 @@ class Generation:
                 ut.gaussian(shape, self.sigmas[generation])
             else:
                 return np.ones(shape)
+
+
+def save_results(image, support, coherence, save_dir):
+    if not save_dir.endswith('/'):
+        save_dir = save_dir + '/'
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+
+    #data_file = data_dir + 'datafile%s.npy' % str(prep_no)
+    np.save(save_dir + 'image', image)
+    np.save(save_dir + 'support', support)
+    np.save(save_dir + 'coherence', coherence)
+
+
+def reconstruction(generations, proc, data, conf, config_map):
+    """
+    This function is called by the user. It checks whether the data is valid and configuration file exists.
+    It calls function to pre-process the data, and then to run reconstruction.
+    The reconstruction results, image and errors are returned.
+
+    Parameters
+    ----------
+    proc : str
+        a string indicating the processor type
+
+    conf : str
+        configuration file name
+
+    Returns
+    -------
+    image : array
+        a 3D np array containing reconstructed image
+
+    er : array
+        a vector containing mean error for each iteration
+    """
+
+    try:
+        low_resolution_generations = config_map.low_resolution_generations
+    except:
+        low_resolution_generations = 0
+
+    try:
+        threads = config_map.threads
+    except:
+        threads = 1
+
+    previous = []
+    for _ in range(threads):
+        previous.append((None, None, None))
+
+    gen_obj = Generation(config_map)
+    for g in range(low_resolution_generations):
+        gen_data = gen_obj.get_data(g, data)
+        previous = rec.rec(proc, gen_data, conf, config_map, previous)
+    for g in range(low_resolution_generations, generations):
+        previous = rec.rec(proc, data, conf, config_map, previous)
+        image = previous[0][0]
+        print 'image norm', ut.get_norm(image), '---------------------'
+        errors = previous[0][3]
+        errors.pop(0)
+        plt.plot(errors)
+        plt.ylabel('errors')
+        plt.show()
+
+    results = previous
+
+    try:
+        save_dir = config_map.save_dir
+        if not save_dir.endswith('/'):
+            save_dir = save_dir + '/'
+    except AttributeError:
+        save_dir = 'results/'
+
+        save_results(results, save_dir)
+
+

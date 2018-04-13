@@ -21,13 +21,13 @@ private:
 public:
     Bridge();
 
-    void StartCalcWithGuess(std::vector<float> data_buffer_r, std::vector<float> guess_buffer_r, std::vector<float> guess_buffer_i, std::vector<int> dim, const std::string & config);
+    void StartCalcWithGuess(int device, std::vector<float> data_buffer_r, std::vector<float> guess_buffer_r, std::vector<float> guess_buffer_i, std::vector<int> dim, const std::string & config);
 
-    void StartCalcWithGuessSupport(std::vector<float> data_buffer_r, std::vector<float> guess_buffer_r, std::vector<float> guess_buffer_i, std::vector<int> support_buffer, std::vector<int> dim, const std::string & config);
+    void StartCalcWithGuessSupport(int device, std::vector<float> data_buffer_r, std::vector<float> guess_buffer_r, std::vector<float> guess_buffer_i, std::vector<int> support_buffer, std::vector<int> dim, const std::string & config);
 
-    void StartCalcWithGuessSupportCoh(std::vector<float> data_buffer_r, std::vector<float> guess_buffer_r, std::vector<float> guess_buffer_i, std::vector<int> support_buffer, std::vector<int> dim, std::vector<float> coh_buffer, std::vector<int> coh_dim, const std::string & config);
+    void StartCalcWithGuessSupportCoh(int device, std::vector<float> data_buffer_r, std::vector<float> guess_buffer_r, std::vector<float> guess_buffer_i, std::vector<int> support_buffer, std::vector<int> dim, std::vector<float> coh_buffer, std::vector<int> coh_dim, const std::string & config);
 
-    void StartCalc(std::vector<float> data_buffer_r, std::vector<int> dim, std::string const & config);
+    void StartCalc(int device, std::vector<float> data_buffer_r, std::vector<int> dim, std::string const & config);
 
     std::vector<float> GetSupportV();
     std::vector<d_type> GetCoherenceV();

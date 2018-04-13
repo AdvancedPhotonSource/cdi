@@ -71,12 +71,6 @@ class DispalyParams:
         except AttributeError:
             self.crop = None
             print ('crop not defined')
-        try:
-            self.save_dir = config_map.save_dir
-            if not self.save_dir.endswith('/'):
-                self.save_dir = self.save_dir + '/'
-        except AttributeError:
-            self.save_dir = ''
 
 
 class CXDViz(tr.HasTraits):
@@ -352,7 +346,7 @@ def get_crop(params, shape):
 #     return image, support
 #
 
-def save_CX(conf, image, support):
+def save_CX(conf, image, support, save_dir):
     image, support = center(image, support)
     #    image = remove_ramp(image)
     params = DispalyParams(conf)
@@ -361,7 +355,7 @@ def save_CX(conf, image, support):
     viz.set_geometry(params, image.shape)
     crop = get_crop(params, image.shape)
     viz.set_crop(crop[0], crop[1], crop[2])  # save image
-    viz.write_structured_grid(params.save_dir + 'image')
+    viz.write_structured_grid(save_dir + 'image')
     viz.set_array(support)
-    viz.write_structured_grid(params.save_dir + 'support')
+    viz.write_structured_grid(save_dir + 'support')
 

@@ -1,0 +1,124 @@
+// GENERAL
+data_dir = "data"
+                             // directory from which data is read
+
+save_dir = "results"
+                             // directory where results of reconstruction as npy files are saved
+                             // if threads > 1, result from each thread will be stored in subdirectory 1,2,3 etc.
+
+cont = false
+                             // only applied if generations equals 1, or not defined
+                             // true if the reconstruction start with previous results stored in continue_dir
+
+continue_dir = "cont"
+                             // directory from which results are read for reconstruction continuation
+                             // if the directory contains subdirectories, a thread will start for each subdirectory
+
+threads = 1
+                             // number of reconstructions to start with
+
+device = [0,0]
+                             // ID of the target devices for each thread. 
+                             // If more threads or not defined, it will default to -1
+
+gc = 1;
+                             // ArrayFire memory management is not reliable, the way around is to call garbage
+                             // collection per defined number of iterations. Decrease this value if out of memory
+                             // error occurs
+
+// GENERATIONS
+generations = 1              // number of generations
+
+low_resolution_generations = 0
+                             // number of generations low resolution is applied to, starting from first gen
+
+low_resolution_sigma_alg = "SIG_SPACE_LINEAR"
+                             // defines how to calculate sigmas based on generation. Supported:
+                             // SIG_SPACE_LINEAR - sigmas are starting from low_resolution_sigma_max,
+                             // linearly decreasing for each generation, reaching low_resolution_sigma
+                             // at the end
+                             // SIG_SCALE_POWER - use low_resolution_scale_power and ScaleFactor
+                             //                to calculate sigmas for generations
+                             // SIG_ASSIGNED - sigmas will be read from low_resolution_sigmas
+
+low_resolution_sigmas = [1.0]
+                             // list of sigmas that will be used by subsequent generations if the 
+                             // low_resolution_sigma_alg is set to SIG_ASSIGNED
+                             // the length must be equal low_resolution_generations
+
+low_resolution_sigma_min = 0.1
+                             // initial sigma
+
+low_resolution_sigma_max = 2.0
+                             // max support sigma value
+
+low_resolution_scale_power = 1
+                             // how the sigma scales with generation (1 - linear, 2 - quad etc)
+
+low_resolution_alg = "GAUSS"
+                             // algorithm to use to apply resolution. Supported algorithms:
+                             // GAUSS
+
+
+// RECONSTRUCTION PARAMETERS USED BY FAST MODULE
+//algorithm_sequence = ((2, ("ER",19), ("HIO", 10)), (1,("ER",20)))
+algorithm_sequence = ((2, ("ER",19), ("HIO", 10)), (1,("ER",20)))
+                             // defines algorithm applied in each iteration by a sequence of tuples.
+                             // The first number in a tuple is a repeat, followed by tuples of pairs, each
+                             // pair defining algorithm and number of iterations to run the algorithm.
+
+twin = 2;
+                             // twin defines at which iteration to cut half of the array(i.e. multiply by 0s),
+                             // it is done in ER/HIO. If don't want to apply twin, set it negative.
+
+phase_triggers = ((1, 1, 30))
+phase_min = -2.0;
+phase_max = 2.0;
+
+beta = .9;
+
+// support
+support_triggers = ((5, 5, 300));
+                             // trigger contains starting iteration, step, and ending iteration (if missing, run
+                             // to the end).
+support_type = "GAUSS";
+support_threshold = 0.1;
+support_sigma = 1.0;
+support_area = [.5,.5,.5];
+                             // initial support area. If the values are fractional, the support area will be calculated
+                             // by multiplying by the data array dimensions. The support will be set to 1s to this
+                             // dimensions centered.
+
+// partial coherence
+partial_coherence_type = "LUCY";
+                             // if type is not defined, partial coherence is not applied
+partial_coherence_triggers = ((15, 14));
+                             // trigger contains starting iteration, step, and ending iteration (if missing, run
+                             // to the end).
+partial_coherence_iteration_num = 20;
+partial_coherence_normalize = true;
+partial_coherence_roi = [32,32,32];
+                             // coherence area. If the values are fractional, the coherence area will be calculated
+                             // by multiplying by the data array dimensions.
+
+//update_resolution_triggers = (1, 20)
+                             // the data is being modified with calculated mask starting with first iteration. 
+                             // the trigger defines step and last iteration for which it is applied
+
+iter_res_sigma_range = (3.0)
+                             // used when applying low resolution to replace support sigma.
+                             // The sigmas are linespaced for low resolution iterations from min value to max. 
+                             // If only one number given, the min sigma will default to support_sigma
+
+iter_res_det_range = (50, 1)
+                             // used when applying low resolution data mask while iterating. 
+                             // The det values are linespaced for low resolution iterations from max value to min. 
+                             // The mask is gauss with sigma of linespaced det. If only one number given,
+                             // the min det will default to 1
+
+regularized_amp = "GAUSS";
+
+avg_iterations = 15;
+                             // number of last iterations that the image amplitudes will be included to calculate
+                             // final
+

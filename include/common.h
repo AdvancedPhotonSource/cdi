@@ -9,6 +9,7 @@ See LICENSE file.
 
 // defines the type of the data; can be float or double. The def_type will get replaced when running initializing script.
 typedef def_type d_type;
+
 const int nD = 3;
 
 
@@ -38,16 +39,9 @@ const int ALGORITHM_GAUSS_PERCENT = 19;
 const int ALGORITHM_PERCENT_AUTO = 20;
 const int ALGORITHM_GAUSS_MINAREA = 21;
 
-const int ACTION_PREP_ONLY = 1;
-const int ACTION_NEW_GUESS = 2;
-const int ACTION_CONTINUE = 3;
-
 const int REGULARIZED_AMPLITUDE_NONE = 0;
 const int REGULARIZED_AMPLITUDE_GAUSS = 1;
 const int REGULARIZED_AMPLITUDE_POISSON = 2;
 const int REGULARIZED_AMPLITUDE_UNIFORM = 3;
-
-const int STAGE_PREMIER = 0;
-const int STAGE_CONTINUE = 1;
 
 #endif /* common_h */

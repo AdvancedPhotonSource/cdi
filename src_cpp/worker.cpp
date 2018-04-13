@@ -23,7 +23,7 @@ See LICENSE file.
 #include "resolution.hpp"
 
 
-Reconstruction::Reconstruction(af::array image_data, af::array guess, Params* parameters, af::array support_array, af::array coherence_array)
+Reconstruction::Reconstruction(af::array image_data, af::array guess, Params* parameters, af::array support_array, af::array coherence_array, bool is_first)
 {
     num_points = 0;
     norm_data = 0;
@@ -32,6 +32,7 @@ Reconstruction::Reconstruction(af::array image_data, af::array guess, Params* pa
     data = image_data;
     ds_image = guess;
     params = parameters;
+    first = is_first;
     state = new State(params);
     support = new Support(data.dims(), params, support_array);
     
@@ -43,7 +44,7 @@ Reconstruction::Reconstruction(af::array image_data, af::array guess, Params* pa
     {
         partialCoherence = NULL;
     }
-    if (params->GetLowResolutionIter() >0)
+    if (first && (params->GetLowResolutionIter() >0))
     {
         resolution = new Resolution(params);
     }
@@ -103,9 +104,9 @@ void Reconstruction::Iterate()
         iter_data = data;
         if ((resolution != NULL) && (current_iteration < params->GetLowResolutionIter()) && (state->IsUpdateResolution()))
         {
-            iter_data = resolution->GetIterData(current_iteration, data);
-            d_type iter_data_max = af::max<d_type>(iter_data);
-            iter_data = iter_data/iter_data_max;
+            iter_data = resolution->GetIterData(current_iteration, data.copy());
+            //d_type iter_data_max = af::max<d_type>(iter_data);
+            //iter_data = iter_data/iter_data_max;
         }
         if (state->IsUpdateSupport() || state->IsUpdatePhase())
         {
@@ -130,7 +131,7 @@ void Reconstruction::Iterate()
         {
             remove("stopfile");
             break;
-        }
+        }        
     }
 
     if (aver_v.size() > 0)
@@ -167,8 +168,8 @@ af::array Reconstruction::ModulusProjection()
     }  
     else
     {
-printf("current iter, pcdi first trigger, action_stage %i, %i, %i\n", current_iteration, partialCoherence->GetTriggers()[0],params->GetActionStage());
-        if ((current_iteration >= partialCoherence->GetTriggers()[0]) || (params->GetActionStage()))
+        if ((current_iteration >= partialCoherence->GetTriggers()[0]) || (first == false))
+        //if (~ Utils::IsNullArray(partialCoherence->GetKernelArray()))
         {
             printf("coherence using lucy\n");            
             af::array abs_amplitudes = abs(rs_amplitudes).copy();

@@ -17,9 +17,8 @@ See LICENSE file.
 using namespace libconfig;
 
 
-Params::Params(const char* config_file, int stage, std::vector<int> data_dim)
+Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
 {
-    action_id_map.clear();
     algorithm_id_map.clear();
     alg_switches.clear();
     d_type amp_threshold = 0;
@@ -42,20 +41,14 @@ Params::Params(const char* config_file, int stage, std::vector<int> data_dim)
     number_iterations = 0;
     twin = -1;
     regularized_amp = REGULARIZED_AMPLITUDE_NONE;
-    action = 0;
-    action_stage = 0;
-    save_results = false;
     plot_errors = false;
     gc = -1;
-    device = -1;
     low_res_iterations = 0;
-    iter_low_res_sigma_min = support_sigma;
+    iter_res_det_min = 1;
 
-    iter_low_res_sigma_max = 3.0;
     update_resolution_triggers.clear();
 
     BuildAlgorithmMap();
-    BuildActionMap();
 
     Config cfg;
     
@@ -73,46 +66,6 @@ Params::Params(const char* config_file, int stage, std::vector<int> data_dim)
         printf("config file parse exception\n");
     }
     
-    try
-    {
-        std::string save_dir_cp = cfg.lookup("save_dir");
-        save_dir = save_dir_cp;
-    }
-    catch (const SettingNotFoundException &nfex)
-    { }
-
-    try {
-        action = action_id_map[cfg.lookup("action")];
-    }
-    catch ( const SettingNotFoundException &nfex)
-    {
-        action = action_id_map["new_guess"];
-    }
-
-    if (action == ACTION_CONTINUE)
-    {
-        try
-        {
-            std::string continue_dir_cp = cfg.lookup("continue_dir");
-            continue_dir = continue_dir_cp;
-            action_stage = 1;
-            // else it is initialized
-        }
-        catch (const SettingNotFoundException &nfex)
-        {
-            printf("No 'continue_dir' parameter in configuration file, saving in 'my_dir'.\n");
-        }
-    }
-    else
-    { 
-        action_stage = stage;
-    }
-    try {
-        save_results = cfg.lookup("save_results");
-    }
-    catch ( const SettingNotFoundException &nfex)
-    { }
-
     try {
         plot_errors = cfg.lookup("plot_errors");
     }
@@ -148,12 +101,6 @@ Params::Params(const char* config_file, int stage, std::vector<int> data_dim)
 
     try {
         gc = cfg.lookup("gc");
-    }
-    catch ( const SettingNotFoundException &nfex)
-    { }
-
-    try {
-        device = cfg.lookup("device");
     }
     catch ( const SettingNotFoundException &nfex)
     { }
@@ -195,7 +142,7 @@ Params::Params(const char* config_file, int stage, std::vector<int> data_dim)
         for (int i =0; i < tmp.getLength(); i++)
         {
             int start = tmp[i][1]; // set the first trigger to step
-            if (action_stage == 0)
+            if (first)
             {
                 start = tmp[i][0];
             }
@@ -227,7 +174,8 @@ Params::Params(const char* config_file, int stage, std::vector<int> data_dim)
     {
         printf((std::string("No 'support_type' parameter in configuration file.\n")).c_str());
     }
-
+    if (first)
+    {
     try {
         std::vector<trigger_setting> triggers;
         const Setting& root = cfg.getRoot();
@@ -235,7 +183,7 @@ Params::Params(const char* config_file, int stage, std::vector<int> data_dim)
         for (int i =0; i < tmp.getLength(); i++)
         {
             int start = tmp[i][1]; // set the first trigger to step
-            if (action_stage == 0)
+            if (first)
             {
                 start = tmp[i][0];
             }
@@ -271,6 +219,7 @@ Params::Params(const char* config_file, int stage, std::vector<int> data_dim)
     }
     catch ( const SettingNotFoundException &nfex)
     { }
+    }  // if first
 
     try {
         pcdi_alg = algorithm_id_map[cfg.lookup("partial_coherence_type")];
@@ -309,7 +258,7 @@ Params::Params(const char* config_file, int stage, std::vector<int> data_dim)
             for (int i =0; i < tmp.getLength(); i++)
             {
                 int start = tmp[i][1]; // set the first trigger to step
-                if (action_stage == 0)
+                if (first)
                 {
                     start = tmp[i][0];
                 }
@@ -348,7 +297,7 @@ Params::Params(const char* config_file, int stage, std::vector<int> data_dim)
         }
     }
 
-    if (action_stage == 0)
+    if (first)
     {
         try 
         {
@@ -376,23 +325,56 @@ Params::Params(const char* config_file, int stage, std::vector<int> data_dim)
         catch ( const SettingNotFoundException &nfex)
         { }
         if (low_res_iterations > 0)
-        {            
+        {   
+            bool low_res = true;         
             try
             {
-                iter_low_res_sigma_min = cfg.lookup("iter_low_res_sigma_min");
-                if (iter_low_res_sigma_min == 0.0)
+                const Setting& root = cfg.getRoot();
+                const Setting &tmp = root["iter_res_sigma_range"];
+                int size = tmp.getLength();
+                if (size > 1)
                 {
-                    iter_low_res_sigma_min = support_sigma;
+                    iter_res_sigma_min = tmp[0];
+                    iter_res_sigma_max = tmp[1];
+                }
+                else
+                {
+                    iter_res_sigma_min = support_sigma;
+                    iter_res_sigma_max = tmp[0];
                 }
             }
             catch(const SettingNotFoundException &nfex)
-            { }
+            {
+                printf("No 'iter_res_sigma_range' parameter in configuration file.\n");
+                low_res = false;
+            }
             try
             {
-                iter_low_res_sigma_max = cfg.lookup("iter_low_res_sigma_max");
+                const Setting& root = cfg.getRoot();
+                const Setting &tmp = root["iter_res_det_range"];
+                int size = tmp.getLength();
+                if (size > 1)
+                {
+                    iter_res_det_min = tmp[0];
+                    iter_res_det_max = tmp[1];
+                }
+                else
+                {
+                    iter_res_det_min = 1;
+                    iter_res_det_max = tmp[0];
+                }
             }
             catch(const SettingNotFoundException &nfex)
-            { }
+            {
+                printf("No 'iter_res_det_range' parameter in configuration file.\n");
+                low_res = false;
+            }
+            if (low_res == false)
+            {
+                printf("Not applying iteration based low resolution.\n");
+                update_resolution_triggers.clear();
+                low_res_iterations = 0;
+            }
         }
     }
 
@@ -402,24 +384,6 @@ Params::Params(const char* config_file, int stage, std::vector<int> data_dim)
     }
     catch(const SettingNotFoundException &nfex)
     { }
-
-//    try
-//    {
-//        amp_threshold = cfg.lookup("amp_threshold");
-//    }
-//    catch(const SettingNotFoundException &nfex)
-//    {
-//        printf("No 'amp_threshold' parameter in configuration file.\n");
-//    }
-
-//    try {
-//        amp_threshold_fill_zeros = cfg.lookup("amp_threshold_fill_zeros");
-//    }
-//    catch (const SettingNotFoundException &nfex)
-//    {
-//        printf("No 'amp_threshold_fill_zeros' parameter in configuration file.\n");
-//    }
-//    
 
     try
     {
@@ -448,7 +412,8 @@ Params::Params(const char* config_file, int stage, std::vector<int> data_dim)
     }
     catch (const SettingNotFoundException &nfex)
     { }
-    if (action_stage == 0)
+
+    if (first)
     {
         try {
             twin = cfg.lookup("twin");
@@ -464,7 +429,6 @@ Params::Params(const char* config_file, int stage, std::vector<int> data_dim)
 
 Params::~Params()
 {
-    action_id_map.clear();
     algorithm_id_map.clear();
     alg_switches.clear();
     data_type.clear();
@@ -482,14 +446,6 @@ void Params::BuildAlgorithmMap()
     algorithm_id_map.insert(std::pair<char*,int>("LUCY", ALGORITHM_LUCY));
     algorithm_id_map.insert(std::pair<char*,int>("LUCY_PREV", ALGORITHM_LUCY_PREV));
     algorithm_id_map.insert(std::pair<char*,int>("GAUSS", ALGORITHM_GAUSS));
-}
-
-void Params::BuildActionMap()
-{
-    // hardcoded
-    action_id_map.insert(std::pair<char*,int>("prep_only", ACTION_PREP_ONLY));
-    action_id_map.insert(std::pair<char*,int>("new_guess", ACTION_NEW_GUESS));
-    action_id_map.insert(std::pair<char*,int>("continue", ACTION_CONTINUE));
 }
 
 std::vector<int> Params::CompactTriggers(std::vector<trigger_setting> triggers)
@@ -617,26 +573,6 @@ std::vector<alg_switch> Params::GetAlgSwitches()
     return alg_switches;
 }
 
-std::string Params::GetSaveDir()
-{
-    return save_dir;
-}
-
-std::string Params::GetContinueDir()
-{
-    return continue_dir;
-}
-
-int Params::GetAction()
-{
-    return action;
-}
-
-bool Params::IsSaveResults()
-{
-    return save_results;
-}
-
 bool Params::IsPlotErrors()
 {
     return plot_errors;
@@ -645,26 +581,6 @@ bool Params::IsPlotErrors()
 int Params::GetGC()
 {
     return gc;
-}
-
-int Params::GetDeviceId()
-{
-    return device;
-}
-
-int Params::GetActionStage()
-{
-    return action_stage;
-}
-
-float Params::GetIterLowResSigmaMin()
-{
-    return iter_low_res_sigma_min;
-}
-
-float Params::GetIterLowResSigmaMax()
-{
-    return iter_low_res_sigma_max;
 }
 
 std::vector<int> Params::GetUpdateResolutionTriggers()
@@ -677,4 +593,23 @@ int Params::GetLowResolutionIter()
     return low_res_iterations;
 }
 
+float Params::GetIterResSigmaMin()
+{
+    return iter_res_sigma_min;
+}
+
+float Params::GetIterResSigmaMax()
+{
+    return iter_res_sigma_max;
+}
+
+float Params::GetIterResDetMin()
+{
+    return iter_res_det_min;
+}
+
+float Params::GetIterResDetMax()
+{
+    return iter_res_det_max;
+}
 

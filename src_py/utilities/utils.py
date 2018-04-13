@@ -13,7 +13,9 @@ This module is a suite of utility mehods.
 """
 
 import tifffile as tf
+import pylibconfig2 as cfg
 import numpy as np
+import os
 
 __author__ = "Barbara Frosik"
 __copyright__ = "Copyright (c) 2016, UChicago Argonne, LLC."
@@ -43,6 +45,29 @@ def get_array_from_tif(filename):
     """
     
     return tf.imread(filename)
+
+
+def read_config(config):
+    """
+    This function gets configuration file. It checks if the file exists and parses it into a map.
+
+    Parameters
+    ----------
+    config : str
+        configuration file name, including path
+
+    Returns
+    -------
+    config_map : dict
+        a map containing parsed configuration, None if the given file does not exist
+    """
+
+    if os.path.isfile(config):
+        with open(config, 'r') as f:
+            config_map = cfg.Config(f.read())
+            return config_map;
+    else:
+        return None
 
 
 def get_good_dim(dim):
@@ -189,79 +214,6 @@ def get_centered(array, center_shift):
     centered = np.roll(array, int(shape[2]/2)-max_coordinates[2], 2) 
 
     return centered    
-  
-
-
-def get_centered1(array, center_shift):
-    """
-    This function finds a greatest value in the array, and puts it in a center of a new array. The extra elements in the new 
-    array are set to 0.
-
-    Parameters
-    ----------
-    array : array
-        the original array to be centered
-        
-    center_shift : list
-        a list defining shift of the center
-
-    Returns
-    -------
-    array : array
-        the centered array
-    """
-    max_coordinates = list(np.unravel_index(np.argmax(array), array.shape))
-    max_coordinates = np.add(max_coordinates, center_shift)
-    shape = array.shape
-    new_shape = []
-    shift = []
-    # find new shape that can fit the array with max_coordinate in center
-    for ax in range(len(shape)):
-        if max_coordinates[ax] <= int(shape[ax]/2):
-            new_shape.append(2*(shape[ax] - max_coordinates[ax]))
-        else:
-            new_shape.append(2*max_coordinates[ax])       
-        shift.append(int(new_shape[ax]/2) - max_coordinates[ax])
-
-    centered = np.zeros(tuple(new_shape), dtype=array.dtype)
-
-    # this supports 3D arrays
-    centered[shift[0]:shift[0]+shape[0], shift[1]:shift[1]+shape[1], shift[2]:shift[2]+shape[2]] = array
-
-    return centered    
-
-
-def adjust_dimensions1(arr, pad):
-    """
-    This function adds to or subtracts from each dimension of the array elements defined by pad. If the pad is positive,
-    the array is padded in this dimension. The elements are added to the beginning of array and end by the same number,
-    so the original array is centered. If the pad is negative, the array is cropped. The crop is symmetrical at the
-    beginning and end of the array in the related dimension.
-    The dimensions of the new array are supported by the opencl library.
-    Parameters
-    ----------
-    arr : array
-        the array to pad/crop
-    pad : list
-        list of three pad values, for each dimension
-    Returns
-    -------
-    array : array
-        the padded/cropped array
-    """
-    dims = arr.shape
-    new_dims = []
-    new_pad = []
-    new_crop = []
-    for i in range(len(dims)):
-        new_dims.append(get_good_dim(dims[i] + 2 * pad[i]))
-        new_pad.append(max(0, int((new_dims[i] - dims[i]) / 2)))
-        new_crop.append(max(0, int((dims[i] - new_dims[i]) / 2)))
-
-    arr = np.lib.pad(arr, ((new_pad[0], new_pad[0]), (new_pad[1], new_pad[1]), (new_pad[2], new_pad[2])), 'constant',
-                      constant_values=((0.0, 0.0), (0.0, 0.0), (0.0, 0.0))).copy()
-
-    return arr[new_crop[0]:new_crop[0]+new_dims[0], new_crop[1]:new_crop[1]+new_dims[1], new_crop[2]:new_crop[2]+new_dims[2]]
 
 
 def adjust_dimensions(arr, pad):
@@ -307,6 +259,17 @@ def adjust_dimensions(arr, pad):
 def crop_center(arr, new_size):
     size = arr.shape
     return arr[ int((size[0]-new_size[0])/2) : int((size[0]-new_size[0])/2) + new_size[0], int((size[1]-new_size[1])/2) : int((size[1]-new_size[1])/2) + new_size[1], int((size[2]-new_size[2])/2) : int((size[2]-new_size[2])/2) + new_size[2]]
+
+
+def get_init_array(shape):
+    half_shape = (shape[0]/2, shape[1]/2, shape[2]/2)
+    arr = np.ones(half_shape)
+    return np.lib.pad(arr, ((half_shape[0]/2, half_shape[0]-half_shape[0]/2), (half_shape[1]/2, half_shape[1]-half_shape[1]/2), (half_shape[2]/2, half_shape[2]-half_shape[2]/2)), 'constant',
+                      constant_values=((0.0, 0.0), (0.0, 0.0), (0.0, 0.0)))
+
+
+def get_norm(arr):
+    return sum(sum(sum(abs(arr)**2)))
 
 
 def flip(m, axis):

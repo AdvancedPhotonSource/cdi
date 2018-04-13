@@ -51,23 +51,21 @@ void Support::Update(const af::array ds_image, bool amp_trigger, bool phase_trig
     }
     if (phase_trigger)
     {
+        printf("phase trigger\n");     
         af::array phase = atan2(imag(ds_image), real(ds_image));
         af::array phase_condition = ((phase > params->GetPhaseMin()) && (phase < params->GetPhaseMax()));
         if (amp_trigger)
         {
             support_array *= phase_condition;
+            init_support_array = support_array.copy();
         }
         else
         {
             support_array = phase_condition * init_support_array;
         }
     }
-    // set to true (1) elements that are greater than phase min and less than phase max, and support is 1
-    //   af::array phase_condition = (phase > params->GetPhaseMin()) && (phase < params->GetPhaseMax()) || (support->GetSupportArray() == 0);
-    // replace the elements that above condition is 1 with prev_ds_image - ds_image * params->GetBeta()
-//replace(ds_image, phase_condition, (prev_ds_image - ds_image * params->GetBeta()));    }
     
-    printf("support sum %f\n", sum<d_type>(support_array));
+//    printf("support sum %f\n", sum<d_type>(support_array));
 }
 
 int Support::GetTriggerAlgorithm()
@@ -84,6 +82,7 @@ af::array Support::GetSupportArray(bool twin)
 {
     if (twin)
     {
+        printf("twinning\n");
         dim4 dims = support_array.dims();
         af::array temp = constant(0, dims, u32);
         temp( af::seq(0, dims[0]/2-1), af::seq(0, dims[1]/2-1), span, span) = 1;

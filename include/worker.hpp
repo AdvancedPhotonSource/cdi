@@ -42,6 +42,7 @@ private:
     PartialCoherence *partialCoherence;
     // A reference to Resolution
     Resolution *resolution;
+    bool first;
 
     af::array data;   // this is abs
     af::array iter_data;  // if low resolutionis used, data will differ in iterations
@@ -79,7 +80,7 @@ public:
     // The class constructor takes data array, an image guess array in reciprocal space, and configuration file. The image guess
     // is typically generated as an complex random array. This image can be also the best outcome of previous calculations. The
     // data is saved and is used for processing. 
-    Reconstruction(af::array data, af::array guess, Params* params, af::array support_array, af::array coherence_array);
+    Reconstruction(af::array data, af::array guess, Params* params, af::array support_array, af::array coherence_array, bool first);
     
     ~Reconstruction();
     

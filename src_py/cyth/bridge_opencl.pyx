@@ -17,10 +17,10 @@ from libcpp.string cimport string
 cdef extern from "../include/bridge.hpp":
     cdef cppclass Bridge:
         Bridge() except +
-        void StartCalcWithGuess(vector[float], vector[float], vector[float], vector[int], string)
-        void StartCalcWithGuessSupport(vector[float], vector[float], vector[float], vector[int], vector[int], string)
-        void StartCalcWithGuessSupportCoh(vector[float], vector[float], vector[float], vector[int], vector[int], vector[float], vector[int], string)
-        void StartCalc(vector[float], vector[int], string)
+        void StartCalcWithGuess(int, vector[float], vector[float], vector[float], vector[int], string)
+        void StartCalcWithGuessSupport(int, vector[float], vector[float], vector[float], vector[int], vector[int], string)
+        void StartCalcWithGuessSupportCoh(int, vector[float], vector[float], vector[float], vector[int], vector[int], vector[float], vector[int], string)
+        void StartCalc(int, vector[float], vector[int], string)
         vector[double] GetImageR()
         vector[double] GetImageI()
         vector[double] GetErrors()
@@ -35,14 +35,14 @@ cdef class PyBridge:
         self.thisptr = new Bridge()
     def __dealloc__(self):
         del self.thisptr
-    def start_calc_with_guess(self, data_r, guess_r, guess_i, dims, config):
-        self.thisptr.StartCalcWithGuess(data_r, guess_r, guess_i, dims, config.encode())
-    def start_calc_with_guess_support(self, data_r, guess_r, guess_i, support, dims, config):
-        self.thisptr.StartCalcWithGuessSupport(data_r, guess_r, guess_i, support, dims, config.encode())
-    def start_calc_with_guess_support_coh(self, data_r, guess_r, guess_i, support, dims, coh, coh_dims, config):
-        self.thisptr.StartCalcWithGuessSupportCoh(data_r, guess_r, guess_i, support, dims, coh, coh_dims, config.encode())
-    def start_calc(self, data_r, dims, config):
-        self.thisptr.StartCalc(data_r, dims, config.encode())
+    def start_calc_with_guess(self, device, data_r, guess_r, guess_i, dims, config):
+        self.thisptr.StartCalcWithGuess(device, data_r, guess_r, guess_i, dims, config.encode())
+    def start_calc_with_guess_support(self, device, data_r, guess_r, guess_i, support, dims, config):
+        self.thisptr.StartCalcWithGuessSupport(device, data_r, guess_r, guess_i, support, dims, config.encode())
+    def start_calc_with_guess_support_coh(self, device, data_r, guess_r, guess_i, support, dims, coh, coh_dims, config):
+        self.thisptr.StartCalcWithGuessSupportCoh(device, data_r, guess_r, guess_i, support, dims, coh, coh_dims, config.encode())
+    def start_calc(self, device, data_r, dims, config):
+        self.thisptr.StartCalc(device, data_r, dims, config.encode())
     def get_image_r(self):
         return self.thisptr.GetImageR()
     def get_image_i(self):
