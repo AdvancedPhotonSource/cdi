@@ -88,29 +88,43 @@ void Reconstruction::Init()
     ds_image *= max_data * GetNorm(ds_image);
 
 // the next two lines are for testing it sets initial guess to initial support    
-     //af::array temp = support->GetSupportArray();
-     //ds_image  = complex(temp.as((af_dtype) dtype_traits<d_type>::ctype), 0.0).as(c64);
+     af::array temp = support->GetSupportArray();
+     ds_image  = complex(temp.as((af_dtype) dtype_traits<d_type>::ctype), 0.0).as(c64);
     
     ds_image *= support->GetSupportArray();
     printf("initial image norm %f\n", GetNorm(ds_image));
+ //   iter_data = data;
 }
 
 
 void Reconstruction::Iterate()
 {
+    d_type sig = params->GetSupportSigma();
     while (state->Next())
     {
         current_iteration = state->GetCurrentIteration();
         iter_data = data;
-        if ((resolution != NULL) && (current_iteration < params->GetLowResolutionIter()) && (state->IsUpdateResolution()))
+        if (resolution != NULL)
         {
-            iter_data = resolution->GetIterData(current_iteration, data.copy());
-            //d_type iter_data_max = af::max<d_type>(iter_data);
-            //iter_data = iter_data/iter_data_max;
+            if ((current_iteration < params->GetLowResolutionIter()) && state->IsUpdateResolution())
+            {
+                iter_data = resolution->GetIterData(current_iteration, data.copy());
+                sig = resolution->GetIterSigma(current_iteration);
+            }
+            if (current_iteration == params->GetLowResolutionIter())
+            {
+                sig = params->GetSupportSigma();
+            }
         }
         if (state->IsUpdateSupport() || state->IsUpdatePhase())
         {
-            support->Update(ds_image.copy(), state->IsUpdateSupport(), state->IsUpdatePhase());
+            support->Update(ds_image.copy(), state->IsUpdateSupport(), state->IsUpdatePhase(), sig);
+            // not a good programming, will be better with framework
+            // it's for not recalculating distribution in support
+            if (state->IsUpdateSupport())
+            {
+                sig = -1;
+            }
         }
 
         if (params->GetGC() && (current_iteration+1) % params->GetGC() == 0)

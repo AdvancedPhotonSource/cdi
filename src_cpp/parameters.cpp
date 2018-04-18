@@ -44,7 +44,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
     plot_errors = false;
     gc = -1;
     low_res_iterations = 0;
-    iter_res_det_min = 1;
+    iter_res_det_first = 1;
 
     update_resolution_triggers.clear();
 
@@ -334,13 +334,13 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
                 int size = tmp.getLength();
                 if (size > 1)
                 {
-                    iter_res_sigma_min = tmp[0];
-                    iter_res_sigma_max = tmp[1];
+                    iter_res_sigma_first = tmp[0];
+                    iter_res_sigma_last = tmp[1];
                 }
                 else
                 {
-                    iter_res_sigma_min = support_sigma;
-                    iter_res_sigma_max = tmp[0];
+                    iter_res_sigma_first = support_sigma;
+                    iter_res_sigma_last = tmp[0];
                 }
             }
             catch(const SettingNotFoundException &nfex)
@@ -355,13 +355,13 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
                 int size = tmp.getLength();
                 if (size > 1)
                 {
-                    iter_res_det_min = tmp[0];
-                    iter_res_det_max = tmp[1];
+                    iter_res_det_first = tmp[0];
+                    iter_res_det_last = tmp[1];
                 }
                 else
                 {
-                    iter_res_det_min = 1;
-                    iter_res_det_max = tmp[0];
+                    iter_res_det_first = 1;
+                    iter_res_det_last = tmp[0];
                 }
             }
             catch(const SettingNotFoundException &nfex)
@@ -593,23 +593,23 @@ int Params::GetLowResolutionIter()
     return low_res_iterations;
 }
 
-float Params::GetIterResSigmaMin()
+float Params::GetIterResSigmaFirst()
 {
-    return iter_res_sigma_min;
+    return iter_res_sigma_first;
 }
 
-float Params::GetIterResSigmaMax()
+float Params::GetIterResSigmaLast()
 {
-    return iter_res_sigma_max;
+    return iter_res_sigma_last;
 }
 
-float Params::GetIterResDetMin()
+float Params::GetIterResDetFirst()
 {
-    return iter_res_det_min;
+    return iter_res_det_first;
 }
 
-float Params::GetIterResDetMax()
+float Params::GetIterResDetLast()
 {
-    return iter_res_det_max;
+    return iter_res_det_last;
 }
 

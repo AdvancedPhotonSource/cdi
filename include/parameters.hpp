@@ -79,13 +79,13 @@ private:
     
     int low_res_iterations;
     
-    float iter_res_sigma_min;
+    float iter_res_sigma_first;
     
-    float iter_res_sigma_max;
+    float iter_res_sigma_last;
     
-    float iter_res_det_min;
+    float iter_res_det_first;
     
-    float iter_res_det_max;
+    float iter_res_det_last;
     
     std::vector<int> update_resolution_triggers;
     
@@ -124,10 +124,10 @@ public:
 
     std::vector<int> GetUpdateResolutionTriggers();
     int GetLowResolutionIter();
-    float GetIterResSigmaMin();
-    float GetIterResSigmaMax();
-    float GetIterResDetMin();
-    float GetIterResDetMax();
+    float GetIterResSigmaFirst();
+    float GetIterResSigmaLast();
+    float GetIterResDetFirst();
+    float GetIterResDetLast();
 
     // Returns amplitude threshold. Used by ER and HIO algorithms.
     d_type GetAmpThreshold();

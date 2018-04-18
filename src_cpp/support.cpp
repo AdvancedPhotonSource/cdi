@@ -27,7 +27,7 @@ Support::Support(const af::dim4 data_dim, Params *parameters, af::array support)
         support_array = support;
     }
 
-    if (algorithm == ALGORITHM_GAUSS)
+/*    if (algorithm == ALGORITHM_GAUSS)
     {
         int alpha = 1;
         d_type *sigmas = new d_type[nD];
@@ -36,13 +36,20 @@ Support::Support(const af::dim4 data_dim, Params *parameters, af::array support)
             sigmas[i] = data_dim[i]/(2.0*af::Pi*sigma);
         } 
         distribution = Utils::GaussDistribution(data_dim, sigmas, alpha);
-    }    
+    } 
+ */   
 }
 
-void Support::Update(const af::array ds_image, bool amp_trigger, bool phase_trigger)
+void Support::Update(const af::array ds_image, bool amp_trigger, bool phase_trigger, d_type sig)
 {
     if (amp_trigger)
     {
+        // not good programming but will be better with framework
+        if (sig > 0)
+        {
+            distribution = GetDistribution(ds_image.dims(), sig);
+        }
+        
         printf("updating support\n");
         af::array convag = GaussConvFft(abs(ds_image));
         d_type max_convag = af::max<d_type>(convag);
@@ -57,7 +64,7 @@ void Support::Update(const af::array ds_image, bool amp_trigger, bool phase_trig
         if (amp_trigger)
         {
             support_array *= phase_condition;
-            init_support_array = support_array.copy();
+//            init_support_array = support_array.copy();
         }
         else
         {
@@ -93,6 +100,18 @@ af::array Support::GetSupportArray(bool twin)
         return support_array;
     }
 }
+
+af::array Support::GetDistribution(const af::dim4 data_dim, d_type sigma)
+{
+    int alpha = 1;
+    d_type *sigmas = new d_type[nD];
+    for (int i=0; i<nD; i++)
+    {
+        sigmas[i] = data_dim[i]/(2.0*af::Pi*sigma);
+    } 
+    return Utils::GaussDistribution(data_dim, sigmas, alpha);
+}
+
 
 af::array Support::GaussConvFft(af::array ds_image_abs)
 {

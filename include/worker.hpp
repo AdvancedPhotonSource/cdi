@@ -118,6 +118,21 @@ public:
     std::vector<d_type> GetCoherenceVectorR();
     std::vector<d_type> GetCoherenceVectorI();
 
+/*    void GarbageTrigger();
+    RESOLUTION_TRIGGER,
+    AMP_SUPPORT_TRIGGER,
+    PHASE_SUPPORT_TRIGGER,
+    TO_REAL_SPACE,
+    PARTIAL_COHERENCE_TRIGGER,
+    CONVERGE_RATIO_TRIGGER,
+    NO_CONVERGE_RATIO_TRIGGER,
+    TUNE_RS_AMPLITUDES,
+    SET_PREVIOUS_PCDI_TRIGGER,
+    TO_RECIPROCAL_SPACE,
+    ALGORITHM,
+    TWINTRIGGER,
+    AVERAGE_TRIGGER,
+    STOP_APPL};
+*/
 };
-
 #endif /* worker_hpp */

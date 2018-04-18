@@ -16,12 +16,19 @@ using namespace af;
 Resolution::Resolution(Params* param)
 {
     int iter = param->GetLowResolutionIter();
-    sigmas = Utils::Linspace(iter, param->GetIterResDetMax(), param->GetIterResDetMin()); 
+    dets = Utils::Linspace(iter, param->GetIterResDetFirst(), param->GetIterResDetLast()); 
+    sigmas = Utils::Linspace(iter, param->GetIterResSigmaFirst(), param->GetIterResSigmaLast()); 
 }
 
 Resolution::~Resolution()
 {
+    dets.clear();
     sigmas.clear();
+}
+
+float Resolution::GetIterSigma(int iter)
+{
+    return sigmas[iter];
 }
 
 af::array Resolution::GetIterData(int iter, af::array data)
@@ -30,7 +37,7 @@ af::array Resolution::GetIterData(int iter, af::array data)
     d_type *dim_sigmas = new d_type[nD];
     for (int i=0; i<nD; i++)
     {
-        dim_sigmas[i] = data.dims()[i]/(2.0*af::Pi*sigmas[iter]);
+        dim_sigmas[i] = data.dims()[i]*dets[iter];
     } 
     af::array distribution = Utils::GaussDistribution(data.dims(), dim_sigmas, alpha);
     af::array data_shifted = Utils::ifftshift(data);

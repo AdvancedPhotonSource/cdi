@@ -21,7 +21,7 @@ device = [0,0]
                              // ID of the target devices for each thread. 
                              // If more threads or not defined, it will default to -1
 
-gc = 1;
+gc = 2;
                              // ArrayFire memory management is not reliable, the way around is to call garbage
                              // collection per defined number of iterations. Decrease this value if out of memory
                              // error occurs
@@ -71,9 +71,9 @@ twin = 2;
                              // twin defines at which iteration to cut half of the array(i.e. multiply by 0s),
                              // it is done in ER/HIO. If don't want to apply twin, set it negative.
 
-phase_triggers = ((1, 1, 30))
-phase_min = -2.0;
-phase_max = 2.0;
+phase_triggers = ((1, 1, 40))
+phase_min = -1.57;
+phase_max = 1.57;
 
 beta = .9;
 
@@ -101,18 +101,18 @@ partial_coherence_roi = [32,32,32];
                              // coherence area. If the values are fractional, the coherence area will be calculated
                              // by multiplying by the data array dimensions.
 
-//update_resolution_triggers = (1, 20)
+update_resolution_triggers = (1, 39)
                              // the data is being modified with calculated mask starting with first iteration. 
                              // the trigger defines step and last iteration for which it is applied
 
-iter_res_sigma_range = (3.0)
+iter_res_sigma_range = (2.0, 1.0)
                              // used when applying low resolution to replace support sigma.
-                             // The sigmas are linespaced for low resolution iterations from min value to max. 
-                             // If only one number given, the min sigma will default to support_sigma
+                             // The sigmas are linespaced for low resolution iterations from first value to last. 
+                             // If only one number given, the last sigma will default to support_sigma
 
-iter_res_det_range = (50, 1)
+iter_res_det_range = (.7, 1.0)
                              // used when applying low resolution data mask while iterating. 
-                             // The det values are linespaced for low resolution iterations from max value to min. 
+                             // The det values are linespaced for low resolution iterations from first value to last. 
                              // The mask is gauss with sigma of linespaced det. If only one number given,
                              // the min det will default to 1
 

@@ -80,7 +80,6 @@ def save_results(results, save_dir):
 
 
 def assign_devices(devices, threads):
-    print 'devices, threads', devices, threads
     dev_no = len(devices)
     dev = []
     for thread in range(threads):

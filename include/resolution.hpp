@@ -19,6 +19,7 @@ namespace af {
 class Resolution
 {
 private:
+    std::vector<float> dets;
     std::vector<float> sigmas;
 
 public:
@@ -29,6 +30,7 @@ public:
     
     // Returns resolution based on iteration
     af::array GetIterData(int iter, af::array data);
+    float GetIterSigma(int iter);
 };
 
 
