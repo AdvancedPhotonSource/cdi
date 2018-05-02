@@ -38,8 +38,10 @@ af::array Resolution::GetIterData(int iter, af::array data)
     for (int i=0; i<nD; i++)
     {
         dim_sigmas[i] = data.dims()[i]*dets[iter];
-    } 
+    }
     af::array distribution = Utils::GaussDistribution(data.dims(), dim_sigmas, alpha);
+    d_type max_dist = af::max<d_type>(distribution);
+    distribution = distribution/max_dist;
     af::array data_shifted = Utils::ifftshift(data);
     af::array masked = distribution*data_shifted;
     return Utils::ifftshift(masked);
