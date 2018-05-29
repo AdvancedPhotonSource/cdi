@@ -1,3 +1,16 @@
+// Trigger can be defined as a single iteration, or multiple iterations.
+// examples:
+// (3) trigger at iteration 3
+// (20, 5) trigger starts at iteration 20, repeats every 5 iteration for the rest of run
+// (20, 5, 40) trigger starts at iteration 20, repeats every 5 iteration until iteration 40
+// Triggers can also be a combination of any of the above, ex: ((4), (3, 7, 24), (6,20))
+// Below is a list of the supported triggers:
+// garbage_trigger, twin_trigger, amp_support_trigger, phase_support_trigger, pcdi_trigger, resolution_trigger,
+// average_trigger.
+// The features that are related to the triggers are described below where the trigger is defined.
+// If a trigger is not defined, the feature is turned off. Comment out trigger that you don't want to apply.
+// Adding a new feature/ trigger is described in common.h header file.
+
 // GENERAL
 data_dir = "data"
                              // directory from which data is read
@@ -21,7 +34,7 @@ device = [0,0]
                              // ID of the target devices for each thread. 
                              // If more threads or not defined, it will default to -1
 
-gc = 2;
+garbage_trigger = (10,5)
                              // ArrayFire memory management is not reliable, the way around is to call garbage
                              // collection per defined number of iterations. Decrease this value if out of memory
                              // error occurs
@@ -61,26 +74,28 @@ low_resolution_alg = "GAUSS"
 
 
 // RECONSTRUCTION PARAMETERS USED BY FAST MODULE
-//algorithm_sequence = ((2, ("ER",19), ("HIO", 10)), (1,("ER",20)))
+// modulus projection algorithm sequence
 algorithm_sequence = ((2, ("ER",19), ("HIO", 10)), (1,("ER",20)))
                              // defines algorithm applied in each iteration by a sequence of tuples.
                              // The first number in a tuple is a repeat, followed by tuples of pairs, each
                              // pair defining algorithm and number of iterations to run the algorithm.
 
-twin = 2;
-                             // twin defines at which iteration to cut half of the array(i.e. multiply by 0s),
-                             // it is done in ER/HIO. If don't want to apply twin, set it negative.
-
-phase_triggers = ((1, 1, 40))
-phase_min = -1.57;
-phase_max = 1.57;
-
 beta = .9;
+                             // used in hio algorithm
+
+// twin
+// twin feature trims the image array at the current state by zeroing half of the array in each dimension.
+twin_trigger = (2)
+                             // applied only in initial reconstruction
+                             // twin defines at which iteration to cut half of the array(i.e. multiply by 0s),
+                             // Comment out, if don't want to apply twin.
 
 // support
-support_triggers = ((5, 5, 300));
-                             // trigger contains starting iteration, step, and ending iteration (if missing, run
-                             // to the end).
+// Support area is an array that defines region in which the image is meaningful. This area is recalculated at the
+// trigger iteration. The calculation employ an algorithm defined here as support_type.
+amp_support_trigger = (7, 5)
+                             // defines when to update support array using the parameters below.
+                             // Comment out, if support feature not used.
 support_type = "GAUSS";
 support_threshold = 0.1;
 support_sigma = 1.0;
@@ -89,36 +104,55 @@ support_area = [.5,.5,.5];
                              // by multiplying by the data array dimensions. The support will be set to 1s to this
                              // dimensions centered.
 
+// phase constrain
+// At the begginning iterations the support area is modified in respect to the phase. Support area will exclude points
+// outside of the defined bounds
+phase_support_trigger = (0, 1, 45)
+                             // applied only in initial reconstruction
+                             // defines when to update support array using the parameters below by applaying phase constrain.
+                             // Comment out, if phase constrain feature not used.
+phase_min = -1.57;
+phase_max = 1.57;
+
 // partial coherence
+// Partial coherence trigger triggers recalculation of coherence array for the amplitudes in reciprocal space.
+// After first coherence array is determined, it is used for convolution in subsequent iteration.
+pcdi_trigger = (16, 14)
+                             // defines when to update coherence using the parameters below.
+                             // Comment out, if pcdi feature not used.
 partial_coherence_type = "LUCY";
-                             // if type is not defined, partial coherence is not applied
-partial_coherence_triggers = ((15, 14));
-                             // trigger contains starting iteration, step, and ending iteration (if missing, run
-                             // to the end).
+                             // partial coherence algorithm
 partial_coherence_iteration_num = 20;
 partial_coherence_normalize = true;
 partial_coherence_roi = [32,32,32];
                              // coherence area. If the values are fractional, the coherence area will be calculated
                              // by multiplying by the data array dimensions.
 
-update_resolution_triggers = (1, 39)
-                             // the data is being modified with calculated mask starting with first iteration. 
-                             // the trigger defines step and last iteration for which it is applied
+// iteration based low resolution
+// At the begginning iterations the data and sigma are modified gradually. The sigma for each iteration where the low
+// resolution is applied is a linespace result of iter_res_sigma_range. The last sigma should be set to support_sigma,
+// or you can use default to achieve this. The sigma is used by when recalculation the support area, i.e when support
+// trigger is on. The data is multiplied by gaussian distribution with sigma gradually growing to the last value, which
+// typically is 1.
+resolution_trigger = (0, 1, 40)
+                             // applied only in initial reconstruction
+                             // defines when to apply low resolution using the parameters below.
+                             // Comment out, if low resolution feature not used.
 
 iter_res_sigma_range = (2.0, 1.0)
                              // used when applying low resolution to replace support sigma.
                              // The sigmas are linespaced for low resolution iterations from first value to last. 
-                             // If only one number given, the last sigma will default to support_sigma
+                             // If only one number given, the last sigma will default to support_sigma.
 
 iter_res_det_range = (.7, 1.0)
                              // used when applying low resolution data mask while iterating. 
                              // The det values are linespaced for low resolution iterations from first value to last. 
                              // The mask is gauss with sigma of linespaced det. If only one number given,
-                             // the min det will default to 1
+                             // the last det will default to 1.
 
-regularized_amp = "GAUSS";
-
-avg_iterations = 15;
-                             // number of last iterations that the image amplitudes will be included to calculate
-                             // final
-
+// averaging
+// The amplitudes of the last several iterations are avaraged. This trigger defines at which iteration the averaging
+// starts.
+average_trigger = (65, 1)
+                             // defines when to apply averaging.
+                             // Comment out, if averaging not used.

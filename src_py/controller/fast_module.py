@@ -18,7 +18,6 @@ visualization.
 """
 
 import numpy as np
-import src_py.utilities.CXDVizNX as cx
 import scipy.fftpack as sf
 import src_py.cyth.bridge_cpu as bridge_cpu
 import src_py.cyth.bridge_opencl as bridge_opencl
@@ -61,11 +60,14 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
         a vector containing mean error for each iteration
     """
     if proc == 'cpu':
-        bridge = bridge_cpu
+        #bridge = bridge_cpu
+        fast_module = bridge_cpu.PyBridge()
     elif proc == 'opencl':
-        bridge = bridge_opencl
+        #bridge = bridge_opencl
+        fast_module = bridge_opencl.PyBridge()
     elif proc == 'cuda':
-        bridge = bridge_cuda
+        #bridge = bridge_cuda
+        fast_module = bridge_cuda.PyBridge()
 
     # shift data
     data=sf.fftshift(data)
@@ -73,7 +75,7 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
 
     dims = data.shape
     dims1 = (dims[2], dims[1], dims[0])
-    fast_module = bridge.PyBridge()
+    #fast_module = bridge.PyBridge()
 
     data_l = data.flatten().tolist()
     if image is None:
@@ -112,7 +114,7 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
     image_r = np.asarray(fast_module.get_image_r()).copy()
     image_i = np.asarray(fast_module.get_image_i()).copy()
     image = image_r + 1j*image_i
-    print 'image norm in fast module',  sum(abs(image)**2)
+    print ('image norm in fast module',  sum(abs(image)**2))
     # normalize image
     mx = max(np.absolute(image).ravel().tolist())
     image = image/mx

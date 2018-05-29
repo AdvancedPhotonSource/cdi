@@ -21,32 +21,21 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
 {
     algorithm_id_map.clear();
     alg_switches.clear();
-    d_type amp_threshold = 0;
-    amp_threshold_fill_zeros = false;
     beta = 0.9;
     support_area.clear();
     support_threshold = 0.1; 
     support_sigma = 1.0;
-    support_triggers.clear();
     support_alg = -1;
     phase_min = -atan(1)*2.0;
     phase_max = atan(1)*2.0;
     pcdi_alg = 0;
     pcdi_roi.clear();
-    pcdi_triggers.clear();
     pcdi_normalize = false;
     pcdi_iter = 20;
-    d_type_precision = false;
-    avg_iterations = 0;
     number_iterations = 0;
-    twin = -1;
-    regularized_amp = REGULARIZED_AMPLITUDE_NONE;
     plot_errors = false;
-    gc = -1;
     low_res_iterations = 0;
     iter_res_det_first = 1;
-
-    update_resolution_triggers.clear();
 
     BuildAlgorithmMap();
 
@@ -65,7 +54,9 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
     {
         printf("config file parse exception\n");
     }
-    
+
+    const Setting& root = cfg.getRoot();
+
     try {
         plot_errors = cfg.lookup("plot_errors");
     }
@@ -73,7 +64,6 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
     { }
 
     try {
-        const Setting& root = cfg.getRoot();
         const Setting &tmp = root["algorithm_sequence"];
         int count = tmp.getLength();
         
@@ -99,109 +89,244 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
         printf("No 'algorithm_sequence' parameter in configuration file.\n");
     }
 
-    try {
-        gc = cfg.lookup("gc");
-    }
-    catch ( const SettingNotFoundException &nfex)
-    { }
+    // process triggers
+    // find which triggers are configured, add the index of the flow_seq item to used_flow_seq vwctor if this item
+    // is used
+    bool is_pcdi = false;
+    for (int i = 0; i < flow_seq_len; i++)
+    {
+        char *flow_item = flow_def[i].item_name;
+        int type = flow_def[i].type;
 
-    try {
-        const Setting& root = cfg.getRoot();
-        const Setting &tmp = root["support_area"];
-        for (int i = 0; i < tmp.getLength(); ++i)
+        // no trigger is part of any flow
+        if (type == NOT_TRIGGER)
         {
-            try {
-                support_area.push_back(tmp[i]);
-            }
-            catch ( const SettingTypeException &nfex)
+            used_flow_seq.push_back(i);
+        }
+        else if (flow_item == "pcdi_trigger")
+        {
+            if (root.exists(flow_item))
             {
-                float ftmp = tmp[i];
-                support_area.push_back(int(ftmp * data_dim[i]));
+                is_pcdi = true;
+                used_flow_seq.push_back(i);
             }
         }
-    }
-    catch ( const SettingNotFoundException &nfex)
-    {
-        printf("No 'support_area' parameter in configuration file.\n");
-    }
-    try {
-        support_threshold = cfg.lookup("support_threshold");
-    }
-    catch ( const SettingNotFoundException &nfex)
-    { }
-    try {
-        support_sigma = cfg.lookup("support_sigma");
-    }
-    catch ( const SettingNotFoundException &nfex)
-    { }
-
-    try {
-        std::vector<trigger_setting> triggers;
-        const Setting& root = cfg.getRoot();
-        const Setting &tmp = root["support_triggers"];
-        for (int i =0; i < tmp.getLength(); i++)
+        else
         {
-            int start = tmp[i][1]; // set the first trigger to step
-            if (first)
+            if (type == CUSTOM)
             {
-                start = tmp[i][0];
+                // currently custom triggers are related to pcdi
+                if (flow_item == "no_pcdi")
+                {
+                    if (!is_pcdi || first)
+                    {
+                        used_flow_seq.push_back(i);
+                    }
+                }
+                else if (is_pcdi)
+                {
+                    used_flow_seq.push_back(i);
+                }
             }
-            int step = tmp[i][1];
-            int end_step;
-            if (tmp[i].getLength() > 2)
+            else if (first)
             {
-                end_step = tmp[i][2];
-                end_step = std::min(end_step, number_iterations);
+                if (type && root.exists(flow_item))
+                {
+                   used_flow_seq.push_back(i);
+                }
             }
             else
             {
-                end_step = number_iterations;
+                if ((type > FIRST_RUN_ONLY) && root.exists(flow_item))
+                {
+                    used_flow_seq.push_back(i);
+                }
             }
-            triggers.push_back(Trigger_setting(start, step, end_step));
         }
-        support_triggers = CompactTriggers(triggers);
-        triggers.clear();
     }
-    catch ( const SettingNotFoundException &nfex)
+//    printf("used triggers \n");
+//    for (int i = 0; i< used_flow_seq.size(); i++)
+//    { printf(" %i", used_flow_seq[i]);}
+//    printf("is pcdi %i\n",is_pcdi);
+
+
+    int used_flow_seq_len = used_flow_seq.size();
+    int flow[number_iterations * used_flow_seq_len];
+    memset(flow, 0, sizeof(flow));
+    std::vector<int> pcdi_tr_iter;
+
+    for (int f = 0; f < used_flow_seq_len; f++)
     {
-        printf("No support_triggers' parameter in configuration file.\n");
-    }
-    
-    try {
-        support_alg = algorithm_id_map[cfg.lookup("support_type")];
-    }
-    catch ( const SettingNotFoundException &nfex)
-    {
-        printf((std::string("No 'support_type' parameter in configuration file.\n")).c_str());
-    }
-    if (first)
-    {
-    try {
-        std::vector<trigger_setting> triggers;
-        const Setting& root = cfg.getRoot();
-        const Setting &tmp = root["phase_triggers"];
-        for (int i =0; i < tmp.getLength(); i++)
+        int offset = f * number_iterations;
+        int type = flow_def[used_flow_seq[f]].type;
+        char *flow_item = flow_def[used_flow_seq[f]].item_name;
+
+        if (type == NOT_TRIGGER)
         {
-            int start = tmp[i][1]; // set the first trigger to step
-            if (first)
+            std::fill_n(flow + offset, number_iterations, 1);
+        }
+        else if (type == CUSTOM)
+        {
+            // for now all custom triggers are associated with pcdi trigger being configured
+            if (flow_item == "pcdi")
             {
-                start = tmp[i][0];
+                int start_pcdi = first ? pcdi_tr_iter[0] : 0;
+                for (int i = start_pcdi; i < number_iterations; i ++)
+                {
+                    flow[offset + i] = 1;
+                }
             }
-            int step = tmp[i][1];
-            int end_step;
-            if (tmp[i].getLength() > 2)
+            else if (flow_item == "no_pcdi")
             {
-                end_step = tmp[i][2];
-                end_step = std::min(end_step, number_iterations);
+                int stop_pcdi = is_pcdi ? pcdi_tr_iter[0] : number_iterations;
+                for (int i = 0; i < stop_pcdi; i ++)
+                {
+                    flow[offset + i] = 1;
+                }
+            }
+            else if (flow_item == "set_prev_pcdi_trigger")
+            {
+                for (int i = 0; i < pcdi_tr_iter.size(); i ++)
+                {
+                    flow[offset + pcdi_tr_iter[i]-1] = 1;
+                }
+            }
+        }
+        else
+        {
+            const Setting &tmp = root[flow_item];
+            if (tmp[0].isNumber())
+            {
+                if (tmp.getLength() == 1)
+                {
+                    int ind = tmp[0];
+                    if (ind < number_iterations)
+                    {
+                        flow[offset + ind] = 1;
+                        if (flow_item == "pcdi_trigger")
+                        {
+                            pcdi_tr_iter.push_back(ind);
+                        }
+                    }
+                }
+                else
+                {
+                    int step = tmp[1];
+                    int start_iter = tmp[0];
+
+                    if (!first && (type == MODIFIED_AFTER_FIRST))
+                    {
+                        start_iter = step;
+                    }
+                    int stop_iter = number_iterations;
+                    if (tmp.getLength() == 3)
+                    {
+                        int conf_stop_iter = tmp[2];
+                        stop_iter = std::min(conf_stop_iter, stop_iter);
+                    }
+                    for (int i = start_iter; i < stop_iter; i += step)
+                    {
+                        flow[offset + i] = 1;
+                        if (flow_item == "pcdi_trigger")
+                        {
+                            pcdi_tr_iter.push_back(i);
+                        }
+                    }
+                }
             }
             else
             {
-                end_step = number_iterations;
+                for (int j = 0; j < tmp.getLength(); j++)
+                {
+                    if (tmp[j].getLength() == 1)
+                    {
+                        int ind = tmp[j][0];
+                        if (ind < number_iterations)
+                        {
+                            flow[offset + ind] = 1;
+                            if (flow_item == "pcdi_trigger")
+                            {
+                                pcdi_tr_iter.push_back(ind);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        int step = tmp[j][1];
+                        int start_iter = tmp[j][0];
+                        if (!first && (type = MODIFIED_AFTER_FIRST))
+                        {
+                            start_iter = step;
+                        }
+                        int stop_iter = number_iterations;
+                        if (tmp[j].getLength() == 3)
+                        {
+                            int conf_stop_iter = tmp[j][2];
+                            stop_iter = std::min(conf_stop_iter, stop_iter);
+                        }
+                        for (int i = start_iter; i < stop_iter; i += step)
+                        {
+                            flow[offset + i] = 1;
+                            if (flow_item == "pcdi_trigger")
+                            {
+                                pcdi_tr_iter.push_back(i);
+                            }
+                        }
+                    }
+                }
             }
-            triggers.push_back(Trigger_setting(start, step, end_step));
+
         }
-        phase_triggers = CompactTriggers(triggers);
-        triggers.clear();
+//    printf(" %s\n",flow_item);
+//    for (int i=0; i < number_iterations; i++)
+//        printf("  %i", flow[offset+i]);
+//    printf("\n");
+    }
+
+    std::vector<int> vec(flow, flow + number_iterations * used_flow_seq.size());
+    flow_vec = vec;
+
+    if (root.exists("amp_support_trigger"))
+    {
+        try {
+            const Setting &tmp = root["support_area"];
+            for (int i = 0; i < tmp.getLength(); ++i)
+            {
+                try {
+                    support_area.push_back(tmp[i]);
+                }
+                catch ( const SettingTypeException &nfex)
+                {
+                    float ftmp = tmp[i];
+                    support_area.push_back(int(ftmp * data_dim[i]));
+                }
+            }
+        }
+        catch ( const SettingNotFoundException &nfex)
+        {
+            printf("No 'support_area' parameter in configuration file.\n");
+        }
+        try {
+            support_threshold = cfg.lookup("support_threshold");
+        }
+        catch ( const SettingNotFoundException &nfex)
+        { }
+        try {
+            support_sigma = cfg.lookup("support_sigma");
+        }
+        catch ( const SettingNotFoundException &nfex)
+        { }
+        try {
+            support_alg = algorithm_id_map[cfg.lookup("support_type")];
+        }
+        catch ( const SettingNotFoundException &nfex)
+        {
+            printf((std::string("No 'support_type' parameter in configuration file.\n")).c_str());
+        }
+    }
+
+    if ((first) && root.exists("phase_support_trigger"))
+    {
         try {
             phase_min = cfg.lookup("phase_min");
         }
@@ -216,22 +341,19 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
         {
             printf((std::string("No 'phase_max' parameter in configuration file. Set to pi/2.\n")).c_str());
         }
-    }
-    catch ( const SettingNotFoundException &nfex)
-    { }
-    }  // if first
 
-    try {
-        pcdi_alg = algorithm_id_map[cfg.lookup("partial_coherence_type")];
     }
-    catch ( const SettingNotFoundException &nfex)
-    {
-        printf((std::string("No 'partial_coherence_type' parameter in configuration file.\n")).c_str());
-    }
-    if (pcdi_alg > 0)
+
+    if (root.exists("pcdi_trigger"))
     {
         try {
-            const Setting& root = cfg.getRoot();
+            pcdi_alg = algorithm_id_map[cfg.lookup("partial_coherence_type")];
+        }
+        catch ( const SettingNotFoundException &nfex)
+        {
+            printf((std::string("No 'partial_coherence_type' parameter in configuration file.\n")).c_str());
+        }
+        try {
             const Setting &tmp = root["partial_coherence_roi"];
             for (int i = 0; i < tmp.getLength(); ++i)
             {
@@ -249,40 +371,6 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
         {
             printf("No 'partial_coherence_roi' parameter in configuration file.\n");
         }
-
-        //pcdi_triggers = ParseTriggers("partial_coherence", action_stage);
-        try {
-            std::vector<trigger_setting> triggers;
-            const Setting& root = cfg.getRoot();
-            const Setting &tmp = root["partial_coherence_triggers"];
-            for (int i =0; i < tmp.getLength(); i++)
-            {
-                int start = tmp[i][1]; // set the first trigger to step
-                if (first)
-                {
-                    start = tmp[i][0];
-                }
-                int step = tmp[i][1];
-                int end_step;
-                if (tmp[i].getLength() > 2)
-                {
-                    end_step = tmp[i][2];
-                    end_step = std::min(end_step, number_iterations);
-                }
-                else
-                {
-                    end_step = number_iterations;
-                }
-                triggers.push_back(Trigger_setting(start, step, end_step));
-            }
-            pcdi_triggers = CompactTriggers(triggers);
-            triggers.clear();
-        }
-        catch ( const SettingNotFoundException &nfex)
-        {
-            printf("No partial_coherence_triggers' parameter in configuration file.\n");
-        }
-    
         try {
             pcdi_normalize = cfg.lookup("partial_coherence_normalize");
         }
@@ -297,93 +385,61 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
         }
     }
 
-    if (first)
+    if ((first) && root.exists("resolution_trigger"))
     {
-        try 
+        const Setting &tmp = root["resolution_trigger"];
+        try
         {
-            const Setting& root = cfg.getRoot();
-            const Setting &tmp = root["update_resolution_triggers"];
-            int step = 0;
-            try
-            {
-                step = tmp[0];
-                try
-                {
-                    low_res_iterations = tmp[1];
-                }
-                catch ( const SettingNotFoundException &nfex)
-                { }
-            }
-            catch ( const SettingNotFoundException &nfex)
-            { }
-
-            for (int i = 0; i <= low_res_iterations; i += step)
-            {
-                update_resolution_triggers.push_back(i);
-            }
+            low_res_iterations = tmp[2];
         }
         catch ( const SettingNotFoundException &nfex)
-        { }
-        if (low_res_iterations > 0)
-        {   
-            bool low_res = true;         
-            try
+        {
+            low_res_iterations = number_iterations;
+            printf((std::string("No 'resolution_trigger' upper bound in configuration file. Setting number to iteration number.\n")).c_str());
+        }
+        try
+        {
+            const Setting &tmp = root["iter_res_sigma_range"];
+            int size = tmp.getLength();
+            if (size > 1)
             {
-                const Setting& root = cfg.getRoot();
-                const Setting &tmp = root["iter_res_sigma_range"];
-                int size = tmp.getLength();
-                if (size > 1)
-                {
-                    iter_res_sigma_first = tmp[0];
-                    iter_res_sigma_last = tmp[1];
-                }
-                else
-                {
-                    iter_res_sigma_first = support_sigma;
-                    iter_res_sigma_last = tmp[0];
-                }
+                iter_res_sigma_first = tmp[0];
+                iter_res_sigma_last = tmp[1];
             }
-            catch(const SettingNotFoundException &nfex)
+            else
             {
-                printf("No 'iter_res_sigma_range' parameter in configuration file.\n");
-                low_res = false;
-            }
-            try
-            {
-                const Setting& root = cfg.getRoot();
-                const Setting &tmp = root["iter_res_det_range"];
-                int size = tmp.getLength();
-                if (size > 1)
-                {
-                    iter_res_det_first = tmp[0];
-                    iter_res_det_last = tmp[1];
-                }
-                else
-                {
-                    iter_res_det_first = 1;
-                    iter_res_det_last = tmp[0];
-                }
-            }
-            catch(const SettingNotFoundException &nfex)
-            {
-                printf("No 'iter_res_det_range' parameter in configuration file.\n");
-                low_res = false;
-            }
-            if (low_res == false)
-            {
-                printf("Not applying iteration based low resolution.\n");
-                update_resolution_triggers.clear();
-                low_res_iterations = 0;
+                iter_res_sigma_first = tmp[0];
+                iter_res_sigma_last = support_sigma;
             }
         }
+        catch(const SettingNotFoundException &nfex)
+        {
+            iter_res_sigma_first = 2.0;
+            iter_res_sigma_last = support_sigma;
+            printf("No 'iter_res_sigma_range' parameter in configuration file.Default to 2.0, sigma.\n");
+        }
+        try
+        {
+            const Setting &tmp = root["iter_res_det_range"];
+            int size = tmp.getLength();
+            if (size > 1)
+            {
+                iter_res_det_first = tmp[0];
+                iter_res_det_last = tmp[1];
+            }
+            else
+            {
+                iter_res_det_first = tmp[0];
+                iter_res_det_last = 1.0;
+            }
+        }
+        catch(const SettingNotFoundException &nfex)
+        {
+            iter_res_det_first = .7;
+            iter_res_det_last = 1.0;
+            printf("No 'iter_res_det_range' parameter in configuration file.\Default to 0.7, 1.0.n");
+        }
     }
-
-    try
-    {
-        avg_iterations = cfg.lookup("avg_iterations");
-    }
-    catch(const SettingNotFoundException &nfex)
-    { }
 
     try
     {
@@ -394,36 +450,6 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
         printf("No 'beta' parameter in configuration file. Setting to .9\n");
     }
 
-    try
-    {
-        const char *reg_amp = cfg.lookup("regularized_amp");
-        if (strcmp (reg_amp, "GAUSS") == 0)
-        {
-            regularized_amp = REGULARIZED_AMPLITUDE_GAUSS;
-        }
-        else if (strcmp (reg_amp, "POISSON") == 0)
-        {
-            regularized_amp = REGULARIZED_AMPLITUDE_POISSON;
-        }
-        else if (strcmp (reg_amp, "UNIFORM") == 0)
-        {
-            regularized_amp = REGULARIZED_AMPLITUDE_UNIFORM;
-        }
-    }
-    catch (const SettingNotFoundException &nfex)
-    { }
-
-    if (first)
-    {
-        try {
-            twin = cfg.lookup("twin");
-        }
-        catch ( const SettingNotFoundException &nfex)
-        {
-            printf("No 'twin' parameter in configuration file.\n");
-        }
-    }
-
 }
 
 
@@ -431,11 +457,8 @@ Params::~Params()
 {
     algorithm_id_map.clear();
     alg_switches.clear();
-    data_type.clear();
     support_area.clear();
-    support_triggers.clear();
     pcdi_roi.clear();
-    pcdi_triggers.clear();
 }
 
 void Params::BuildAlgorithmMap()
@@ -448,59 +471,14 @@ void Params::BuildAlgorithmMap()
     algorithm_id_map.insert(std::pair<char*,int>("GAUSS", ALGORITHM_GAUSS));
 }
 
-std::vector<int> Params::CompactTriggers(std::vector<trigger_setting> triggers)
-{
-    std::vector<int> trigger_iterations;    
-
-    for (int i = 0; i < triggers.size(); i++)
-    {
-        for (int j = triggers[i].start_iteration; j <= triggers[i].end_iteration; j += triggers[i].step_iteration)
-        {
-            trigger_iterations.push_back(j);
-        }
-    }
-    if (triggers.size() > 1)
-    {
-        std::sort(trigger_iterations.begin(), trigger_iterations.end());
-        trigger_iterations.erase( unique(trigger_iterations.begin(), trigger_iterations.end()), trigger_iterations.end());
-    }
-
-    return trigger_iterations;
-}
-
 int Params::GetNumberIterations()
 {
     return number_iterations;
 }
 
-d_type Params::GetAmpThreshold()
-{
-    return amp_threshold;
-}
-
-bool Params::IsAmpThresholdFillZeros()
-{
-    return amp_threshold_fill_zeros;
-}
-
 float Params::GetBeta()
 {
     return beta;
-}
-
-int Params::GetAvgIterations()
-{
-    return avg_iterations;
-}
-
-int Params::GetRegularizedAmp()
-{
-    return regularized_amp;
-}
-
-int Params::GetTwin()
-{
-    return twin;
 }
 
 std::vector<int> Params::GetSupportArea()
@@ -518,11 +496,6 @@ float Params::GetSupportSigma()
     return support_sigma;
 }
 
-std::vector<int> Params::GetSupportTriggers()
-{
-    return support_triggers;
-}
-
 int Params::GetSupportAlg()
 {
     return support_alg;
@@ -538,11 +511,6 @@ d_type Params::GetPhaseMax()
     return phase_max;
 }
 
-std::vector<int> Params::GetPhaseTriggers()
-{
-    return phase_triggers;
-}
-
 int Params::GetPcdiAlgorithm()
 {
     return pcdi_alg;
@@ -551,11 +519,6 @@ int Params::GetPcdiAlgorithm()
 std::vector<int>  Params::GetPcdiRoi()
 {
     return pcdi_roi;
-}
-
-std::vector<int> Params::GetPcdiTriggers()
-{
-    return pcdi_triggers;
 }
 
 bool Params::GetPcdiNormalize()
@@ -576,16 +539,6 @@ std::vector<alg_switch> Params::GetAlgSwitches()
 bool Params::IsPlotErrors()
 {
     return plot_errors;
-}
-
-int Params::GetGC()
-{
-    return gc;
-}
-
-std::vector<int> Params::GetUpdateResolutionTriggers()
-{
-    return update_resolution_triggers;
 }
 
 int Params::GetLowResolutionIter()
@@ -613,3 +566,13 @@ float Params::GetIterResDetLast()
     return iter_res_det_last;
 }
 
+std::vector<int> Params::GetUsedFlowSeq()
+{
+    return used_flow_seq;
+}
+
+std::vector<int> Params::GetFlowArray()
+{
+    printf("flow vec len %i", flow_vec.size());
+    return flow_vec;
+}

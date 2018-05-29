@@ -314,7 +314,7 @@ def center(image, support):
 
     # set com phase to zero, use as a reference
     phi0 = m.atan2(image.imag[dims[0]/2, dims[1]/2, dims[2]/2], image.real[dims[0]/2, dims[1]/2, dims[2]/2])
-    print 'phi0', phi0
+    print ('phi0', phi0)
     image = image * np.exp(-1j * phi0)
     return image, support
 

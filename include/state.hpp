@@ -41,31 +41,7 @@ private:
     
     // mapping of algorithm id to an Algorithm object
     std::map<int, Algorithm*> algorithm_map;
-    
-    // a flag indicating whether to update support
-    bool update_support;
-    // current index in support_triggers vector
-    int support_triggers_index;
-    
-    // a flag indicating whether to update phase
-    bool update_phase;
-    // current index in phase_triggers vector
-    int phase_triggers_index;
-    
-    // partial coherence state
-    // a flag indicating whether to update partial coherence
-    bool run_convolution;
-    bool update_kernel;
-    // current index in support_partial_coherence vector
-    int partial_coherence_triggers_index;
-    
-    int update_resolution_triggers_index;
-    bool update_resolution;
-    
-    bool averaging;
-    
-    bool apply_twin;
-    
+
     void MapAlgorithmObject(int alg_id);
 
 public:
@@ -93,25 +69,7 @@ public:
 
     // Returns an algorithm that should be run in a current state (i.e. iteration).
     Algorithm * GetCurrentAlg();
-    
-    // Returns true if the current state should include support update.
-    bool IsUpdateSupport();
 
-    // Returns true if the current state should include phase update.
-    bool IsUpdatePhase();
-
-    // Returns true if the current state should include partial coherence update.
-    bool IsUpdatePartialCoherence();
-
-    // Returns true if the current state should include resolution update.
-    bool IsUpdateResolution();
-
-    // Returns true if the current state should apply twin.
-    bool IsApplyTwin();
-
-    // Returns the difference of current iteration and iteration of averaging start
-    bool IsAveragingIteration();
-    
     // Stores the error
     void RecordError(d_type error);
     

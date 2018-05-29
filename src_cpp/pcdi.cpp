@@ -16,8 +16,6 @@ PartialCoherence::PartialCoherence(Params *parameters, af::array coherence_array
 {
     params = parameters;
     roi= params->GetPcdiRoi();
-    triggers = params->GetPcdiTriggers();
-    trigger_index = 0;
     algorithm = params->GetPcdiAlgorithm();
     normalize = params->GetPcdiNormalize();
     iteration_num = params->GetPcdiIterations();
@@ -35,7 +33,6 @@ PartialCoherence::PartialCoherence(Params *parameters, af::array coherence_array
 PartialCoherence::~PartialCoherence()
 { 
     roi.clear();
-    triggers.clear();
 }
 
 void PartialCoherence::Init(af::array data)
@@ -62,12 +59,7 @@ void PartialCoherence::SetPrevious(af::array abs_amplitudes)
     roi_amplitudes_prev =  Utils::CropCenter(abs_amplitudes_centered, roi_dims).copy();
 }
 
-std::vector<int> PartialCoherence::GetTriggers()
-{
-    return triggers;
-}
-
-int PartialCoherence::GetTriggerAlgorithm()
+int PartialCoherence::GetAlgorithm()
 {
     return algorithm;
 }
@@ -77,20 +69,8 @@ std::vector<int> PartialCoherence::GetRoi()
     return roi;
 }
 
-af::array PartialCoherence::ApplyPartialCoherence(af::array abs_amplitudes, int current_iteration)
+af::array PartialCoherence::ApplyPartialCoherence(af::array abs_amplitudes)
 {
-    // check if trigger is set for this iteration, and if so update coherence
-    if ((trigger_index < triggers.size()) && (current_iteration == triggers[trigger_index]))
-    {        
-        af::array abs_amplitudes_centered = shift(abs_amplitudes, dims[0]/2, dims[1]/2, dims[2]/2, dims[3]/2);
-        af::array roi_abs_amplitudes = Utils::CropCenter(abs_amplitudes_centered, roi_dims).copy();
-
-        af::array roi_combined_amp = 2*roi_abs_amplitudes - roi_amplitudes_prev;
-        OnTrigger(roi_combined_amp);   // use_2k_1 from matlab program
-        printf("Updating coherence, current iter %i\n", current_iteration);
-        trigger_index++;
-    }
-
     // apply coherence
     af::array abs_amplitudes_2 = pow(abs_amplitudes, 2);
     af::array converged_2 = af::fftConvolve(abs_amplitudes_2, kernel_array);
@@ -100,6 +80,16 @@ af::array PartialCoherence::ApplyPartialCoherence(af::array abs_amplitudes, int 
     printf("coherence norm %f\n", sum<d_type>(pow(abs(kernel_array), 2)));
     printf("converged norm %f\n", sum<d_type>(pow(abs(converged), 2)));
     return converged;
+}
+
+af::array PartialCoherence::UpdatePartialCoherence(af::array abs_amplitudes)
+{
+    af::array abs_amplitudes_centered = shift(abs_amplitudes, dims[0]/2, dims[1]/2, dims[2]/2, dims[3]/2);
+    af::array roi_abs_amplitudes = Utils::CropCenter(abs_amplitudes_centered, roi_dims).copy();
+
+    af::array roi_combined_amp = 2*roi_abs_amplitudes - roi_amplitudes_prev;
+    OnTrigger(roi_combined_amp);   // use_2k_1 from matlab program
+    printf("Updating coherence\n");
 }
 
 void PartialCoherence::OnTrigger(af::array arr)
@@ -123,11 +113,7 @@ void PartialCoherence::OnTrigger(af::array arr)
     }
     else if (algorithm == ALGORITHM_LUCY_PREV)
     {
-        // initialize, consider moving to init()
-        if (trigger_index == 1)
-        {
-            coherence = pow(roi_data_abs, 2);
-        }
+        //    coherence = pow(roi_data_abs, 2);
         //coherence = DeconvLucy(coherence, pow(roi_data_abs, 2), iteration_num);
     }
     else

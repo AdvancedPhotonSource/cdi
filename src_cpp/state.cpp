@@ -23,17 +23,6 @@ State::State(Params* parameters)
     total_iter_num = 0;
     current_alg = NULL;
     alg_switch_index = 0;
-    update_support = false;
-    support_triggers_index = 0;
-    update_phase = false;
-    phase_triggers_index = 0;
-    run_convolution = false;
-    update_kernel = false;
-    partial_coherence_triggers_index = 0;
-    averaging = false;
-    apply_twin = false;
-    update_resolution_triggers_index = 0;
-    update_resolution = false;
 }
 
 State::~State()
@@ -85,51 +74,6 @@ int State::Next()
         alg_switch_index++;
         current_alg = algorithm_map[params->GetAlgSwitches()[alg_switch_index].algorithm_id];
     }
- 
-    // check if update support this iteration
-    if ((params->GetSupportTriggers().size() > 0) && (params->GetSupportTriggers()[support_triggers_index] == current_iter))
-    {
-        update_support = true;
-        support_triggers_index++;
-    }
-    else
-    {
-        update_support = false;
-    }
-
-    // check if update phase this iteration
-    if ((params->GetPhaseTriggers().size() > 0) && (params->GetPhaseTriggers()[phase_triggers_index] == current_iter))
-    {
-        update_phase = true;
-        phase_triggers_index++;
-    }
-    else
-    {
-        update_phase = false;
-    }
-
-    // check if change resolution this iteration
-    if ((params->GetUpdateResolutionTriggers().size() > 0) && (params->GetUpdateResolutionTriggers()[update_resolution_triggers_index] == current_iter))
-    {
-        update_resolution = true;
-        update_resolution_triggers_index++;
-    }
-    else
-    {
-        update_resolution = false;
-    }
-
-    // calculate if during the iteration should do averaging.
-    averaging = ( current_iter >= (total_iter_num - params->GetAvgIterations()) );
-
-    if (current_iter == params->GetTwin())
-    {
-        apply_twin = true;
-    }
-    else
-    {
-        apply_twin = false;
-    }
 
     return true;
 }
@@ -148,36 +92,6 @@ void State::RecordError(d_type error)
 int State::GetCurrentIteration()
 {
     return current_iter;
-}
-
-bool State::IsUpdateSupport()
-{
-    return update_support;
-}
-
-bool State::IsUpdatePhase()
-{
-    return update_phase;
-}
-
-bool State::IsUpdatePartialCoherence()
-{
-    return update_kernel;
-}
-
-bool State::IsUpdateResolution()
-{
-    return update_resolution;
-}
-
-bool State::IsApplyTwin()
-{
-    return apply_twin;
-}
-
-bool State::IsAveragingIteration()
-{
-    return averaging;
 }
 
 std::vector<d_type>  State::GetErrors()

@@ -30,6 +30,8 @@ using namespace af;
 
 class Reconstruction
 {
+typedef void (Reconstruction::*fp)(void);
+
 private:
 
     // Params object constructed by the Reconstruction class
@@ -42,19 +44,23 @@ private:
     PartialCoherence *partialCoherence;
     // A reference to Resolution
     Resolution *resolution;
-    bool first;
 
     af::array data;   // this is abs
     af::array iter_data;  // if low resolutionis used, data will differ in iterations
+    d_type sig;
     int num_points;
     d_type norm_data;
     int current_iteration;
     af::array ds_image;
+    af::array ds_image_raw;
+    af::array rs_amplitudes;
     int aver_iter;
     std::vector<d_type> aver_v;
     std::vector<float> support_vector;
     std::vector<d_type> coherence_vector;
-    //d_type max_data;
+    std::vector<std::vector<fp> > iter_flow;
+
+        //d_type max_data;
 //    af::Window * errors_plot;
     
     // This method returns sum of squares of all elements in the array
@@ -62,9 +68,6 @@ private:
     
     // This method calculates ratio of amplitudes and correction arrays replacing zero divider with 1.
     af::array GetRatio(af::array ar, af::array correction);
-
-    // Averages amplitudes
-    void Average();
 
     // vectorize support array at the end of iterations
     void VectorizeSupport();
@@ -75,12 +78,26 @@ private:
     d_type CalculateError();
  
 //    void Plot();
+    void NextIter();
+    void ResolutionTrigger();
+    void SupportTrigger();
+    void PhaseTrigger();
+    void ToReal();
+    void PcdiTrigger();
+    void Pcdi();
+    void NoPcdi();
+    void Gc();
+    void SetPcdiPrevious();
+    void ToReciprocal();
+    void RunAlg();
+    void Twin();
+    void Average();
 
 public:
     // The class constructor takes data array, an image guess array in reciprocal space, and configuration file. The image guess
     // is typically generated as an complex random array. This image can be also the best outcome of previous calculations. The
     // data is saved and is used for processing. 
-    Reconstruction(af::array data, af::array guess, Params* params, af::array support_array, af::array coherence_array, bool first);
+    Reconstruction(af::array data, af::array guess, Params* params, af::array support_array, af::array coherence_array);
     
     ~Reconstruction();
     
@@ -98,16 +115,11 @@ public:
     // been completed (i.e. the code reached last state), and true otherwise. Typically this method will be run in a while loop.
     void Iterate();
 
-    int GetCurrentIteration();
-
-    // This code is common for ER and HIO algorithms.
-    af::array ModulusProjection();
-
     // Runs one iteration of ER algorithm.
-    void ModulusConstrainEr(af::array);
+    void ModulusConstrainEr();
 
     // Runs one iteration of HIO algorithm. 
-    void ModulusConstrainHio(af::array);
+    void ModulusConstrainHio();
 
     af::array GetImage();
     af::array GetSupportArray();
@@ -118,21 +130,5 @@ public:
     std::vector<d_type> GetCoherenceVectorR();
     std::vector<d_type> GetCoherenceVectorI();
 
-/*    void GarbageTrigger();
-    RESOLUTION_TRIGGER,
-    AMP_SUPPORT_TRIGGER,
-    PHASE_SUPPORT_TRIGGER,
-    TO_REAL_SPACE,
-    PARTIAL_COHERENCE_TRIGGER,
-    CONVERGE_RATIO_TRIGGER,
-    NO_CONVERGE_RATIO_TRIGGER,
-    TUNE_RS_AMPLITUDES,
-    SET_PREVIOUS_PCDI_TRIGGER,
-    TO_RECIPROCAL_SPACE,
-    ALGORITHM,
-    TWINTRIGGER,
-    AVERAGE_TRIGGER,
-    STOP_APPL};
-*/
 };
 #endif /* worker_hpp */

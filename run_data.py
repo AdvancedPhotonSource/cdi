@@ -22,5 +22,5 @@ def main(arg):
 if __name__ == "__main__":
         main(sys.argv[1:])
 
-#python run_data.py 'opencl' '/home/phoebus/BFROSIK/CDI/S149/Staff14-3_S0149.tif' 'config_data'
+#python run_data.py 'opencl' '/local/bfrosik/CDI/Staff14-3_S0149.tif' 'config_data'
         

@@ -25,20 +25,19 @@ public:
     
     // the following methods are overridden in concrete algorithms
     // they are part of strategy pattern
-    af::array ModulusProjection();
-    virtual void ModulusConstrain(af::array);
+    virtual void ModulusConstrain();
 };
 
 class Hio : public Algorithm
 {
 public:
-    void ModulusConstrain(af::array);
+    void ModulusConstrain();
 };
 
 class Er : public Algorithm
 {
 public:
-    void ModulusConstrain(af::array);
+    void ModulusConstrain();
 };
 
 

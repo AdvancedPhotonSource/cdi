@@ -15,15 +15,10 @@ using namespace af;
 void Algorithm::RunAlgorithm(Reconstruction * reconstruction)
 {
     rec = reconstruction;
-    ModulusConstrain(ModulusProjection());
+    ModulusConstrain();
 }
 
-af::array Algorithm::ModulusProjection()
-{
-    return rec->ModulusProjection();
-}
-
-void Algorithm::ModulusConstrain(af::array arr)
+void Algorithm::ModulusConstrain()
 {
 
 }
@@ -31,16 +26,16 @@ void Algorithm::ModulusConstrain(af::array arr)
 //-------------------------------------------------------------------
 // Hio sub-class
 
-void Hio::ModulusConstrain(af::array arr)
+void Hio::ModulusConstrain()
 {
-    rec->ModulusConstrainHio(arr);
+    rec->ModulusConstrainHio();
 }
 
 //-------------------------------------------------------------------
 // Er sub-class
 
-void Er::ModulusConstrain(af::array arr)
+void Er::ModulusConstrain()
 {
-    rec->ModulusConstrainEr(arr);
+    rec->ModulusConstrainEr();
 }
 

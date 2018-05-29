@@ -22,6 +22,8 @@ private:
     float threshold;
     float sigma;
     int algorithm;
+    int update_iter;
+    d_type last_sigma;
     af::array support_array;
     af::array init_support_array;
     af::array GaussConvFft(af::array ds_image);
@@ -29,10 +31,11 @@ private:
 
 public:
     Support(const af::dim4 data_dim, Params *params, af::array support_array);
-    void Update(const af::array ds_image, bool amp, bool phase, d_type sigma);
+    void UpdateAmp(const af::array ds_image, d_type sig, int iter);
+    void UpdatePhase(const af::array ds_image, int iter);
     int GetTriggerAlgorithm();
     float GetThreshold();
-    af::array GetSupportArray(bool twin=false);
+    af::array GetSupportArray();
 };
 
 #endif /* support_hpp */

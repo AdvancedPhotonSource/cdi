@@ -167,7 +167,7 @@ def reconstruction(generations, proc, data, conf, config_map):
     for g in range(low_resolution_generations, generations):
         previous = rec.rec(proc, data, conf, config_map, previous)
         image = previous[0][0]
-        print 'image norm', ut.get_norm(image), '---------------------'
+        print ('image norm', ut.get_norm(image), '---------------------')
         errors = previous[0][3]
         errors.pop(0)
         plt.plot(errors)

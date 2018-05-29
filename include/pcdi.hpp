@@ -19,8 +19,6 @@ class PartialCoherence
 private:
     Params * params;
     std::vector<int> roi;
-    std::vector<int> triggers;
-    int trigger_index;
     int algorithm;
     bool normalize;
     int iteration_num;
@@ -35,7 +33,7 @@ private:
     void DeconvLucy(af::array image, af::array filter, int iter_num);
     void OnTrigger(af::array abs_image);
     void TuneLucyCoherence(af::array);
-    int GetTriggerAlgorithm();
+    int GetAlgorithm();
     std::vector<int> GetRoi();
     af::array fftConvolve(af::array arr, af::array kernel);
 
@@ -44,8 +42,8 @@ public:
     ~PartialCoherence();
     void Init(af::array data);
     void SetPrevious(af::array abs_amplitudes);
-    std::vector<int> GetTriggers();
-    af::array ApplyPartialCoherence(af::array abs_image, int current_iteration);
+    af::array ApplyPartialCoherence(af::array abs_image);
+    af::array UpdatePartialCoherence(af::array abs_image);
     af::array GetKernelArray();
 };
 

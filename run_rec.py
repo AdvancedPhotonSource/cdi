@@ -37,7 +37,7 @@ def reconstruction(proc, conf):
     try:
         datafile = data_dir + 'data.npy'
         data = np.load(datafile)
-        print 'data shape', data.shape
+        print ('data shape', data.shape)
     except:
         print ('data file ' + datafile + ' is missing')
         return

@@ -23,7 +23,7 @@ See LICENSE file.
 #include "resolution.hpp"
 
 
-Reconstruction::Reconstruction(af::array image_data, af::array guess, Params* parameters, af::array support_array, af::array coherence_array, bool is_first)
+Reconstruction::Reconstruction(af::array image_data, af::array guess, Params* parameters, af::array support_array, af::array coherence_array)
 {
     num_points = 0;
     norm_data = 0;
@@ -32,7 +32,11 @@ Reconstruction::Reconstruction(af::array image_data, af::array guess, Params* pa
     data = image_data;
     ds_image = guess;
     params = parameters;
-    first = is_first;
+    for (int i = 0; i < params->GetNumberIterations(); i++)
+    {
+         std::vector<fp> v;
+         iter_flow.push_back(v);
+    }
     state = new State(params);
     support = new Support(data.dims(), params, support_array);
     
@@ -44,15 +48,10 @@ Reconstruction::Reconstruction(af::array image_data, af::array guess, Params* pa
     {
         partialCoherence = NULL;
     }
-    if (first && (params->GetLowResolutionIter() >0))
+    if (params->GetLowResolutionIter() >0)
     {
         resolution = new Resolution(params);
     }
-    //max_data = af::max<d_type>(data);
-//    if (params->IsPlotErrors())
-//    {
-//        errors_plot = new Window(512, 512, "errors");
-//    }
 }
 
 Reconstruction::~Reconstruction()
@@ -63,10 +62,6 @@ Reconstruction::~Reconstruction()
     {
         delete partialCoherence;
     }
-//    if (errors_plot != NULL)
-//    {
-//        delete errors_plot;
-//    }
     aver_v.clear();
     support_vector.clear();
     coherence_vector.clear();
@@ -74,13 +69,50 @@ Reconstruction::~Reconstruction()
 
 void Reconstruction::Init()
 {
+printf("in init\n");
+
+    std::map<char*, fp> flow_ptr_map;
+    flow_ptr_map["NextIter"] = &Reconstruction::NextIter;
+    flow_ptr_map["ResolutionTrigger"] =  &Reconstruction::ResolutionTrigger;
+    flow_ptr_map["SupportTrigger"] = &Reconstruction::SupportTrigger;
+    flow_ptr_map["PhaseTrigger"] = &Reconstruction::PhaseTrigger;
+    flow_ptr_map["ToReal"] = &Reconstruction::ToReal;
+    flow_ptr_map["PcdiTrigger"] = &Reconstruction::PcdiTrigger;
+    flow_ptr_map["Pcdi"] = &Reconstruction::Pcdi;
+    flow_ptr_map["NoPcdi"] = &Reconstruction::NoPcdi;
+    flow_ptr_map["Gc"] = &Reconstruction::Gc;
+    flow_ptr_map["SetPcdiPrevious"] = &Reconstruction::SetPcdiPrevious;
+    flow_ptr_map["ToReciprocal"] = &Reconstruction::ToReciprocal;
+    flow_ptr_map["RunAlg"] = &Reconstruction::RunAlg;
+    flow_ptr_map["Twin"] = &Reconstruction::Twin;
+    flow_ptr_map["Average"] = &Reconstruction::Average;
+
+
+    std::vector<int> used_flow_seq = params->GetUsedFlowSeq();
+    std::vector<int> flow_array = params->GetFlowArray();
+    int num_iter = params->GetNumberIterations();
+
+    for (int i = 0; i < used_flow_seq.size(); i++)
+    {
+        int func_order = used_flow_seq[i];
+        fp func_ptr = flow_ptr_map[flow_def[func_order].func_name];
+        int offset = i * num_iter;
+        for (int j=0; j < num_iter; j++)
+        {
+            if (flow_array[offset + j])
+            {
+                iter_flow[j].push_back(func_ptr);
+            }
+        }
+    }
+
     // initialize other components
     state->Init();
     if (partialCoherence != NULL)
     {
-        partialCoherence->Init(data);
+         partialCoherence->Init(data);
     }
-    aver_iter = params->GetAvgIterations();
+
     norm_data = GetNorm(data);
     num_points = data.elements();
     // multiply the rs_amplitudes by max element of data array and the norm
@@ -93,59 +125,24 @@ void Reconstruction::Init()
     
     ds_image *= support->GetSupportArray();
     printf("initial image norm %f\n", GetNorm(ds_image));
- //   iter_data = data;
-}
 
+}
 
 void Reconstruction::Iterate()
 {
-    d_type sig = params->GetSupportSigma();
     while (state->Next())
     {
-        current_iteration = state->GetCurrentIteration();
-        iter_data = data;
-        if (resolution != NULL)
-        {
-            if ((current_iteration < params->GetLowResolutionIter()) && state->IsUpdateResolution())
-            {
-                iter_data = resolution->GetIterData(current_iteration, data.copy());
-                sig = resolution->GetIterSigma(current_iteration);
-            }
-            if (current_iteration == params->GetLowResolutionIter())
-            {
-                sig = params->GetSupportSigma();
-            }
-        }
-        if (state->IsUpdateSupport() || state->IsUpdatePhase())
-        {
-            support->Update(ds_image.copy(), state->IsUpdateSupport(), state->IsUpdatePhase(), sig);
-            // not a good programming, will be better with framework
-            // it's for not recalculating distribution in support
-            if (state->IsUpdateSupport())
-            {
-                sig = -1;
-            }
-        }
-
-        if (params->GetGC() && (current_iteration+1) % params->GetGC() == 0)
-        {
-            af::deviceGC();
-        }
-        Algorithm * alg  = state->GetCurrentAlg();
-        alg->RunAlgorithm(this);
-        
-//        if (params->IsPlotErrors() && !errors_plot->close())
-//        {
-//            Plot();
-//        }
-        
-        Average();
-
-        if (access("stopfile", F_OK) == 0)
+       current_iteration = state->GetCurrentIteration();
+       if (access("stopfile", F_OK) == 0)
         {
             remove("stopfile");
             break;
-        }        
+        }
+
+        for (int i=0; i<iter_flow[current_iteration].size(); i++ )
+        {
+            (*this.*iter_flow[current_iteration][i])();
+        }
     }
 
     if (aver_v.size() > 0)
@@ -162,106 +159,146 @@ void Reconstruction::Iterate()
     }
 }
 
-af::array Reconstruction::ModulusProjection()
+void Reconstruction::NextIter()
 {
     printf("------------------current iteration %i -----------------\n", current_iteration);
-    af::array rs_amplitudes;
-    dim4 dims = data.dims();
-    rs_amplitudes = Utils::ifft(ds_image)*num_points;
-
-    
-    printf("data norm, ampl norm before ratio %fl %fl\n", GetNorm(iter_data), GetNorm(rs_amplitudes));
-    //state->RecordError( GetNorm(abs(rs_amplitudes)(rs_amplitudes > 0)-iter_data(rs_amplitudes > 0))/GetNorm(iter_data));
-    
-    if ((partialCoherence == NULL) || (partialCoherence->GetTriggers().size() == 0))
-    {
-        //rs_amplitudes = data * exp(af::complex(0, af::arg(rs_amplitudes)));
-        af::array ratio = Utils::GetRatio(iter_data, abs(rs_amplitudes));        
-        state->RecordError( GetNorm(abs(rs_amplitudes)(rs_amplitudes > 0)-iter_data(rs_amplitudes > 0))/GetNorm(iter_data));
-        rs_amplitudes *= ratio;
-    }  
-    else
-    {
-        if ((current_iteration >= partialCoherence->GetTriggers()[0]) || (first == false))
-        //if (~ Utils::IsNullArray(partialCoherence->GetKernelArray()))
-        {
-            printf("coherence using lucy\n");            
-            af::array abs_amplitudes = abs(rs_amplitudes).copy();
-            af::array converged = partialCoherence->ApplyPartialCoherence(abs_amplitudes, current_iteration);
-            af::array ratio = Utils::GetRatio(iter_data, abs(converged));
-            printf("ratio norm %f\n", GetNorm(ratio));
-            state->RecordError( GetNorm(abs(converged)(converged > 0)-iter_data(converged > 0))/GetNorm(iter_data));
-
-            rs_amplitudes *= ratio;            
-        }
-        else
-        {
-            //rs_amplitudes = data * exp(af::complex(0, af::arg(rs_amplitudes)));
-            af::array ratio = Utils::GetRatio(iter_data, abs(rs_amplitudes));
-            state->RecordError( GetNorm(abs(rs_amplitudes)(rs_amplitudes > 0)-iter_data(rs_amplitudes > 0))/GetNorm(iter_data));
-            rs_amplitudes *= ratio;
-        }
-        partialCoherence->SetPrevious(abs(rs_amplitudes));
-    }
-    printf("ampl norm after ratio %fl\n", GetNorm(rs_amplitudes));
-    
-    if (params->GetGC() && current_iteration % params->GetGC() == 0)
-        af::deviceGC();
-    
-    return Utils::fft(rs_amplitudes)/num_points;
-
+    iter_data = data;
+    sig = params->GetSupportSigma();
+    printf("NextIter\n");
 }
 
-void Reconstruction::ModulusConstrainEr(af::array ds_image_raw)
+void Reconstruction::ResolutionTrigger()
+{
+    iter_data = resolution->GetIterData(current_iteration, data.copy());
+    sig = resolution->GetIterSigma(current_iteration);
+    printf("ResolutionTrigger\n");
+}
+
+void Reconstruction::SupportTrigger()
+{
+    support->UpdateAmp(ds_image.copy(), sig, current_iteration);
+    printf("SupportTrigger\n");
+}
+
+void Reconstruction::PhaseTrigger()
+{
+    support->UpdatePhase(ds_image.copy(), current_iteration);
+    printf("PhaseTrigger\n");
+}
+
+void Reconstruction::ToReal()
+{
+    rs_amplitudes = Utils::ifft(ds_image)*num_points;
+    printf("data norm, ampl norm before ratio %fl %fl\n", GetNorm(iter_data), GetNorm(rs_amplitudes));
+    printf("ToReal\n");
+}
+
+void Reconstruction::PcdiTrigger()
+{
+    af::array abs_amplitudes = abs(rs_amplitudes).copy();
+    partialCoherence->UpdatePartialCoherence(abs_amplitudes);
+    printf("PcdiTrigger\n");
+}
+
+void Reconstruction::Pcdi()
+{
+    af::array abs_amplitudes = abs(rs_amplitudes).copy();
+    af::array converged = partialCoherence->ApplyPartialCoherence(abs_amplitudes);
+    af::array ratio = Utils::GetRatio(iter_data, abs(converged));
+    printf("ratio norm %f\n", GetNorm(ratio));
+    state->RecordError( GetNorm(abs(converged)(converged > 0)-iter_data(converged > 0))/GetNorm(iter_data));
+    rs_amplitudes *= ratio;
+    printf("Pcdi\n");
+}
+
+void Reconstruction::NoPcdi()
+{
+    af::array ratio = Utils::GetRatio(iter_data, abs(rs_amplitudes));
+    state->RecordError( GetNorm(abs(rs_amplitudes)(rs_amplitudes > 0)-iter_data(rs_amplitudes > 0))/GetNorm(iter_data));
+    rs_amplitudes *= ratio;
+    printf("NoPcdi\n");
+}
+
+void Reconstruction::Gc()
+{
+    af::deviceGC();
+    printf("Gc\n");
+}
+
+void Reconstruction::SetPcdiPrevious()
+{
+    partialCoherence->SetPrevious(abs(rs_amplitudes));
+    printf("SetPcdiPrevious\n");
+}
+
+void Reconstruction::ToReciprocal()
+{
+    ds_image_raw = Utils::fft(rs_amplitudes)/num_points;
+    printf("ToReciprocal\n");
+}
+
+void Reconstruction::RunAlg()
+{
+    Algorithm * alg  = state->GetCurrentAlg();
+    alg->RunAlgorithm(this);
+    printf("RunAlg\n");
+}
+
+void Reconstruction::Twin()
+{
+    dim4 dims = data.dims();
+    af::array temp = constant(0, dims, u32);
+    temp( af::seq(0, dims[0]/2-1), af::seq(0, dims[1]/2-1), span, span) = 1;
+    ds_image = ds_image * temp;
+    printf("Twin\n");
+}
+
+void Reconstruction::Average()
+{
+    printf("average\n");
+    aver_iter++;
+    af::array abs_image = abs(ds_image).copy();
+    d_type *image_v = abs_image.host<d_type>();
+    std::vector<d_type> v(image_v, image_v + ds_image.elements());
+    if (aver_v.size() == 0)
+    {
+        for (int i = 0; i < v.size(); i++)
+        {
+            aver_v.push_back(v[i]);
+        }
+    }
+    else
+    {
+        for (int i = 0; i < v.size(); i++)
+        {
+            aver_v[i] += v[i];
+        }
+    }
+
+    delete [] image_v;
+    printf("Average\n");
+}
+
+void Reconstruction::ModulusConstrainEr()
 {
     printf("er\n");
-    printf("image norm before support %fl\n", GetNorm(ds_image_raw));  
-    //ds_image = ds_image_raw * support->GetSupportArray(state->IsApplyTwin());
-    af::array support_array = support->GetSupportArray(state->IsApplyTwin());
+    printf("image norm before support %fl\n", GetNorm(ds_image_raw));
+    af::array support_array = support->GetSupportArray();
     ds_image = ds_image_raw * support_array;
     printf("image norm after support %fl\n", GetNorm(ds_image));
 }
 
-void Reconstruction::ModulusConstrainHio(af::array ds_image_raw)
+void Reconstruction::ModulusConstrainHio()
 {
-    
     printf("hio\n");
     printf("image norm before support %fl\n",GetNorm(ds_image_raw));
     //ds_image(support->GetSupportArray(state->IsApplyTwin()) == 0) = (ds_image - ds_image_raw * params->GetBeta())(support->GetSupportArray(state->IsApplyTwin()) == 0);
-    af::array support_array = support->GetSupportArray(state->IsApplyTwin());
+    af::array support_array = support->GetSupportArray();
     af::array adjusted_calc_image = ds_image_raw * params->GetBeta();
     af::array combined_image = ds_image - adjusted_calc_image;
     ds_image = ds_image_raw;
     ds_image(support_array == 0) = combined_image(support_array == 0);
     printf("image norm after support %fl\n",GetNorm(ds_image));
-}
-
-void Reconstruction::Average()
-{
-    if (state->IsAveragingIteration())
-    {
-        printf("average\n");
-    //    int aver_num = params->GetAvgIterations();
-        af::array abs_image = abs(ds_image).copy();
-        d_type *image_v = abs_image.host<d_type>();
-        std::vector<d_type> v(image_v, image_v + ds_image.elements());
-        if (aver_v.size() == 0)
-        {
-            for (int i = 0; i < v.size(); i++)
-            {
-                aver_v.push_back(v[i]);
-            }            
-        }
-        else
-        {
-            for (int i = 0; i < v.size(); i++)
-            {
-                aver_v[i] += v[i];
-            }            
-        }
-
-        delete [] image_v;
-    }
 }
 
 double Reconstruction::GetNorm(af::array arr)
@@ -286,23 +323,6 @@ void Reconstruction::VectorizeCoherence()
     std::vector<d_type> v(coherence_v, coherence_v + a.elements());
     coherence_vector = v;
     delete [] coherence_v;
-}
-
-//void Reconstruction::Plot()
-//{
-//    if (current_iteration > 5 )
-//    {
-//        // the plot will not show the very first error
-//        af::array x = seq(1.0, float(current_iteration-1), 1.0);
-//        std::vector<d_type> errors = state->GetErrors();
-//        af::array y(dim4(x.elements()), &errors[1]);
-//        errors_plot->plot(x,y.as(f32));
-//    }
-//}
-
-int Reconstruction::GetCurrentIteration()
-{
-    return state->GetCurrentIteration();
 }
 
 af::array Reconstruction::GetImage()
@@ -344,5 +364,4 @@ std::vector<d_type> Reconstruction::GetCoherenceVectorI()
 {
     return coherence_vector;
 }
-
 

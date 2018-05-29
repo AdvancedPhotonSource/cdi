@@ -51,7 +51,7 @@ void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vect
     }
     af::array null_array = array();
 
-    rec = new Reconstruction(data, guess, params, null_array, null_array, first);
+    rec = new Reconstruction(data, guess, params, null_array, null_array);
     rec->Init();
     printf("initialized\n");
 
@@ -82,7 +82,7 @@ void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vect
        
     af::array null_array = array();
 
-    rec = new Reconstruction(data, guess, params, null_array, null_array, first);
+    rec = new Reconstruction(data, guess, params, null_array, null_array);
     rec->Init();
     printf("initialized\n");
 
@@ -114,7 +114,7 @@ void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vect
        
     af::array null_array = array();
 
-    rec = new Reconstruction(data, guess, params, support_a, null_array, first);
+    rec = new Reconstruction(data, guess, params, support_a, null_array);
     rec->Init();
     printf("initialized\n");
 
@@ -145,7 +145,7 @@ void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vect
     af::array support_a(af_dims, &support_vector[0]);
     af::array coh_a(Utils::Int2Dim4(coh_dim), &coh_vector[0]);
        
-    rec = new Reconstruction(data, guess, params, support_a, coh_a, first);
+    rec = new Reconstruction(data, guess, params, support_a, coh_a);
     rec->Init();
     printf("initialized\n");
 
