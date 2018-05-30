@@ -68,7 +68,7 @@ typedef struct flow_item_def { char* item_name;
 // The flow_item_def func_name is a name of the function in worker that implements the flow item.
 //
 // To add a new trigger/function do the following:
-// 1. Insert a new definition for the flow_item in the correct order in the table.
+// 1. Insert a new definition for the flow_item in the correct order in the flow_def array.
 // 2. Update the flow_seq_len below.
 // 3. Add the new function to the worker.hh and worker.cc, and add the pair (func_name, fp) to the flow_ptr_map in worker.cc.
 const flow_item_def flow_def[] = {
