@@ -149,7 +149,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
 //    { printf(" %i", used_flow_seq[i]);}
 //    printf("is pcdi %i\n",is_pcdi);
 
-
+    // parse triggers and flow items into flow array; 0 if not executed, 1 if executed
     int used_flow_seq_len = used_flow_seq.size();
     int flow[number_iterations * used_flow_seq_len];
     memset(flow, 0, sizeof(flow));
@@ -202,6 +202,8 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
                     int ind = tmp[0];
                     if (ind < number_iterations)
                     {
+                        // the line below handler negative number
+                        ind = (ind + number_iterations) % number_iterations;
                         flow[offset + ind] = 1;
                         if (flow_item == "pcdi_trigger")
                         {
@@ -213,6 +215,10 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
                 {
                     int step = tmp[1];
                     int start_iter = tmp[0];
+                    if (start_iter < number_iterations)
+                    {
+                        start_iter = (start_iter + number_iterations) % number_iterations;
+                    }
 
                     if (!first && (type == MODIFIED_AFTER_FIRST))
                     {
@@ -222,6 +228,11 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
                     if (tmp.getLength() == 3)
                     {
                         int conf_stop_iter = tmp[2];
+                        // the line below handler negative number
+                        if (conf_stop_iter < number_iterations)
+                        {
+                            conf_stop_iter = (conf_stop_iter + number_iterations) % number_iterations;
+                        }
                         stop_iter = std::min(conf_stop_iter, stop_iter);
                     }
                     for (int i = start_iter; i < stop_iter; i += step)
@@ -243,6 +254,8 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
                         int ind = tmp[j][0];
                         if (ind < number_iterations)
                         {
+                            // the line below handler negative number
+                            ind = (ind + number_iterations) % number_iterations;
                             flow[offset + ind] = 1;
                             if (flow_item == "pcdi_trigger")
                             {
@@ -254,6 +267,10 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
                     {
                         int step = tmp[j][1];
                         int start_iter = tmp[j][0];
+                        if (start_iter < number_iterations)
+                        {
+                            start_iter = (start_iter + number_iterations) % number_iterations;
+                        }
                         if (!first && (type = MODIFIED_AFTER_FIRST))
                         {
                             start_iter = step;
@@ -262,6 +279,10 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
                         if (tmp[j].getLength() == 3)
                         {
                             int conf_stop_iter = tmp[j][2];
+                            if (conf_stop_iter < number_iterations)
+                            {
+                                conf_stop_iter = (conf_stop_iter + number_iterations) % number_iterations;
+                            }
                             stop_iter = std::min(conf_stop_iter, stop_iter);
                         }
                         for (int i = start_iter; i < stop_iter; i += step)
@@ -391,6 +412,10 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
         try
         {
             low_res_iterations = tmp[2];
+            if (low_res_iterations < 0)
+            {
+                low_res_iterations = low_res_iterations + number_iterations;
+            }
         }
         catch ( const SettingNotFoundException &nfex)
         {
@@ -573,6 +598,6 @@ std::vector<int> Params::GetUsedFlowSeq()
 
 std::vector<int> Params::GetFlowArray()
 {
-    printf("flow vec len %i", flow_vec.size());
+    //printf("flow vec len %i", flow_vec.size());
     return flow_vec;
 }

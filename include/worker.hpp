@@ -82,13 +82,13 @@ private:
     void ResolutionTrigger();
     void SupportTrigger();
     void PhaseTrigger();
-    void ToReal();
+    void ToReciprocal();
     void PcdiTrigger();
     void Pcdi();
     void NoPcdi();
     void Gc();
     void SetPcdiPrevious();
-    void ToReciprocal();
+    void ToDirect();
     void RunAlg();
     void Twin();
     void Average();
