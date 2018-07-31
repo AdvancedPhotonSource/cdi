@@ -76,13 +76,13 @@ printf("in init\n");
     flow_ptr_map["ResolutionTrigger"] =  &Reconstruction::ResolutionTrigger;
     flow_ptr_map["SupportTrigger"] = &Reconstruction::SupportTrigger;
     flow_ptr_map["PhaseTrigger"] = &Reconstruction::PhaseTrigger;
-    flow_ptr_map["ToReal"] = &Reconstruction::ToReal;
+    flow_ptr_map["ToReciprocal"] = &Reconstruction::ToReciprocal;
     flow_ptr_map["PcdiTrigger"] = &Reconstruction::PcdiTrigger;
     flow_ptr_map["Pcdi"] = &Reconstruction::Pcdi;
     flow_ptr_map["NoPcdi"] = &Reconstruction::NoPcdi;
     flow_ptr_map["Gc"] = &Reconstruction::Gc;
     flow_ptr_map["SetPcdiPrevious"] = &Reconstruction::SetPcdiPrevious;
-    flow_ptr_map["ToReciprocal"] = &Reconstruction::ToReciprocal;
+    flow_ptr_map["ToDirect"] = &Reconstruction::ToDirect;
     flow_ptr_map["RunAlg"] = &Reconstruction::RunAlg;
     flow_ptr_map["Twin"] = &Reconstruction::Twin;
     flow_ptr_map["Average"] = &Reconstruction::Average;
@@ -186,11 +186,11 @@ void Reconstruction::PhaseTrigger()
     printf("PhaseTrigger\n");
 }
 
-void Reconstruction::ToReal()
+void Reconstruction::ToReciprocal()
 {
     rs_amplitudes = Utils::ifft(ds_image)*num_points;
     printf("data norm, ampl norm before ratio %fl %fl\n", GetNorm(iter_data), GetNorm(rs_amplitudes));
-    printf("ToReal\n");
+    printf("ToReciprocal\n");
 }
 
 void Reconstruction::PcdiTrigger()
@@ -231,10 +231,10 @@ void Reconstruction::SetPcdiPrevious()
     printf("SetPcdiPrevious\n");
 }
 
-void Reconstruction::ToReciprocal()
+void Reconstruction::ToDirect()
 {
     ds_image_raw = Utils::fft(rs_amplitudes)/num_points;
-    printf("ToReciprocal\n");
+    printf("ToDirect\n");
 }
 
 void Reconstruction::RunAlg()
