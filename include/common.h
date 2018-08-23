@@ -7,7 +7,7 @@ See LICENSE file.
 #ifndef common_h
 #define common_h
 
-// defines the type of the data; can be float or double. The double will get replaced when running initializing script.
+// defines the type of the data; can be float or double. The def_type will get replaced when running initializing script.
 typedef def_type d_type;
 
 const int nD = 3;
@@ -76,13 +76,13 @@ const flow_item_def flow_def[] = {
   flow_item_def("resolution_trigger",    FIRST_RUN_ONLY,       "ResolutionTrigger"),
   flow_item_def("amp_support_trigger",   MODIFIED_AFTER_FIRST, "SupportTrigger"),
   flow_item_def("phase_support_trigger", FIRST_RUN_ONLY,       "PhaseTrigger"),
-  flow_item_def("to_real_space",         NOT_TRIGGER,          "ToReal"),
+  flow_item_def("to_reciprocal_space",   NOT_TRIGGER,          "ToReciprocal"),
   flow_item_def("pcdi_trigger",          MODIFIED_AFTER_FIRST, "PcdiTrigger"),
   flow_item_def("pcdi",                  CUSTOM,               "Pcdi"),
   flow_item_def("no_pcdi",               CUSTOM,               "NoPcdi"),
   flow_item_def("garbage_trigger",       FOR_ALL_RUNS,         "Gc"),
   flow_item_def("set_prev_pcdi_trigger", CUSTOM,               "SetPcdiPrevious"),
-  flow_item_def("to_reciprocal_space",   NOT_TRIGGER,          "ToReciprocal"),
+  flow_item_def("to_direct_space",       NOT_TRIGGER,          "ToDirect"),
   flow_item_def("algorithm",             NOT_TRIGGER,          "RunAlg"),
   flow_item_def("twin_trigger",          FIRST_RUN_ONLY,       "Twin"),
   flow_item_def("average_trigger",       FOR_ALL_RUNS,         "Average")

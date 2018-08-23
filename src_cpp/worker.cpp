@@ -141,7 +141,7 @@ void Reconstruction::Iterate()
 
         for (int i=0; i<iter_flow[current_iteration].size(); i++ )
         {
-            (*this.*iter_flow[current_iteration][i])();
+            (this->*iter_flow[current_iteration][i])();
         }
     }
 
