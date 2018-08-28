@@ -228,7 +228,6 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
                     if (tmp.getLength() == 3)
                     {
                         int conf_stop_iter = tmp[2];
-                        // the line below handler negative number
                         if (conf_stop_iter < number_iterations)
                         {
                             conf_stop_iter = (conf_stop_iter + number_iterations) % number_iterations;

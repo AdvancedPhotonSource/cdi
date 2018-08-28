@@ -205,12 +205,11 @@ class cdi_conf_tab(QTabWidget):
 
     def prepare(self):
         scan = str(self.scan_widget.text())
-
-        if  not self.main_win.working_dir is None and \
-            not self.main_win.id is None and\
-            not scan is None and \
-            not self.data_dir is None and \
-            not self.specfile is None:
+        if  self.main_win.working_dir is not None and \
+            self.main_win.id is not None and\
+            scan is not None and \
+            self.data_dir is not None and \
+            self.specfile is not None:
             try:
                 # after checking that scan is entered convert it to list of int
                 scan_range = scan.split('-')
@@ -225,7 +224,7 @@ class cdi_conf_tab(QTabWidget):
 
     def config_data(self):
         conf_map = {}
-        data_out_dir = self.main_win.working_dir + '/' + self.main_win.id + '/data'
+        data_out_dir = '"' + self.main_win.working_dir + '/' + self.main_win.id + '/data' + '"'
         conf_map['data_dir'] = data_out_dir
         conf_map['aliens'] = str(self.aliens.text())
         conf_map['amp_threshold'] = str(self.amp_threshold.text())
@@ -233,14 +232,12 @@ class cdi_conf_tab(QTabWidget):
         conf_map['center_shift'] = str(self.center_shift.text())
         conf_map['adjust_dimensions'] = str(self.adjust_dimensions.text())
 
-        data_conf_file = os.path.join(self.main_win.working_dir, self.main_win.id, 'conf', 'config_data')
-
-        self.create_config(data_conf_file, conf_map)
+        self.create_config('config_data', conf_map)
 
 
     def config_rec(self):
         conf_map = {}
-        conf_map['data_dir'] = self.main_win.working_dir + '/' + self.main_win.id + '/data'
+        conf_map['data_dir'] = '"' + self.main_win.working_dir + '/' + self.main_win.id + '/data' + '"'
         conf_map['save_dir'] = str(self.save_dir.text())
         conf_map['threads'] = str(self.threads.text())
         conf_map['device'] = str(self.device.text())
@@ -284,13 +281,20 @@ class cdi_conf_tab(QTabWidget):
         if self.features.active_6.isChecked():
             conf_map['avarage_trigger'] = str(self.features.average_triggers.text())
 
-        rec_conf_file = os.path.join(self.main_win.working_dir, self.main_win.id, 'conf', 'config_rec')
-        self.create_config(rec_conf_file, conf_map)
+        self.create_config('config_rec', conf_map)
 
 
     def create_config(self, conf_file, conf_map):
         valid = True
-        with open('temp', 'a') as f:
+        working_dir = os.path.join(self.main_win.working_dir, self.main_win.id)
+        if not os.path.exists(working_dir):
+            os.makedirs(working_dir)
+        conf_dir = os.path.join(working_dir, 'conf')
+        if not os.path.exists(conf_dir):
+            os.makedirs(conf_dir)
+        conf_file = os.path.join(conf_dir, conf_file)
+        temp_file = os.path.join(self.main_win.working_dir, self.main_win.id, 'conf', 'temp')
+        with open(temp_file, 'a') as f:
             for key in conf_map:
                 value = conf_map[key]
                 if len(value) == 0:
@@ -300,7 +304,7 @@ class cdi_conf_tab(QTabWidget):
                 f.write(key + ' = ' + conf_map[key] + '\n')
         f.close()
         if valid:
-            shutil.move('temp', conf_file)
+            shutil.move(temp_file, conf_file)
 
 
     def config_disp(self):
@@ -308,17 +312,27 @@ class cdi_conf_tab(QTabWidget):
             print ('crop not configured')
             return
 
+        working_dir = os.path.join(self.main_win.working_dir, self.main_win.id)
+        if not os.path.exists(working_dir):
+            os.makedirs(working_dir)
+        conf_dir = os.path.join(working_dir, 'conf')
+        if not os.path.exists(conf_dir):
+            os.makedirs(conf_dir)
         disp_conf_file = os.path.join(self.main_win.working_dir, self.main_win.id, 'conf', 'config_disp')
-        with open('temp', 'a') as temp:
-            with open(disp_conf_file, 'r') as f:
-                for line in f:
-                    if not line.startswith('crop'):
-                        temp.write(line)
-            f.close()
+        temp_file = os.path.join(self.main_win.working_dir, self.main_win.id, 'conf', 'temp')
+        with open(temp_file, 'a') as temp:
+            try:
+                with open(disp_conf_file, 'r') as f:
+                    for line in f:
+                        if not line.startswith('crop'):
+                            temp.write(line)
+                f.close()
+            except:
+                pass
 
             temp.write('crop = ' + str(self.crop.text()))
         temp.close()
-        shutil.move('temp', disp_conf_file)
+        shutil.move(temp_file, disp_conf_file)
 
 
     def rec_default(self):
@@ -326,11 +340,11 @@ class cdi_conf_tab(QTabWidget):
             len(self.main_win.working_dir) == 0 or len(self.main_win.id) == 0:
                 print ('Working Directory or Reconstruction ID not configured')
         else:
-            self.save_dir.setText(str(self.main_win.working_dir) + '/' + str(self.main_win.id) + '/results')
+            self.save_dir.setText('"' + str(self.main_win.working_dir) + '/' + str(self.main_win.id) + '/results' + '"')
             self.threads.setText('1')
-            self.device.setText('3')
-            self.gc.setText('1000')
-            self.alg_seq.setText("((5,('ER',20),('HIO',180)),(1,('ER',40),('HIO',160)),(4,('ER',20),('HIO',180)))")
+            self.device.setText('(3)')
+            self.gc.setText('(1000)')
+            self.alg_seq.setText('((5,("ER",20),("HIO",180)),(1,("ER",40),("HIO",160)),(4,("ER",20),("HIO",180)))')
             self.beta.setText('.9')
             self.cont.setChecked(False)
 
@@ -595,16 +609,17 @@ class features(QWidget):
 
     def rec_1_default(self):
         #TODO add to accept fractions in trigger, so the default will be (.5,1)
-        self.res_triggers.setText('(1000, 1)')
-        self.sigma_range.setText('2')
-        self.det_range.setText('.7')
+        self.res_triggers.setText('(0, 1, 500)')
+        self.sigma_range.setText('(2.0)')
+        self.det_range.setText('(.7)')
 
 
     def rec_2_default(self):
         self.support_triggers.setText('(1,1)')
-        self.support_type.setText('GAUSS')
+        self.support_type.setText('"GAUSS"')
         self.support_area.setText('[.5,.5,.5]')
-        self.sigma.setText('1')
+        self.sigma.setText('1.0')
+        self.threshold.setText('0.1')
 
 
     def rec_3_default(self):
@@ -615,9 +630,9 @@ class features(QWidget):
 
     def rec_4_default(self):
         self.pcdi_triggers.setText('(50,50)')
-        self.pcdi_type.setText('LUCY')
+        self.pcdi_type.setText('"LUCY"')
         self.pcdi_iter.setText('20')
-        self.pcdi_normalize.setText('True')
+        self.pcdi_normalize.setText('true')
         self.pcdi_roi.setText('[32,32,16]')
 
 

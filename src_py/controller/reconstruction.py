@@ -143,16 +143,22 @@ def reconstruction(proc, data, conf, config_map):
         threads = 1
 
     # if continue, find the previous results from the continue_dir
-    if config_map.cont:
-        try:
-            continue_dir = config_map.continue_dir
-            if not continue_dir.endswith('/'):
-                continue_dir = continue_dir + '/'
-        except:
-            print ("continue_dir not configured")
-            return None
-        previous = read_results(continue_dir)
-    else:
+    try:
+        if config_map.cont:
+            try:
+                continue_dir = config_map.continue_dir
+                if not continue_dir.endswith('/'):
+                    continue_dir = continue_dir + '/'
+            except:
+                print ("continue_dir not configured")
+                return None
+            previous = read_results(continue_dir)
+        else:
+            previous = []
+            for _ in range(threads):
+                previous.append((None, None, None))
+    except:
+        # cont not defined, defaults to False
         previous = []
         for _ in range(threads):
             previous.append((None, None, None))

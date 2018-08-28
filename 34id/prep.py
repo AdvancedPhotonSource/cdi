@@ -47,13 +47,18 @@ def set_disp_conf(dth, delta, gamma, arm, lam, detector, disp_dir):
     pixel = {'34idcTIM2':'[55.0e-6, 55.0e-6]'}
 
     # create display configuration file from the parsed parameters
+    temp_file = os.path.join(disp_dir, 'temp')
     disp_conf_file = os.path.join(disp_dir, 'config_disp')
-    with open('temp', 'a') as temp:
-        with open(disp_conf_file, 'r') as f:
-            for line in f:
-                if line.startswith('crop'):
-                    temp.write(line + '\n')
-        f.close()
+    with open(temp_file, 'a') as temp:
+        try:
+            with open(disp_conf_file, 'r') as f:
+                for line in f:
+                    if line.startswith('crop'):
+                        temp.write(line + '\n')
+            f.close()
+        except:
+            pass
+
         temp.write('lamda = ' + str(lam) + '\n')
         temp.write('delta = ' + str(delta) + '\n')
         temp.write('gamma = ' + str(gamma) + '\n')
@@ -61,7 +66,7 @@ def set_disp_conf(dth, delta, gamma, arm, lam, detector, disp_dir):
         temp.write('dth = ' + str(dth) + '\n')
         temp.write('pixel = ' + pixel[detector] + '\n')
     temp.close()
-    shutil.move('temp', disp_conf_file)
+    shutil.move(temp_file, disp_conf_file)
 
 
 def get_normalized_slice(file, dark, white):
