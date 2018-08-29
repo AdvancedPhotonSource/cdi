@@ -66,11 +66,6 @@ af::array Utils::CropCenter(af::array arr, af::dim4 roi)
     return arr(seq(beginning[0], ending[0]-1), seq(beginning[1], ending[1]-1), seq(beginning[2], ending[2]-1), seq(beginning[3], ending[3]-1));
 }
 
-//af::array Utils::fftshift(af::array arr)
-//{
-//    return af::shift(arr, int(arr.dims()[0]/2-1), int(arr.dims()[1]/2-1), int(arr.dims()[2]/2-1), int(arr.dims()[3]/2));
-//}
-
 af::array Utils::fftshift(af::array arr)
 {
     return af::shift(arr, ceil(arr.dims()[0]/2)-1, ceil(arr.dims()[1]/2)-1, ceil(arr.dims()[2]/2)-1, ceil(arr.dims()[3]/2)-1);
@@ -106,50 +101,6 @@ af::array Utils::ifft(af::array arr)
     }
 }
 
-//af::array Utils::CropCenterZeroPad(af::array arr, int * roi)
-//{
-//    dim4 dims = arr.dims();
-//     // Find the coordinates sub-array of the given dimensions in the center of array arr
-//    int x0 = int(dims[0]/2 - roi[0]/2);
-//    int x1 = x0 + roi[0];
-//    int y0 = int(dims[1]/2 - roi[1]/2);
-//    int y1 = y0 + roi[1];
-//    int z0 = int(dims[2]/2 - roi[2]/2);
-//    int z1 = z0 + roi[2];
-//
-//    af::array cropped = arr.copy() *0;
-//    // select the subarray
-//    cropped(seq(x0 + 1, x1), seq(y0 + 1, y1), seq(z0 + 1, z1)) = arr(seq(x0 + 1, x1), seq(y0 + 1, y1), seq(z0 + 1, z1));
-//    return cropped;
-//
-//}
-
-//af::array Utils::CropRoi(af::array arr, int * roi)
-//{
-//    return arr(seq(0, roi[0]-1), seq(0, roi[1]-1), seq(0, roi[2]-1));
-//}
-
-//af::array Utils::CenterMax(af::array arr, int * kernel)
-//{
-//    printf("in CenterMax dims %i %i %i %i\n", arr.dims()[0], arr.dims()[1], arr.dims()[2], arr.dims()[0]*arr.dims()[1]*arr.dims()[2]);
-//    //find indexes of max
-//    double *arr_values = abs(arr).host<double>();
-//    std::vector<double> v(arr_values, arr_values + arr.elements());
-//    std::vector<double>::iterator result = std::max_element(v.begin(), v.end());
-//    int max_offset = result - v.begin();
-//    printf("maximum value, %i %f\n", max_offset, v[max_offset]);
-//    delete [] arr_values;
-//    int x_max = max_offset % arr.dims()[0];
-//    int y_max = max_offset / arr.dims()[0] % arr.dims()[1];
-//    int z_max = max_offset/ (arr.dims()[0] * arr.dims()[1]);
-//    printf("max indexes %i %i %i\n", x_max, y_max, z_max);
-//
-//
-//    af::array shifted = af::shift(arr, arr.dims()[0]/2-x_max, arr.dims()[1]/2-y_max, arr.dims()[2]/2-z_max );
-//    return shifted;
-//
-//}
-//
 void Utils::GetMaxIndices(af::array arr, int* indices)
 {
     //find indexes of max
@@ -165,40 +116,6 @@ void Utils::GetMaxIndices(af::array arr, int* indices)
     printf("offset, ind1, ind2 ind3 %i %i %i %i\n", max_offset, indices[0], indices[1], indices[2]);
 }
 
-//af::array Utils::CenterMax(af::array arr)
-//{
-//    printf("in CenterMax dims %i %i %i\n", arr.dims()[0], arr.dims()[1], arr.dims()[2]);
-//    //find indexes of max
-//    d_type *arr_values = abs(arr).host<d_type>();
-//    std::vector<d_type> v(arr_values, arr_values + arr.elements());
-//    std::vector<d_type>::iterator result = std::max_element(v.begin(), v.end());
-//    int max_offset = result - v.begin();
-//    printf("maximum offset, value, %i %f\n", max_offset, v[max_offset]);
-//    delete [] arr_values;
-//    int x_max = max_offset % arr.dims()[0];
-//    int y_max = max_offset / arr.dims()[0] % arr.dims()[1];
-//    int z_max = max_offset/ (arr.dims()[0] * arr.dims()[1]);
-//    printf("CenterMax max indexes %i %i %i\n", x_max, y_max, z_max);
-//
-//    return af::shift(arr, arr.dims()[0]/2 -x_max, arr.dims()[1]-y_max, arr.dims()[2]-z_max );;
-//}
-
-//af::array Utils::ShiftMax(af::array arr, int * kernel)
-//{
-//    //find indexes of max
-//    d_type *arr_values = abs(arr).host<d_type>();
-//    std::vector<d_type> v(arr_values, arr_values + arr.elements());
-//    std::vector<d_type>::iterator result = std::max_element(v.begin(), v.end());
-//    int max_offset = result - v.begin();
-//    printf("maximum value, %i %f\n", max_offset, v[max_offset]);
-//    delete [] arr_values;
-//    int x_max = max_offset % arr.dims()[0];
-//    int y_max = max_offset / arr.dims()[0] % arr.dims()[1];
-//    int z_max = max_offset/ (arr.dims()[0] * arr.dims()[1]);
-//    printf("ShiftMax max indexes %i %i %i\n", x_max, y_max, z_max);
-//
-//    return arr;
-//}
 
 af::array Utils::ReverseGaussDistribution(af::dim4 data_dim, d_type * sgma, int alpha)
 {

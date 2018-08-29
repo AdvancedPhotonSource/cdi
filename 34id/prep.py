@@ -214,4 +214,125 @@ def prepare(working_dir, id, scan, data_dir, specfile, darkfile, whitefile):
     # data prep
     prep_data(scan, det_area1, det_area2, data_dir, prep_data_dir, darkfile, whitefile)
 
-#prepare('/local/bfrosik/cdi/prep', 'test', 'DET1', [38,39], '/net/s34data/export/34idc-data/2018/Startup18-2/ADStartup18-2a', '/net/s34data/export/34idc-data/2018/Startup18-2/Startup18-2a.spec')
+#prepare('/local/bfrosik/cdi/test', 'A', 'DET1', [38,39], '/net/s34data/export/34idc-data/2018/Startup18-2/ADStartup18-2a', '/net/s34data/export/34idc-data/2018/Startup18-2/Startup18-2a.spec')
+
+def create_config(conf_dir, conf_file, conf_map):
+    valid = True
+    temp_file = os.path.join(conf_dir, 'temp')
+    with open(temp_file, 'a') as f:
+        for key in conf_map:
+            value = conf_map[key]
+            if len(value) == 0:
+                print('the ' + key + ' is not configured')
+                valid = False
+                break
+            f.write(key + ' = ' + conf_map[key] + '\n')
+    f.close()
+    if valid:
+        shutil.move(temp_file, conf_file)
+
+
+def config_data(working_dir, id):
+    conf_map = {}
+    conf_map['data_dir'] = '"' + working_dir + '/' + id + '/data"'
+    conf_map['aliens'] = '(0,0,0,0,0,0), (0,0,0,0,0,0)'
+    conf_map['amp_threshold'] = '(2.0)'
+    conf_map['binning'] = '((1,1,1))'
+    conf_map['center_shift'] = '((0,0,0))'
+    conf_map['adjust_dimensions'] = '((-13, -13, -65, -65, -65, -65), (-7, -13, -55, -65, -55, -65))'
+
+    working_dir = os.path.join(working_dir, id)
+    if not os.path.exists(working_dir):
+        os.makedirs(working_dir)
+    conf_dir = os.path.join(working_dir, 'conf')
+    if not os.path.exists(conf_dir):
+        os.makedirs(conf_dir)
+    conf_file = os.path.join(conf_dir, 'config_data')
+    create_config(conf_dir, conf_file, conf_map)
+
+
+def config_rec(working_dir, id):
+    conf_map = {}
+    conf_map['data_dir'] = '"' + working_dir + '/' + id + '/data"'
+    conf_map['save_dir'] = '"' + working_dir + '/' + id + '/results"'
+    conf_map['threads'] = '(1)'
+    conf_map['device'] = '(3)'
+    conf_map['garbage_trigger'] = '(1000)'
+    conf_map['algorithm_sequence'] = '((5,("ER",20),("HIO",180)),(1,("ER",40),("HIO",160)),(4,("ER",20),("HIO",180)))'
+    conf_map['beta'] = ('.9')
+    conf_map['resolution_trigger'] = '(0, 1, 500)'
+    conf_map['iter_res_sigma_range'] = '(2.0)'
+    conf_map['iter_res_det_range'] = '(.7)'
+    conf_map['amp_support_trigger'] = '(1,1)'
+    conf_map['support_type'] = '"GAUSS"'
+    conf_map['support_threshold'] = '0.1'
+    conf_map['support_sigma'] = '1.0'
+    conf_map['support_area'] = '[.5,.5,.5]'
+    conf_map['phase_support_trigger'] = '(0,1,20)'
+    conf_map['phase_min'] = '-1.57'
+    conf_map['phase_max'] = '1.57'
+    conf_map['pcdi_trigger'] = '(50,50)'
+    conf_map['partial_coherence_type'] = '"LUCY"'
+    conf_map['partial_coherence_iteration_num'] = '20'
+    conf_map['partial_coherence_normalize'] = 'true'
+    conf_map['partial_coherence_roi'] = '[32,32,16]'
+    conf_map['twin_trigger'] = '2'
+    conf_map['avarage_trigger'] = '(-400,1)'
+
+    working_dir = os.path.join(working_dir, id)
+    if not os.path.exists(working_dir):
+        os.makedirs(working_dir)
+    conf_dir = os.path.join(working_dir, 'conf')
+    if not os.path.exists(conf_dir):
+        os.makedirs(conf_dir)
+    conf_file = os.path.join(conf_dir, 'config_rec')
+    create_config(conf_dir, conf_file, conf_map)
+
+
+def config_disp(working_dir, id):
+    working_dir = os.path.join(working_dir, id)
+    if not os.path.exists(working_dir):
+        os.makedirs(working_dir)
+    conf_dir = os.path.join(working_dir, 'conf')
+    if not os.path.exists(conf_dir):
+        os.makedirs(conf_dir)
+    disp_conf_file = os.path.join(conf_dir, 'config_disp')
+    temp_file = os.path.join(conf_dir, 'temp')
+    with open(temp_file, 'a') as temp:
+        try:
+            with open(disp_conf_file, 'r') as f:
+                for line in f:
+                    if not line.startswith('crop'):
+                        temp.write(line)
+            f.close()
+        except:
+            pass
+
+        temp.write('crop = ' + '(.5,.5,.5)')
+    temp.close()
+    shutil.move(temp_file, disp_conf_file)
+
+
+def create_default_config(working_dir, id):
+    # create config_data
+    config_data(working_dir, id)
+
+    # create config_rec
+    config_rec(working_dir, id)
+
+    # add to config_disp
+    config_disp(working_dir, id)
+
+
+
+# prepare('/local/bfrosik/cdi/test',
+#         'A',
+#         [48,60],
+#         '/net/s34data/export/34idc-data/2018/Startup18-2/ADStartup18-2a',
+#         '/net/s34data/export/34idc-data/2018/Startup18-2/Startup18-2a.spec',
+#         '/net/s34data/export/34idc-work/2018/Startup18-2/dark.tif',
+#         '/net/s34data/export/34idc-work/2018/Startup18-2/CelaWhiteField.tif')
+# create_default_config('/local/bfrosik/cdi/test', 'A')
+
+
+
