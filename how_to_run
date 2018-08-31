@@ -1,0 +1,59 @@
+To visualize reconstructed image file from data the following steps are needed:
+
+I. Beamline specific. We support solution for the APS beamline 34-ID.
+    1. From data collected by detector create 3D tif file.
+    2. From experiment record create configuration file for processing display.
+II. For any beamline.
+    3. Create configuration files.
+    4. Prepare the 3D tif data file for reconstruction according to configuration.
+       This will remove aliens, add padding, etc.
+    5. Run reconstruction according to configuration.
+    6. Run display processing according to configuration.
+
+How to run using command lines only:
+------------------------------------
+1. python prepare(working_dir,
+         experiment_id,
+         scans,
+         detector_data_dir,
+         spec_file,
+         dark_file,
+         white_file)
+2*. python create_default_config(working_dir,
+         experiment_id)
+3*. edit configuration files (important for the config_data):
+   <working_dir>/<experiment_id>/conf/config_data
+   <working_dir>/<experiment_id>/conf/config_rec
+   <working_dir>/<experiment_id>/conf/config_disp
+4. python run_data.py "<working_dir>/<experiment_id>/prep/prep_data" "<working_dir>/<experiment_id>/conf/config_data"
+5. source run_rec.sh <proc> "<working_dir>/<experiment_id>/conf/config_rec"
+6. source run_disp.sh "<working_dir>/<experiment_id>/conf/config_disp"
+7. the image.vtk file will be in "<working_dir>/<experiment_id>/results" directory
+
+*This steps are optional, it helps with creating configuration files, but one can use
+different configuration files
+
+example:
+1. python prepare('/home/beams/CXDUSER/CDI/cdi-master/test',
+         'A_48-60',
+         [48,60],
+         '/net/s34data/export/34idc-data/2018/Startup18-2/ADStartup18-2a',
+         '/net/s34data/export/34idc-data/2018/Startup18-2/Startup18-2a.spec',
+         '/net/s34data/export/34idc-work/2018/Startup18-2/dark.tif',
+         '/net/s34data/export/34idc-work/2018/Startup18-2/CelaWhiteField.tif')
+2. python create_default_config('/home/beams/CXDUSER/CDI/cdi-master/test', 'A_48-60')
+3. edit (/home/beams/CXDUSER/CDI/cdi-master/test/A_48-60/conf/config_data,
+         /home/beams/CXDUSER/CDI/cdi-master/test/A_48-60/conf/config_rec,
+         /home/beams/CXDUSER/CDI/cdi-master/test/A_48-60/conf/config_disp) if needed
+4. python run_data.py '/home/beams/CXDUSER/CDI/cdi-master/test/A_48-60/prep/prep_data' '/home/beams/CXDUSER/CDI/cdi-master/test/A_48-60/conf/config_data'
+5. source run_rec.sh 'cuda' '/home/beams/CXDUSER/CDI/cdi-master/test/A_48-60/conf/config_rec'
+6. source run_disp.sh '/home/beams/CXDUSER/CDI/cdi-master/test/A_48-60/conf/config_disp'
+
+How to run using GUI and command lines:
+---------------------------------------
+1. python 34id/cdi_conf_window.py (to start GUI)
+2. Fill out working directory and Reconstruction ID (where the prep, and config will be created),
+   and run tabs in order they appear: '34ID prep', 'Data', 'Reconstruction', 'Display'. This
+   will create prep_data and configuration files in <working_dir>/<experiment_id>conf/ directory
+3. Use the configuration files when running steps 4, 5, 6.
+

@@ -182,10 +182,11 @@ def prep_data(scan, det_area1, det_area2, data_dir, prep_data_dir, darkfile, whi
     else:
         b = arr
 
-    if len(scan) == 1:
-        data_file = str(scan)+'_data'
-    else:
-        data_file = str(scan[0])+'-'+str(scan[1])+'_data'
+    # if len(scan) == 1:
+    #     data_file = str(scan)+'_data'
+    # else:
+    #     data_file = str(scan[0])+'-'+str(scan[1])+'_data'
+    data_file = 'prep_data'
     data_file = os.path.join(prep_data_dir, data_file)
     tif.imsave(data_file, b.astype(np.int32))
 

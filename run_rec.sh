@@ -8,4 +8,5 @@ p=$PATH
 p=${p//"anaconda2"/"anaconda3"}
 export PATH=$p
 
-python run_rec.py "opencl" "config_rec"
+python run_rec.py $1 $2
+#python run_rec.py "opencl" "config_rec"
