@@ -172,6 +172,8 @@ class cdi_conf_tab(QTabWidget):
         layout = QFormLayout()
         self.crop = QLineEdit()
         layout.addRow("crop", self.crop)
+        self.save_disp_dir = QLineEdit()
+        layout.addRow("save display dir", self.save_disp_dir)
         self.config_disp_button = QPushButton('update config_disp', self)
         layout.addWidget(self.config_disp_button)
         self.tab4.setLayout(layout)
@@ -226,11 +228,27 @@ class cdi_conf_tab(QTabWidget):
         conf_map = {}
         data_out_dir = '"' + self.main_win.working_dir + '/' + self.main_win.id + '/data' + '"'
         conf_map['data_dir'] = data_out_dir
-        conf_map['aliens'] = str(self.aliens.text())
-        conf_map['amp_threshold'] = str(self.amp_threshold.text())
-        conf_map['binning'] = str(self.binning.text())
-        conf_map['center_shift'] = str(self.center_shift.text())
-        conf_map['adjust_dimensions'] = str(self.adjust_dimensions.text())
+        if len(self.aliens.text()) > 0:
+            conf_map['aliens'] = str(self.aliens.text())
+        else:
+            print ("aliens not defined")
+        if len(self.amp_threshold.text()) > 0:
+            conf_map['amp_threshold'] = str(self.amp_threshold.text())
+        else:
+            print ('amplitude threshold not defined. Quiting operation.')
+            return
+        if len(self.binning.text()) > 0:
+            conf_map['binning'] = str(self.binning.text())
+        else:
+            print ("binning not defined")
+        if len(self.center_shift.text()) > 0:
+            conf_map['center_shift'] = str(self.center_shift.text())
+        else:
+            print ("center shift not defined")
+        if len(self.adjust_dimensions.text()) > 0:
+            conf_map['adjust_dimensions'] = str(self.adjust_dimensions.text())
+        else:
+            print ("adjust dimensions not defined")
 
         self.create_config('config_data', conf_map)
 
@@ -310,12 +328,13 @@ class cdi_conf_tab(QTabWidget):
     def config_disp(self):
         if len(self.crop.text()) == 0:
             print ('crop not configured')
-            return
+            #return
 
         working_dir = os.path.join(self.main_win.working_dir, self.main_win.id)
         if not os.path.exists(working_dir):
             os.makedirs(working_dir)
         conf_dir = os.path.join(working_dir, 'conf')
+
         if not os.path.exists(conf_dir):
             os.makedirs(conf_dir)
         disp_conf_file = os.path.join(self.main_win.working_dir, self.main_win.id, 'conf', 'config_disp')
@@ -324,13 +343,18 @@ class cdi_conf_tab(QTabWidget):
             try:
                 with open(disp_conf_file, 'r') as f:
                     for line in f:
-                        if not line.startswith('crop'):
+                        if not line.startswith('crop')and not line.startswith('save_dir'):
                             temp.write(line)
                 f.close()
             except:
                 pass
 
-            temp.write('crop = ' + str(self.crop.text()))
+            if len(self.crop.text()) != 0:
+                temp.write('crop = ' + str(self.crop.text()) + '\n')
+            if len(self.save_disp_dir.text()) == 0:
+                temp.write('save_dir = ' + working_dir + '/results\n')
+            else:
+                temp.write('save_dir = ' + str(self.save_disp_dir.text()) + '\n')
         temp.close()
         shutil.move(temp_file, disp_conf_file)
 

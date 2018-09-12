@@ -47,9 +47,9 @@ def to_vtk(conf):
 def main(arg):
     parser = argparse.ArgumentParser()
     parser.add_argument("conf", help="configuration file.")
-
     args = parser.parse_args()
     conf = args.conf
+
     to_vtk(conf)
 
 

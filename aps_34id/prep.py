@@ -82,20 +82,32 @@ def get_normalized_slice(file, dark, white):
 def read_scan(dir, dark, white):
     slices = 0
     files = []
+    files_dir = {}
     for file in os.listdir(dir):
         if file.endswith('tif') or file.endswith('tiff'):
-            slices += 1
-            files.append(os.path.join(dir, file))
+            temp = file.split('.')
+            #it's assumed that the files end with four digits and 'tif' or 'tiff' extension
+            key = temp[0][-4:]
+            files_dir[key] = file
+    ordered_keys = sorted(list(files_dir.keys()))
+
+    for key in ordered_keys:
+        file = files_dir[key]
+        slices += 1
+        files.append(os.path.join(dir, file))
 
     # look at slice0 to find out shape
-    slice0 = get_normalized_slice(files[0], dark, white)
+    n = 0
+    slice0 = get_normalized_slice(files[n], dark, white)
     shape = (slice0.shape[0], slice0.shape[1], slices)
     arr = np.zeros(shape, dtype=slice0.dtype)
     arr[:,:,0] = slice0
 
-    for i in range (1, len(files)):
-        slice = get_normalized_slice(files[i], dark, white)
-        arr[:,:,i] = slice
+    #for i in range (1, len(files)):
+    for file in files[1:]:
+        n = n + 1
+        slice = get_normalized_slice(file, dark, white)
+        arr[:,:,n] = slice
     return arr
 
 
@@ -124,7 +136,6 @@ def combine_part(part_f, slice_sum, refpart, part):
     intshift = np.unravel_index(amp.argmax(), corelated)
     shifted = np.array(intshift)
     pixelshift = np.where(shifted>=corelated/2, shifted-corelated, shifted)
-    temp = shift(part, pixelshift)
     return slice_sum + shift(part, pixelshift)
 
 
@@ -186,7 +197,7 @@ def prep_data(scan, det_area1, det_area2, data_dir, prep_data_dir, darkfile, whi
     #     data_file = str(scan)+'_data'
     # else:
     #     data_file = str(scan[0])+'-'+str(scan[1])+'_data'
-    data_file = 'prep_data'
+    data_file = 'prep_data.tif'
     data_file = os.path.join(prep_data_dir, data_file)
     tif.imsave(data_file, b.astype(np.int32))
 
@@ -236,11 +247,11 @@ def create_config(conf_dir, conf_file, conf_map):
 def config_data(working_dir, id):
     conf_map = {}
     conf_map['data_dir'] = '"' + working_dir + '/' + id + '/data"'
-    conf_map['aliens'] = '(0,0,0,0,0,0), (0,0,0,0,0,0)'
-    conf_map['amp_threshold'] = '(2.0)'
-    conf_map['binning'] = '((1,1,1))'
-    conf_map['center_shift'] = '((0,0,0))'
-    conf_map['adjust_dimensions'] = '((-13, -13, -65, -65, -65, -65), (-7, -13, -55, -65, -55, -65))'
+    conf_map['aliens'] = '((0,0,0,0,0,0), (0,0,0,0,0,0))'
+    conf_map['amp_threshold'] = '2.0'
+    conf_map['binning'] = '(1,1,1)'
+    conf_map['center_shift'] = '(0,0,0)'
+    conf_map['adjust_dimensions'] = '(-4, -4, -65, -65, -65, -65)'
 
     working_dir = os.path.join(working_dir, id)
     if not os.path.exists(working_dir):
@@ -256,8 +267,8 @@ def config_rec(working_dir, id):
     conf_map = {}
     conf_map['data_dir'] = '"' + working_dir + '/' + id + '/data"'
     conf_map['save_dir'] = '"' + working_dir + '/' + id + '/results"'
-    conf_map['threads'] = '(1)'
-    conf_map['device'] = '(3)'
+    conf_map['threads'] = '1'
+    conf_map['device'] = '(0)'
     conf_map['garbage_trigger'] = '(1000)'
     conf_map['algorithm_sequence'] = '((5,("ER",20),("HIO",180)),(1,("ER",40),("HIO",160)),(4,("ER",20),("HIO",180)))'
     conf_map['beta'] = ('.9')
@@ -277,7 +288,7 @@ def config_rec(working_dir, id):
     conf_map['partial_coherence_iteration_num'] = '20'
     conf_map['partial_coherence_normalize'] = 'true'
     conf_map['partial_coherence_roi'] = '[32,32,16]'
-    conf_map['twin_trigger'] = '2'
+    conf_map['twin_trigger'] = '(2)'
     conf_map['avarage_trigger'] = '(-400,1)'
 
     working_dir = os.path.join(working_dir, id)
@@ -303,13 +314,14 @@ def config_disp(working_dir, id):
         try:
             with open(disp_conf_file, 'r') as f:
                 for line in f:
-                    if not line.startswith('crop'):
+                    if not line.startswith('crop')and not line.startswith('save_dir'):
                         temp.write(line)
             f.close()
         except:
             pass
 
-        temp.write('crop = ' + '(.5,.5,.5)')
+        temp.write('crop = ' + '(.5,.5,.5)' + '\n')
+        temp.write('save_dir = "' + working_dir + '/results"' + '\n')
     temp.close()
     shutil.move(temp_file, disp_conf_file)
 

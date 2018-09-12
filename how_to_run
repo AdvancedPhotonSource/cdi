@@ -12,15 +12,15 @@ II. For any beamline.
 
 How to run using command lines only:
 ------------------------------------
-1. python prepare(working_dir,
-         experiment_id,
-         scans,
-         detector_data_dir,
-         spec_file,
-         dark_file,
-         white_file)
-2*. python create_default_config(working_dir,
-         experiment_id)
+1. python run_prepare.py
+         <working_dir>
+         <experiment_id>
+         <scans>
+         <detector_data_dir>
+         <spec_file>
+         <dark_file>
+         <white_file>
+2*. python create_default_config.py <working_dir> <experiment_id>
 3*. edit configuration files (important for the config_data):
    <working_dir>/<experiment_id>/conf/config_data
    <working_dir>/<experiment_id>/conf/config_rec
@@ -34,20 +34,20 @@ How to run using command lines only:
 different configuration files
 
 example:
-1. python prepare('/home/beams/CXDUSER/CDI/cdi-master/test',
-         'A_48-60',
-         [48,60],
-         '/net/s34data/export/34idc-data/2018/Startup18-2/ADStartup18-2a',
-         '/net/s34data/export/34idc-data/2018/Startup18-2/Startup18-2a.spec',
-         '/net/s34data/export/34idc-work/2018/Startup18-2/dark.tif',
-         '/net/s34data/export/34idc-work/2018/Startup18-2/CelaWhiteField.tif')
-2. python create_default_config('/home/beams/CXDUSER/CDI/cdi-master/test', 'A_48-60')
-3. edit (/home/beams/CXDUSER/CDI/cdi-master/test/A_48-60/conf/config_data,
+1. python run_prepare.py '/home/beams/CXDUSER/CDI/cdi-master/test'\
+  'A_48-60'\
+  '48-60'\
+  '/net/s34data/export/34idc-data/2018/Startup18-2/ADStartup18-2a'\
+  '/net/s34data/export/34idc-data/2018/Startup18-2/Startup18-2a.spec'\
+  '/net/s34data/export/34idc-work/2018/Startup18-2/dark.tif'\
+  '/net/s34data/export/34idc-work/2018/Startup18-2/CelaWhiteField.tif'
+2. python create_default_conf.py '/home/beams/CXDUSER/CDI/cdi-master/test' 'A_48-60'
+3. <edit> (/home/beams/CXDUSER/CDI/cdi-master/test/A_48-60/conf/config_data,
          /home/beams/CXDUSER/CDI/cdi-master/test/A_48-60/conf/config_rec,
          /home/beams/CXDUSER/CDI/cdi-master/test/A_48-60/conf/config_disp) if needed
-4. python run_data.py '/home/beams/CXDUSER/CDI/cdi-master/test/A_48-60/prep/prep_data' '/home/beams/CXDUSER/CDI/cdi-master/test/A_48-60/conf/config_data'
-5. source run_rec.sh 'cuda' '/home/beams/CXDUSER/CDI/cdi-master/test/A_48-60/conf/config_rec'
-6. source run_disp.sh '/home/beams/CXDUSER/CDI/cdi-master/test/A_48-60/conf/config_disp'
+4. python run_data.py '/home/beams/CXDUSER/CDI/cdi-master/test' 'A_48-60'
+5. source run_rec.sh 'cuda' '/home/beams/CXDUSER/CDI/cdi-master/test' 'A_48-60'
+6. source run_disp.sh '/home/beams/CXDUSER/CDI/cdi-master/test' 'A_48-60'
 
 How to run using GUI and command lines:
 ---------------------------------------

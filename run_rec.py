@@ -54,11 +54,9 @@ def reconstruction(proc, conf):
 
 
 def main(arg):
-
     parser = argparse.ArgumentParser()
     parser.add_argument("proc", help="the processor the code will run on, can be 'cpu', 'opencl', or 'cuda'.")
     parser.add_argument("conf", help="configuration file.")
-
     args = parser.parse_args()
     proc = args.proc
     conf = args.conf
