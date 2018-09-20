@@ -144,7 +144,7 @@ class cdi_conf_tab(QTabWidget):
 
         layout.addLayout(ulayout)
         layout.addLayout(llayout)
-        self.features = features(self, llayout)
+        self.features = Features(self, llayout)
         self.config_rec_button = QPushButton('create config_rec', self)
         layout.addWidget(self.config_rec_button)
         self.tab3.setAutoFillBackground(True)
@@ -265,39 +265,8 @@ class cdi_conf_tab(QTabWidget):
         if self.cont.isChecked():
             conf_map['continue_dir'] = str(self.cont_dir.text())
 
-        if self.features.active_0.isChecked():
-            conf_map['generations'] = str(self.features.generations.text())
-            conf_map['low_resolution_generations'] = str(self.features.lr_generations.text())
-            conf_map['low_resolution_sigma_alg'] = str(self.features.lr_sigma_alg.text())
-            conf_map['low_resolution_sigmas'] = str(self.features.lr_sigmas.text())
-            conf_map['low_resolution_sigma_min'] = str(self.features.lr_sigma_min.text())
-            conf_map['low_resolution_sigma_max'] = str(self.features.lr_sigma_max.text())
-            conf_map['low_resolution_scale_power'] = str(self.features.lr_scale_power.text())
-            conf_map['low_resolution_alg'] = str(self.features.lr_algorithm.text())
-        if self.features.active_1.isChecked():
-            conf_map['resolution_trigger'] = str(self.features.res_triggers.text())
-            conf_map['iter_res_sigma_range'] = str(self.features.sigma_range.text())
-            conf_map['iter_res_det_range'] = str(self.features.det_range.text())
-        if self.features.active_2.isChecked():
-            conf_map['amp_support_trigger'] = str(self.features.support_triggers.text())
-            conf_map['support_type'] = str(self.features.support_type.text())
-            conf_map['support_threshold'] = str(self.features.threshold.text())
-            conf_map['support_sigma'] = str(self.features.sigma.text())
-            conf_map['support_area'] = str(self.features.support_area.text())
-        if self.features.active_3.isChecked():
-            conf_map['phase_support_trigger'] = str(self.features.phase_triggers.text())
-            conf_map['phase_min'] = str(self.features.phase_min.text())
-            conf_map['phase_max'] = str(self.features.phase_max.text())
-        if self.features.active_4.isChecked():
-            conf_map['pcdi_trigger'] = str(self.features.pcdi_triggers.text())
-            conf_map['partial_coherence_type'] = str(self.features.pcdi_type.text())
-            conf_map['partial_coherence_iteration_num'] = str(self.features.pcdi_iter.text())
-            conf_map['partial_coherence_normalize'] = str(self.features.pcdi_normalize.text())
-            conf_map['partial_coherence_roi'] = str(self.features.pcdi_roi.text())
-        if self.features.active_5.isChecked():
-            conf_map['twin_trigger'] = str(self.features.twin_triggers.text())
-        if self.features.active_6.isChecked():
-            conf_map['avarage_trigger'] = str(self.features.average_triggers.text())
+        for feat_id in self.features.feature_dir:
+            self.features.feature_dir[feat_id].add_config(conf_map)
 
         self.create_config('config_rec', conf_map)
 
@@ -373,108 +342,28 @@ class cdi_conf_tab(QTabWidget):
             self.cont.setChecked(False)
 
 
-class features(QWidget):
-    def __init__(self, tab, layout):
-        super(features, self).__init__()
-        self.leftlist = QListWidget()
-        self.leftlist.insertItem(0, 'GA')
-        self.leftlist.insertItem(1, 'low resolution')
-        self.leftlist.insertItem(2, 'amplitude support')
-        self.leftlist.insertItem(3, 'phase support')
-        self.leftlist.insertItem(4, 'pcdi')
-        self.leftlist.insertItem(5, 'twin')
-        self.leftlist.insertItem(6, 'average')
-
-        item = self.leftlist.item(2)
-        item.setForeground(QColor('black'));
-
-        self.stack0 = QWidget()
-        self.stack1 = QWidget()
-        self.stack2 = QWidget()
-        self.stack3 = QWidget()
-        self.stack4 = QWidget()
-        self.stack5 = QWidget()
-        self.stack6 = QWidget()
-
-        self.stack0UI(self.leftlist.item(0))
-        self.stack1UI(self.leftlist.item(1))
-        self.stack2UI(self.leftlist.item(2))
-        self.stack3UI(self.leftlist.item(3))
-        self.stack4UI(self.leftlist.item(4))
-        self.stack5UI(self.leftlist.item(5))
-        self.stack6UI(self.leftlist.item(6))
-
-        self.Stack = QStackedWidget(self)
-        self.Stack.addWidget(self.stack0)
-        self.Stack.addWidget(self.stack1)
-        self.Stack.addWidget(self.stack2)
-        self.Stack.addWidget(self.stack3)
-        self.Stack.addWidget(self.stack4)
-        self.Stack.addWidget(self.stack5)
-        self.Stack.addWidget(self.stack6)
-
-        layout.addWidget(self.leftlist)
-        layout.addWidget(self.Stack)
-
-        self.leftlist.currentRowChanged.connect(self.display)
+class Feature(object):
+    def __init__(self):
+        self.stack = QWidget()
 
 
-    def stack0UI(self, item):
+    def stackUI(self, item, feats):
         layout = QFormLayout()
-        self.active_0 = QCheckBox("active")
-        self.active_0.setChecked(False)
-        layout.addWidget(self.active_0)
-        self.toggle_0(layout, item)
-        self.stack0.setLayout(layout)
-        self.active_0.stateChanged.connect(lambda: self.toggle_0(layout, item))
-
-    def toggle_0(self, layout, item):
-        if self.active_0.isChecked():
-            self.generations = QLineEdit()
-            layout.addRow("generations", self.generations)
-            self.lr_generations = QLineEdit()
-            layout.addRow("low resolution generations", self.lr_generations)
-            self.lr_sigma_alg = QLineEdit()
-            layout.addRow("low resolution sigma algorithm", self.lr_sigma_alg)
-            self.lr_sigmas = QLineEdit()
-            layout.addRow("low resolution sigmas", self.lr_sigmas)
-            self.lr_sigma_min = QLineEdit()
-            layout.addRow("low resolution sigma min", self.lr_sigma_min)
-            self.lr_sigma_max = QLineEdit()
-            layout.addRow("low resolution sigma max", self.lr_sigma_max)
-            self.lr_scale_power = QLineEdit()
-            layout.addRow("low resolution scale power", self.lr_scale_power)
-            self.lr_algorithm = QLineEdit()
-            layout.addRow("low resolution algorithm", self.lr_algorithm)
-            item.setForeground(QColor('black'));
-        else:
-            for i in reversed(range(1, layout.count())):
-                layout.itemAt(i).widget().setParent(None)
-            item.setForeground(QColor('grey'));
+        self.active = QCheckBox("active")
+        self.active.setChecked(True)
+        layout.addWidget(self.active)
+        self.toggle(layout, item, feats)
+        self.stack.setLayout(layout)
+        self.active.stateChanged.connect(lambda: self.toggle(layout, item, feats))
 
 
-    def stack1UI(self, item):
-        layout = QFormLayout()
-        self.active_1 = QCheckBox("active")
-        self.active_1.setChecked(True)
-        layout.addWidget(self.active_1)
-        self.toggle_1(layout, item)
-        self.stack1.setLayout(layout)
-        self.active_1.stateChanged.connect(lambda:self.toggle_1(layout, item))
+    def toggle(self, layout, item, feats):
+        if self.active.isChecked():
+            self.fill_active(layout)
 
-
-    def toggle_1(self, layout, item):
-        if self.active_1.isChecked():
-            self.res_triggers = QLineEdit()
-            layout.addRow("low resolution triggers", self.res_triggers)
-            self.sigma_range = QLineEdit()
-            layout.addRow("sigma range", self.sigma_range)
-            self.det_range = QLineEdit()
-            layout.addRow("det range", self.det_range)
-
-            self.default_1_button = QPushButton('set to defaults', self)
-            layout.addWidget(self.default_1_button)
-            self.default_1_button.clicked.connect(self.rec_1_default)
+            self.default_button = QPushButton('set to defaults', feats)
+            layout.addWidget(self.default_button)
+            self.default_button.clicked.connect(self.rec_default)
 
             item.setForeground(QColor('black'));
         else:
@@ -482,163 +371,111 @@ class features(QWidget):
                 layout.itemAt(i).widget().setParent(None)
             item.setForeground(QColor('grey'));
 
-
-    def stack2UI(self, item):
-        layout = QFormLayout()
-        self.active_2 = QCheckBox("active")
-        self.active_2.setChecked(True)
-        layout.addWidget(self.active_2)
-        self.toggle_2(layout, item)
-        self.stack2.setLayout(layout)
-        self.active_2.stateChanged.connect(lambda: self.toggle_2(layout, item))
+    def fill_active(self, layout):
+        pass
 
 
-    def toggle_2(self, layout, item):
-        if self.active_2.isChecked():
-            self.support_triggers = QLineEdit()
-            layout.addRow("support triggers", self.support_triggers)
-            self.support_type = QLineEdit()
-            layout.addRow("support algorithm", self.support_type)
-            self.support_area = QLineEdit()
-            layout.addRow("starting support area", self.support_area)
-            self.threshold = QLineEdit()
-            layout.addRow("threshold", self.threshold)
-            self.sigma = QLineEdit()
-            layout.addRow("sigma", self.sigma)
-
-            self.default_2_button = QPushButton('set to defaults', self)
-            layout.addWidget(self.default_2_button)
-            self.default_2_button.clicked.connect(self.rec_2_default)
-
-            item.setForeground(QColor('black'));
-        else:
-            for i in reversed(range(1, layout.count())):
-                layout.itemAt(i).widget().setParent(None)
-            item.setForeground(QColor('grey'));
+    def rec_default(self):
+        pass
 
 
-    def stack3UI(self, item):
-        layout = QFormLayout()
-        self.active_3 = QCheckBox("active")
-        self.active_3.setChecked(True)
-        layout.addWidget(self.active_3)
-        self.toggle_3(layout, item)
-        self.stack3.setLayout(layout)
-        self.active_3.stateChanged.connect(lambda: self.toggle_3(layout, item))
+    def add_config(self, conf_map):
+        if self.active.isChecked():
+            self.add_feat_conf(conf_map)
 
-    def toggle_3(self, layout, item):
-        if self.active_3.isChecked():
-            self.phase_triggers = QLineEdit()
-            layout.addRow("phase support triggers", self.phase_triggers)
-            self.phase_min = QLineEdit()
-            layout.addRow("phase minimum", self.phase_min)
-            self.phase_max = QLineEdit()
-            layout.addRow("phase maximum", self.phase_max)
-
-            self.default_3_button = QPushButton('set to defaults', self)
-            layout.addWidget(self.default_3_button)
-            self.default_3_button.clicked.connect(self.rec_3_default)
-
-            item.setForeground(QColor('black'));
-        else:
-            for i in reversed(range(1, layout.count())):
-                layout.itemAt(i).widget().setParent(None)
-            item.setForeground(QColor('grey'));
+    def add_feat_conf(self, conf_map):
+        pass
 
 
-    def stack4UI(self, item):
-        layout = QFormLayout()
-        self.active_4 = QCheckBox("active")
-        self.active_4.setChecked(True)
-        layout.addWidget(self.active_4)
-        self.toggle_4(layout, item)
-        self.stack4.setLayout(layout)
-        self.active_4.stateChanged.connect(lambda: self.toggle_4(layout, item))
+class GA(Feature):
+    def __init__(self):
+        super(GA, self).__init__()
+        self.id = 'GA'
 
-    def toggle_4(self, layout, item):
-        if self.active_4.isChecked():
-            self.pcdi_triggers = QLineEdit()
-            layout.addRow("pcdi triggers", self.pcdi_triggers)
-            self.pcdi_type = QLineEdit()
-            layout.addRow("partial coherence algorithm", self.pcdi_type)
-            self.pcdi_iter = QLineEdit()
-            layout.addRow("pcdi iteration number", self.pcdi_iter)
-            self.pcdi_normalize = QLineEdit()
-            layout.addRow("normalize", self.pcdi_normalize)
-            self.pcdi_roi = QLineEdit()
-            layout.addRow("pcdi kernel area", self.pcdi_roi)
-
-            self.default_4_button = QPushButton('set to defaults', self)
-            layout.addWidget(self.default_4_button)
-            self.default_4_button.clicked.connect(self.rec_4_default)
-
-            item.setForeground(QColor('black'));
-        else:
-            for i in reversed(range(1, layout.count())):
-                layout.itemAt(i).widget().setParent(None)
-            item.setForeground(QColor('grey'));
-
-    def stack5UI(self, item):
-        layout = QFormLayout()
-        self.active_5 = QCheckBox("active")
-        self.active_5.setChecked(True)
-        layout.addWidget(self.active_5)
-        self.toggle_5(layout, item)
-        self.stack5.setLayout(layout)
-        self.active_5.stateChanged.connect(lambda: self.toggle_5(layout, item))
-
-    def toggle_5(self, layout, item):
-        if self.active_5.isChecked():
-            self.twin_triggers = QLineEdit()
-            layout.addRow("twin triggers", self.twin_triggers)
-
-            self.default_5_button = QPushButton('set to defaults', self)
-            layout.addWidget(self.default_5_button)
-            self.default_5_button.clicked.connect(self.rec_5_default)
-
-            item.setForeground(QColor('black'));
-        else:
-            for i in reversed(range(1, layout.count())):
-                layout.itemAt(i).widget().setParent(None)
-            item.setForeground(QColor('grey'));
+    # override setting the active to set it False
+    def stackUI(self, item, feats):
+        super(GA, self).stackUI(item, feats)
+        self.active.setChecked(False)
 
 
-    def stack6UI(self, item):
-        layout = QFormLayout()
-        self.active_6 = QCheckBox("active")
-        self.active_6.setChecked(True)
-        layout.addWidget(self.active_6)
-        self.toggle_6(layout, item)
-        self.stack6.setLayout(layout)
-        self.active_6.stateChanged.connect(lambda: self.toggle_6(layout, item))
-
-    def toggle_6(self, layout, item):
-        if self.active_6.isChecked():
-            self.average_triggers = QLineEdit()
-            layout.addRow("average triggers", self.average_triggers)
-
-            self.default_6_button = QPushButton('set to defaults', self)
-            layout.addWidget(self.default_6_button)
-            self.default_6_button.clicked.connect(self.rec_6_default)
-
-            item.setForeground(QColor('black'));
-        else:
-            for i in reversed(range(1, layout.count())):
-                layout.itemAt(i).widget().setParent(None)
-            item.setForeground(QColor('grey'));
-
-    def display(self, i):
-        self.Stack.setCurrentIndex(i)
+    def fill_active(self, layout):
+        self.generations = QLineEdit()
+        layout.addRow("generations", self.generations)
+        self.lr_generations = QLineEdit()
+        layout.addRow("low resolution generations", self.lr_generations)
+        self.lr_sigma_alg = QLineEdit()
+        layout.addRow("low resolution sigma algorithm", self.lr_sigma_alg)
+        self.lr_sigmas = QLineEdit()
+        layout.addRow("low resolution sigmas", self.lr_sigmas)
+        self.lr_sigma_min = QLineEdit()
+        layout.addRow("low resolution sigma min", self.lr_sigma_min)
+        self.lr_sigma_max = QLineEdit()
+        layout.addRow("low resolution sigma max", self.lr_sigma_max)
+        self.lr_scale_power = QLineEdit()
+        layout.addRow("low resolution scale power", self.lr_scale_power)
+        self.lr_algorithm = QLineEdit()
+        layout.addRow("low resolution algorithm", self.lr_algorithm)
 
 
-    def rec_1_default(self):
+    def add_feat_conf(self, conf_map):
+        conf_map['generations'] = str(self.generations.text())
+        conf_map['low_resolution_generations'] = str(self.lr_generations.text())
+        conf_map['low_resolution_sigma_alg'] = str(self.lr_sigma_alg.text())
+        conf_map['low_resolution_sigmas'] = str(self.lr_sigmas.text())
+        conf_map['low_resolution_sigma_min'] = str(self.lr_sigma_min.text())
+        conf_map['low_resolution_sigma_max'] = str(self.lr_sigma_max.text())
+        conf_map['low_resolution_scale_power'] = str(self.lr_scale_power.text())
+        conf_map['low_resolution_alg'] = str(self.lr_algorithm.text())
+
+
+class low_resolution(Feature):
+    def __init__(self):
+        super(low_resolution, self).__init__()
+        self.id = 'low resolution'
+
+
+    def fill_active(self, layout):
+        self.res_triggers = QLineEdit()
+        layout.addRow("low resolution triggers", self.res_triggers)
+        self.sigma_range = QLineEdit()
+        layout.addRow("sigma range", self.sigma_range)
+        self.det_range = QLineEdit()
+        layout.addRow("det range", self.det_range)
+
+
+    def rec_default(self):
         #TODO add to accept fractions in trigger, so the default will be (.5,1)
         self.res_triggers.setText('(0, 1, 500)')
         self.sigma_range.setText('(2.0)')
         self.det_range.setText('(.7)')
 
 
-    def rec_2_default(self):
+    def add_feat_conf(self, conf_map):
+        conf_map['resolution_trigger'] = str(self.res_triggers.text())
+        conf_map['iter_res_sigma_range'] = str(self.sigma_range.text())
+        conf_map['iter_res_det_range'] = str(self.det_range.text())
+
+
+class amplitude_support(Feature):
+    def __init__(self):
+        super(amplitude_support, self).__init__()
+        self.id = 'amplitude support'
+
+
+    def fill_active(self, layout):
+        self.support_triggers = QLineEdit()
+        layout.addRow("support triggers", self.support_triggers)
+        self.support_type = QLineEdit()
+        layout.addRow("support algorithm", self.support_type)
+        self.support_area = QLineEdit()
+        layout.addRow("starting support area", self.support_area)
+        self.threshold = QLineEdit()
+        layout.addRow("threshold", self.threshold)
+        self.sigma = QLineEdit()
+        layout.addRow("sigma", self.sigma)
+
+
+    def rec_default(self):
         self.support_triggers.setText('(1,1)')
         self.support_type.setText('"GAUSS"')
         self.support_area.setText('[.5,.5,.5]')
@@ -646,13 +483,61 @@ class features(QWidget):
         self.threshold.setText('0.1')
 
 
-    def rec_3_default(self):
+    def add_feat_conf(self, conf_map):
+        conf_map['amp_support_trigger'] = str(self.support_triggers.text())
+        conf_map['support_type'] = str(self.support_type.text())
+        conf_map['support_threshold'] = str(self.threshold.text())
+        conf_map['support_sigma'] = str(self.sigma.text())
+        conf_map['support_area'] = str(self.support_area.text())
+
+
+class phase_support(Feature):
+    def __init__(self):
+        super(phase_support, self).__init__()
+        self.id = 'phase support'
+
+
+    def fill_active(self, layout):
+        self.phase_triggers = QLineEdit()
+        layout.addRow("phase support triggers", self.phase_triggers)
+        self.phase_min = QLineEdit()
+        layout.addRow("phase minimum", self.phase_min)
+        self.phase_max = QLineEdit()
+        layout.addRow("phase maximum", self.phase_max)
+
+
+    def rec_default(self):
         self.phase_triggers.setText('(0,1,20)')
         self.phase_min.setText('-1.57')
         self.phase_max.setText('1.57')
 
 
-    def rec_4_default(self):
+    def add_feat_conf(self, conf_map):
+        conf_map['phase_support_trigger'] = str(self.phase_triggers.text())
+        conf_map['phase_min'] = str(self.phase_min.text())
+        conf_map['phase_max'] = str(self.phase_max.text())
+
+
+class pcdi(Feature):
+    def __init__(self):
+        super(pcdi, self).__init__()
+        self.id = 'pcdi'
+
+
+    def fill_active(self, layout):
+        self.pcdi_triggers = QLineEdit()
+        layout.addRow("pcdi triggers", self.pcdi_triggers)
+        self.pcdi_type = QLineEdit()
+        layout.addRow("partial coherence algorithm", self.pcdi_type)
+        self.pcdi_iter = QLineEdit()
+        layout.addRow("pcdi iteration number", self.pcdi_iter)
+        self.pcdi_normalize = QLineEdit()
+        layout.addRow("normalize", self.pcdi_normalize)
+        self.pcdi_roi = QLineEdit()
+        layout.addRow("pcdi kernel area", self.pcdi_roi)
+
+
+    def rec_default(self):
         self.pcdi_triggers.setText('(50,50)')
         self.pcdi_type.setText('"LUCY"')
         self.pcdi_iter.setText('20')
@@ -660,12 +545,80 @@ class features(QWidget):
         self.pcdi_roi.setText('[32,32,16]')
 
 
-    def rec_5_default(self):
+    def add_feat_conf(self, conf_map):
+        conf_map['pcdi_trigger'] = str(self.pcdi_triggers.text())
+        conf_map['partial_coherence_type'] = str(self.pcdi_type.text())
+        conf_map['partial_coherence_iteration_num'] = str(self.pcdi_iter.text())
+        conf_map['partial_coherence_normalize'] = str(self.pcdi_normalize.text())
+        conf_map['partial_coherence_roi'] = str(self.pcdi_roi.text())
+
+
+class twin(Feature):
+    def __init__(self):
+        super(twin, self).__init__()
+        self.id = 'twin'
+
+
+    def fill_active(self, layout):
+        self.twin_triggers = QLineEdit()
+        layout.addRow("twin triggers", self.twin_triggers)
+
+
+    def rec_default(self):
         self.twin_triggers.setText('(2)')
 
 
-    def rec_6_default(self):
+    def add_feat_conf(self, conf_map):
+        conf_map['twin_trigger'] = str(self.twin_triggers.text())
+
+
+class average(Feature):
+    def __init__(self):
+        super(average, self).__init__()
+        self.id = 'average'
+
+
+    def fill_active(self, layout):
+        self.average_triggers = QLineEdit()
+        layout.addRow("average triggers", self.average_triggers)
+
+
+    def rec_default(self):
         self.average_triggers.setText('(-400,1)')
+
+
+    def add_feat_conf(self, conf_map):
+        conf_map['avarage_trigger'] = str(self.average_triggers.text())
+
+
+class Features(QWidget):
+    def __init__(self, tab, layout):
+        super(Features, self).__init__()
+        feature_ids = ['GA', 'low resolution', 'amplitude support', 'phase support', 'pcdi', 'twin', 'average']
+        self.leftlist = QListWidget()
+        self.feature_dir = {'GA' : GA(),
+                            'low resolution' : low_resolution(),
+                            'amplitude support' : amplitude_support(),
+                            'phase support' : phase_support(),
+                            'pcdi' : pcdi(),
+                            'twin' : twin(),
+                            'average' : average()}
+        self.Stack = QStackedWidget(self)
+        for i in range(len(feature_ids)):
+            id = feature_ids[i]
+            self.leftlist.insertItem(i, id)
+            feature = self.feature_dir[id]
+            feature.stackUI(self.leftlist.item(i), self)
+            self.Stack.addWidget(feature.stack)
+
+        layout.addWidget(self.leftlist)
+        layout.addWidget(self.Stack)
+
+        self.leftlist.currentRowChanged.connect(self.display)
+
+
+    def display(self, i):
+        self.Stack.setCurrentIndex(i)
 
 
 def main():
