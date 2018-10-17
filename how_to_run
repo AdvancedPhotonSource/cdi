@@ -51,7 +51,7 @@ example:
 
 How to run using GUI and command lines:
 ---------------------------------------
-1. python 34id/cdi_conf_window.py (to start GUI)
+1. python aps_34id/cdi_conf_window.py (to start GUI)
 2. Fill out working directory and Reconstruction ID (where the prep, and config will be created),
    and run tabs in order they appear: '34ID prep', 'Data', 'Reconstruction', 'Display'. This
    will create prep_data and configuration files in <working_dir>/<experiment_id>/conf/ directory
