@@ -20,9 +20,6 @@ visualization.
 import numpy as np
 import src_py.utilities.utils as ut
 import os
-import shutil
-from string import digits
-import src_py.controller.fast_module as calc
 
 
 __author__ = "Barbara Frosik"
@@ -131,5 +128,5 @@ def prep(fname, conf):
     data_file = data_dir + 'data.npy'
     np.save(data_file, prep_data)
 
-#prep('/local/bfrosik/CDI/S149/Staff14-3_S0149.tif', 'config_data')
 
+#prep('/local/bfrosik/CDI/S149/Staff14-3_S0149.tif', 'config_data')

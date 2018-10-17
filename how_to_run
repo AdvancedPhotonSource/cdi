@@ -34,12 +34,12 @@ How to run using command lines only:
 different configuration files
 
 example:
-1. python run_prepare.py '/home/beams/CXDUSER/CDI/cdi-master/test'\
-  'A_48-60'\
-  '48-60'\
-  '/net/s34data/export/34idc-data/2018/Startup18-2/ADStartup18-2a'\
-  '/net/s34data/export/34idc-data/2018/Startup18-2/Startup18-2a.spec'\
-  '/net/s34data/export/34idc-work/2018/Startup18-2/dark.tif'\
+1. python run_prepare.py '/home/beams/CXDUSER/CDI/cdi-master/test' \
+  'A_48-60' \
+  '48-60' \
+  '/net/s34data/export/34idc-data/2018/Startup18-2/ADStartup18-2a' \
+  '/net/s34data/export/34idc-data/2018/Startup18-2/Startup18-2a.spec' \
+  '/net/s34data/export/34idc-work/2018/Startup18-2/dark.tif' \
   '/net/s34data/export/34idc-work/2018/Startup18-2/CelaWhiteField.tif'
 2. python create_default_conf.py '/home/beams/CXDUSER/CDI/cdi-master/test' 'A_48-60'
 3. <edit> (/home/beams/CXDUSER/CDI/cdi-master/test/A_48-60/conf/config_data,
@@ -54,6 +54,6 @@ How to run using GUI and command lines:
 1. python 34id/cdi_conf_window.py (to start GUI)
 2. Fill out working directory and Reconstruction ID (where the prep, and config will be created),
    and run tabs in order they appear: '34ID prep', 'Data', 'Reconstruction', 'Display'. This
-   will create prep_data and configuration files in <working_dir>/<experiment_id>conf/ directory
+   will create prep_data and configuration files in <working_dir>/<experiment_id>/conf/ directory
 3. Use the configuration files when running steps 4, 5, 6.
 
