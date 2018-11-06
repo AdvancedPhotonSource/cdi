@@ -21,7 +21,9 @@ import numpy as np
 import scipy.fftpack as sf
 import src_py.cyth.bridge_cpu as bridge_cpu
 import src_py.cyth.bridge_opencl as bridge_opencl
-import src_py.cyth.bridge_cuda as bridge_cuda
+#import src_py.cyth.bridge_cuda as bridge_cuda
+import os
+import threading
 
 
 __author__ = "Barbara Frosik"
@@ -68,6 +70,9 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
     elif proc == 'cuda':
         #bridge = bridge_cuda
         fast_module = bridge_cuda.PyBridge()
+
+    print ('proc id', os.getpid())
+    print ('thread id', threading.get_ident())
 
     # shift data
     data=sf.fftshift(data)

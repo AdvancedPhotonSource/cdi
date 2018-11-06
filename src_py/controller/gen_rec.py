@@ -20,7 +20,8 @@ visualization.
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-import src_py.controller.reconstruction as rec
+import src_py.controller.reconstruction as single
+import src_py.controller.reconstruction_multi as multi
 import src_py.utilities.utils as ut
 
 
@@ -156,33 +157,69 @@ def reconstruction(generations, proc, data, conf, config_map):
     except:
         threads = 1
 
-    previous = []
-    for _ in range(threads):
-        previous.append((None, None, None))
+    if threads > 1:
+        images = []
+        supports = []
+        cohs = []
+        for _ in range(threads):
+            images.append(None)
+            supports.append(None)
+            cohs.append(None)
+        rec = multi
+        rec.load_config(threads)
+    else:
+        images = None
+        supports = None
+        cohs = None
+        rec = single
+
+    errors = []
 
     gen_obj = Generation(config_map)
-    for g in range(low_resolution_generations):
-        gen_data = gen_obj.get_data(g, data)
-        previous = rec.rec(proc, gen_data, conf, config_map, previous)
+    # the results are not kept
+    if low_resolution_generations > 0:
+        for g in range(low_resolution_generations):
+            errors.append(None)
+            gen_data = gen_obj.get_data(g, data)
+            images, supports, cohs, errs = rec.rec(proc, gen_data, conf, config_map, images, supports, cohs)
+            # here will be logic to pick the best threads
+            errors[g] = errs
     for g in range(low_resolution_generations, generations):
-        previous = rec.rec(proc, data, conf, config_map, previous)
-        image = previous[0][0]
-        print ('image norm', ut.get_norm(image), '---------------------')
-        errors = previous[0][3]
-        errors.pop(0)
-        plt.plot(errors)
-        plt.ylabel('errors')
-        plt.show()
+        errors.append(None)
+        images, supports, cohs, errs = rec.rec(proc, data, conf, config_map, images, supports, cohs)
+        errors[g] = errs
 
-    results = previous
+    print ('done gen')
+        # if g == 0:
+        #     errors[0][0].pop(0)
+        #     print ('errors0', errors[0][0])
+        #     plt.plot(errors[0][0])
+        #     plt.ylabel('errors')
+        #     plt.show()
 
-    try:
-        save_dir = config_map.save_dir
-        if not save_dir.endswith('/'):
-            save_dir = save_dir + '/'
-    except AttributeError:
-        save_dir = 'results/'
+        #image = previous[0][0]
+        # print ('image norm', ut.get_norm(image), '---------------------')
+        # errors = previous[0][3]
+        # errors.pop(0)
+        # plt.plot(errors)
+        # plt.ylabel('errors')
+        # plt.show()
 
-        save_results(results, save_dir)
+    # image = images[0]
+    # print ('image norm', ut.get_norm(image), '---------------------')
+    # errors.pop(0)
+    # plt.plot(errors[0])
+    # plt.ylabel('errors')
+    # plt.show()
 
+    #
+    # try:
+    #     save_dir = config_map.save_dir
+    #     if not save_dir.endswith('/'):
+    #         save_dir = save_dir + '/'
+    # except AttributeError:
+    #     save_dir = 'results/'
+    #
+    #     save_results(results, save_dir)
+    #
 
