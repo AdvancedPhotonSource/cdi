@@ -22,6 +22,8 @@ import os
 import src_py.controller.fast_module as calc
 from parsl.app.app import python_app
 import src_py.utilities.utils as ut
+import time
+
 
 __author__ = "Barbara Frosik"
 __copyright__ = "Copyright (c) 2016, UChicago Argonne, LLC."
@@ -169,7 +171,11 @@ def reconstruction(threads, proc, data, conf, config_map):
             cohs.append(None)
 
     load_config(threads)
+    start = time.time()
     images, supports, cohs, errs = rec(proc, data, conf, config_map, images, supports, cohs)
+    stop = time.time()
+    t = stop - start
+    print ('run in ' + str(t) + ' sec')
 
     try:
         save_dir = config_map.save_dir
@@ -181,8 +187,4 @@ def reconstruction(threads, proc, data, conf, config_map):
     save_results(threads, images, supports, cohs, save_dir)
 
     print('done')
-
-
-
-
 
