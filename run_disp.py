@@ -8,22 +8,23 @@ import numpy as np
 
 def save_vtk(res_dir, conf):
     try:
-        imagefile = res_dir + 'image.npy'
+        imagefile = os.path.join(res_dir, 'image.npy')
+        image = np.load(imagefile)
     except:
         return
-    image = np.load(imagefile)
 
     try:
-        supportfile = res_dir + 'support.npy'
+        supportfile = os.path.join(res_dir, 'support.npy')
+        support = np.load(supportfile)
     except:
         print ('support file ' + supportfile + ' is missing')
         return
-    support = np.load(supportfile)
 
     cx.save_CX(conf, image, support, res_dir)
 
 
-def to_vtk(conf):
+def to_vtk(experiment_dir):
+    conf = os.path.join(experiment_dir, 'conf', 'config_disp')
     config_map = ut.read_config(conf)
     if config_map is None:
         print ("can't read configuration file")
@@ -31,27 +32,27 @@ def to_vtk(conf):
 
     try:
         save_dir = config_map.save_dir
-        if not save_dir.endswith('/'):
-            save_dir = save_dir + '/'
     except AttributeError:
-        save_dir = 'results/'
+        save_dir = os.path.join(experiment_dir, 'results')
 
     save_vtk(save_dir, conf)
-
+    print ('save dir', save_dir)
     for sub in os.listdir(save_dir):
-        subdir = save_dir + sub + '/'
+        subdir = os.path.join(save_dir, sub)
+        print ('subdir', subdir)
         if os.path.isdir(subdir):
             save_vtk(subdir, conf)
 
 
 def main(arg):
+    print ('preparing display')
     parser = argparse.ArgumentParser()
-    parser.add_argument("conf", help="configuration file.")
+    parser.add_argument("experiment_dir", help="experiment directory")
     args = parser.parse_args()
-    conf = args.conf
+    experiment_dir = args.experiment_dir
 
-    to_vtk(conf)
-
+    to_vtk(experiment_dir)
+    print ('done with display')
 
 if __name__ == "__main__":
         main(sys.argv[1:])

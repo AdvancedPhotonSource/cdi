@@ -46,7 +46,7 @@ def rec(proc, data, conf, config_map, image, support, coh):
     return calc.fast_module_reconstruction(proc, devices[0], conf, data, coh_dims, image, support, coh)
 
 
-def reconstruction(proc, data, conf, config_map):
+def reconstruction(proc, data, conf_info, config_map):
     """
     This function is called by the user. It checks whether the data is valid and configuration file exists.
     It calls function to pre-process the data, and then to run reconstruction.
@@ -76,15 +76,13 @@ def reconstruction(proc, data, conf, config_map):
         threads = 1
 
     if threads > 1:
-        multi.reconstruction(threads, proc, data, conf, config_map)
+        multi.reconstruction(threads, proc, data, conf_info, config_map)
     else:
         cont = False
         try:
             if config_map.cont:
                 try:
                     continue_dir = config_map.continue_dir
-                    if not continue_dir.endswith('/'):
-                        continue_dir = continue_dir + '/'
                     image, support, coh = ut.read_results(continue_dir)
                     cont = True
                 except:
@@ -98,14 +96,22 @@ def reconstruction(proc, data, conf, config_map):
             support = None
             coh = None
 
+        if os.path.isdir(conf_info):
+            experiment_dir = conf_info
+            conf = os.path.join(experiment_dir, 'conf', 'config_rec')
+        else:
+            # assuming it's a file
+            conf = conf_info
+            experiment_dir = None
+
         image, support, coh, errs = rec(proc, data, conf, config_map, image, support, coh)
 
         try:
             save_dir = config_map.save_dir
-            if not save_dir.endswith('/'):
-                save_dir = save_dir + '/'
         except AttributeError:
-            save_dir = 'results/'
+            save_dir = 'results'
+            if experiment_dir is not None:
+                save_dir = os.path.join(experiment_dir, save_dir)
 
         ut.save_results(image, support, coh, save_dir)
 

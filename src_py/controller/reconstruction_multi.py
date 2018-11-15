@@ -88,7 +88,8 @@ def read_results(read_dir):
 
 def save_results(threads, images, supports, cohs, save_dir):
     for i in range(threads):
-        ut.save_results(images[i], supports[i], cohs[i], save_dir + str(i) + '/')
+        subdir = os.path.join(save_dir, str(i))
+        ut.save_results(images[i], supports[i], cohs[i], subdir)
 
 
 def rec(proc, data, conf, config_map, images, supports, cohs):
@@ -123,7 +124,7 @@ def rec(proc, data, conf, config_map, images, supports, cohs):
     return images, supports, cohs, errs
 
 
-def reconstruction(threads, proc, data, conf, config_map):
+def reconstruction(threads, proc, data, conf_info, config_map):
     """
     This function is called by the user. It checks whether the data is valid and configuration file exists.
     It calls function to pre-process the data, and then to run reconstruction.
@@ -151,8 +152,6 @@ def reconstruction(threads, proc, data, conf, config_map):
         if config_map.cont:
             try:
                 continue_dir = config_map.continue_dir
-                if not continue_dir.endswith('/'):
-                    continue_dir = continue_dir + '/'
                 images, supports, cohs = read_results(continue_dir)
                 cont = True
             except:
@@ -172,6 +171,15 @@ def reconstruction(threads, proc, data, conf, config_map):
 
     load_config(threads)
     start = time.time()
+
+    if os.path.isdir(conf_info):
+        experiment_dir = conf_info
+        conf = os.path.join(experiment_dir, 'conf', 'config_rec')
+    else:
+        # assuming it's a file
+        conf = conf_info
+        experiment_dir = None
+
     images, supports, cohs, errs = rec(proc, data, conf, config_map, images, supports, cohs)
     stop = time.time()
     t = stop - start
@@ -179,10 +187,10 @@ def reconstruction(threads, proc, data, conf, config_map):
 
     try:
         save_dir = config_map.save_dir
-        if not save_dir.endswith('/'):
-            save_dir = save_dir + '/'
     except AttributeError:
-        save_dir = 'results/'
+        save_dir = 'results'
+        if experiment_dir is not None:
+            save_dir = os.path.join(experiment_dir, save_dir)
 
     save_results(threads, images, supports, cohs, save_dir)
 

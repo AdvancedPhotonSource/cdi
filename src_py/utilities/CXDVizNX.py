@@ -355,7 +355,9 @@ def save_CX(conf, image, support, save_dir):
     viz.set_geometry(params, image.shape)
     crop = get_crop(params, image.shape)
     viz.set_crop(crop[0], crop[1], crop[2])  # save image
-    viz.write_structured_grid(save_dir + 'image')
+    image_file = os.path.join(save_dir, 'image')
+    viz.write_structured_grid(image_file)
     viz.set_array(support)
-    viz.write_structured_grid(save_dir + 'support')
+    support_file = os.path.join(save_dir, 'support')
+    viz.write_structured_grid(support_file)
 

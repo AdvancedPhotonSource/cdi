@@ -28,7 +28,7 @@ __docformat__ = 'restructuredtext en'
 __all__ = ['prep']
 
 
-def prep(fname, conf):
+def prep(fname, conf_info):
 
     """
     This function prepares raw data for reconstruction. It uses configured parameters. The preparation consists of the following steps:
@@ -56,7 +56,13 @@ def prep(fname, conf):
     """
 
     data = ut.get_array_from_tif(fname)
-
+    if os.path.isdir(conf_info):
+        experiment_dir = conf_info
+        conf = os.path.join(experiment_dir, 'conf', 'config_data')
+    else:
+        #assuming it's a file
+        conf = conf_info
+        experiment_dir = None
     config_map = ut.read_config(conf)
     if config_map is None:
         print ("can't read configuration file")
@@ -66,6 +72,7 @@ def prep(fname, conf):
     # zero out the aliens, aliens are the same for each data prep
     try:
         aliens = config_map.aliens
+        print ('removing aliens')
         for alien in aliens:
             data[alien[0]:alien[3], alien[1]:alien[4], alien[2]:alien[5]] = 0
     except AttributeError:
@@ -73,6 +80,7 @@ def prep(fname, conf):
 
     try:
         amp_threshold = config_map.amp_threshold
+        print ('applied threshold')
     except AttributeError:
         print ('define amplitude threshold. Exiting')
         return
@@ -96,12 +104,17 @@ def prep(fname, conf):
         data_dir = config_map.data_dir
     except AttributeError:
         data_dir = 'data'
+        if experiment_dir is not None:
+            data_dir = os.path.join(experiment_dir, data_dir)
+    if not os.path.exists(data_dir):
+        os.makedirs(data_dir)
 
     # zero out the noise
     prep_data = np.where(data < amp_threshold, 0, data)
 
     if not binsizes is None:
         # do binning
+        print ('binning')
         prep_data = ut.binning(prep_data, binsizes)
 
     # square root data
@@ -109,23 +122,21 @@ def prep(fname, conf):
 
     if not pads is None:
         # adjust the size, either zero pad or crop array
+        print ('adjusting dimention')
         prep_data = ut.adjust_dimensions(prep_data, pads)
     else:
         prep_data = ut.adjust_dimensions(prep_data, (0,0,0,0,0,0))
 
     if not center_shift is None:
         # get centered array
+        print ('shift center')
         prep_data = ut.get_centered(prep_data, center_shift)
     else:
         prep_data = ut.get_centered(prep_data, [0,0,0])
 
     # save data
-    if not data_dir.endswith('/'):
-        data_dir = data_dir + '/'
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir)
-
-    data_file = data_dir + 'data.npy'
+    data_file = os.path.join(data_dir, 'data.npy')
+    print ('saving data ready for reconstruction')
     np.save(data_file, prep_data)
 
 

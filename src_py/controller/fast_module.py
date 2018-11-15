@@ -71,9 +71,6 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
         #bridge = bridge_cuda
         fast_module = bridge_cuda.PyBridge()
 
-    print ('proc id', os.getpid())
-    print ('thread id', threading.get_ident())
-
     # shift data
     data=sf.fftshift(data)
     data = np.swapaxes(data,1,2)

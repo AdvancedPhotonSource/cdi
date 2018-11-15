@@ -124,7 +124,7 @@ def save_results(image, support, coherence, save_dir):
     np.save(save_dir + 'coherence', coherence)
 
 
-def reconstruction(generations, proc, data, conf, config_map):
+def reconstruction(generations, proc, data, conf_info, config_map):
     """
     This function is called by the user. It checks whether the data is valid and configuration file exists.
     It calls function to pre-process the data, and then to run reconstruction.
@@ -177,6 +177,13 @@ def reconstruction(generations, proc, data, conf, config_map):
 
     gen_obj = Generation(config_map)
     # the results are not kept
+    if os.path.isdir(conf_info):
+        experiment_dir = conf_info
+        conf = os.path.join(experiment_dir, 'conf', 'config_rec')
+    else:
+        # assuming it's a file
+        conf = conf_info
+
     if low_resolution_generations > 0:
         for g in range(low_resolution_generations):
             errors.append(None)

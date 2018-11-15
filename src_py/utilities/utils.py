@@ -288,16 +288,16 @@ def flip(m, axis):
     return m[tuple(indexer)]
 
 
-def read_prev_results(read_dir):
+def read_results(read_dir):
     try:
-        imagefile = read_dir + 'image.npy'
+        imagefile = os.path.join(read_dir, 'image.npy')
         image = np.load(imagefile)
 
-        supportfile = read_dir + 'support.npy'
+        supportfile = os.path.join(read_dir, 'support.npy')
         support = np.load(supportfile)
 
         try:
-            cohfile = read_dir + 'coherence.npy'
+            cohfile =  os.path.join(read_dir, 'coherence.npy')
             coh = np.load(cohfile)
         except:
             coh = None
@@ -306,14 +306,16 @@ def read_prev_results(read_dir):
 
     return image, support, coh
 
-
 def save_results(image, support, coh, save_dir):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    np.save(save_dir + 'image', image)
-    np.save(save_dir + 'support', support)
+    image_file = os.path.join(save_dir, 'image')
+    np.save(image_file, image)
+    support_file = os.path.join(save_dir, 'support')
+    np.save(support_file, support)
     if not coh is None:
-        np.save(save_dir + 'coherence', coh)
+        coh_file = os.path.join(save_dir, 'coherence')
+        np.save(coh_file, coh)
 
 

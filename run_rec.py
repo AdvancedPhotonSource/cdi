@@ -21,7 +21,9 @@ def interrupt_thread(arg):
     signal.pause()
 
 
-def reconstruction(proc, conf):
+def reconstruction(proc, experiment_dir):
+    print ('starting reconstruction')
+    conf = os.path.join(experiment_dir, 'conf', 'config_rec')
     config_map = ut.read_config(conf)
     if config_map is None:
         print ("can't read configuration file")
@@ -29,13 +31,11 @@ def reconstruction(proc, conf):
 
     try:
         data_dir = config_map.data_dir
-        if not data_dir.endswith('/'):
-            data_dir = data_dir + '/'
     except AttributeError:
-        data_dir = 'data/'
+        data_dir = os.path.join(experiment_dir, 'data')
+    datafile = os.path.join(data_dir, 'data.npy')
 
     try:
-        datafile = data_dir + 'data.npy'
         data = np.load(datafile)
         print ('data shape', data.shape)
     except:
@@ -48,20 +48,21 @@ def reconstruction(proc, conf):
         generations = 1
 
     if generations > 1:
-        gen_rec.reconstruction(generations, proc, data, conf, config_map)
+        gen_rec.reconstruction(generations, proc, data, experiment_dir, config_map)
     else:
-        rec.reconstruction(proc, data, conf, config_map)
+        rec.reconstruction(proc, data, experiment_dir, config_map)
+    print ('done with reconstruction')
 
 
 def main(arg):
     parser = argparse.ArgumentParser()
     parser.add_argument("proc", help="the processor the code will run on, can be 'cpu', 'opencl', or 'cuda'.")
-    parser.add_argument("conf", help="configuration file.")
+    parser.add_argument("experiment_dir", help="experiment directory.")
     args = parser.parse_args()
     proc = args.proc
-    conf = args.conf
+    experiment_dir = args.experiment_dir
 
-    reconstruction(proc, conf)
+    reconstruction(proc, experiment_dir)
 
 
 if __name__ == "__main__":
