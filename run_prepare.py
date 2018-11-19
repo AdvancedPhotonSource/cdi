@@ -69,7 +69,7 @@ def main(arg):
         shutil.copy(conf_disp, experiment_conf_dir)
 
     prep.prepare(config_map.working_dir, id, scan_num, config_map.data_dir, config_map.specfile, config_map.darkfile, config_map.whitefile)
-    print ('done reading data')
+    print (experiment_dir)
     return experiment_dir
 
 if __name__ == "__main__":
