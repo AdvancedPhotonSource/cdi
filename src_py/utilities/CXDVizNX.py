@@ -199,16 +199,16 @@ class CXDViz(tr.HasTraits):
         else:
             self.cropz = dims[2]
 
-        start1 = dims[0] / 2 - self.cropx / 2
-        end1 = dims[0] / 2 + self.cropx / 2
+        start1 = int(dims[0]/2) - int(self.cropx/2)
+        end1 = int(dims[0]/2) + int(self.cropx/2)
         if start1 == end1:
             end1 = end1 + 1
-        start2 = dims[1] / 2 - self.cropy / 2
-        end2 = dims[1] / 2 + self.cropy / 2
+        start2 = int(dims[1]/2) - int(self.cropy/2)
+        end2 = int(dims[1]/2) + int(self.cropy/2)
         if start2 == end2:
             end2 = end2 + 1
-        start3 = dims[2] / 2 - self.cropz / 2
-        end3 = dims[2] / 2 + self.cropz / 2
+        start3 = int(dims[2]/2) - int(self.cropz/2)
+        end3 = int(dims[2]/2) + int(self.cropz/2)
         if start3 == end3:
             end3 = end3 + 1
 
@@ -220,7 +220,7 @@ class CXDViz(tr.HasTraits):
         self.update_coords()
         dims = list(self.arr[self.cropobj].shape)
         self.sg.points = self.coords
-        if args.has_key("mode"):
+        if "mode" in args:
             if args["mode"] == "Phase":
                 arr1 = self.arr[self.cropobj].ravel()
                 arr = (np.arctan2(arr1.imag, arr1.real))
@@ -273,9 +273,9 @@ def shift(arr, s0, s1, s2):
 def sub_pixel_shift(arr, shift_ind):
     buf = np.fft.fftn(arr)
     dims = buf.shape
-    x = np.fft.ifftshift(np.arange(-(dims[0] / 2), dims[0] / 2))
-    y = np.fft.ifftshift(np.arange(-(dims[1] / 2), dims[1] / 2))
-    z = np.fft.ifftshift(np.arange(-(dims[2] / 2), dims[2] / 2))
+    x = np.fft.ifftshift(np.arange(-int(dims[0]/2), int(dims[0]/2)))
+    y = np.fft.ifftshift(np.arange(-int(dims[1]/2), int(dims[1]/2)))
+    z = np.fft.ifftshift(np.arange(-int(dims[2]/2), int(dims[2]/2)))
     gx, gy, gz = np.meshgrid(x, y, z)
 
     grid_shift = - gx * shift_ind[0] / dims[0] - gy * shift_ind[1] / dims[1] - gy * shift_ind[2] / dims[2]
@@ -314,11 +314,11 @@ def center(image, support):
     dims = image.shape
     com = center_of_mass(np.absolute(image) * support)
     # place center of mass image*support in the center
-    image = shift(image, dims[0] / 2 - com[0], dims[1] / 2 - com[1], dims[2] / 2 - com[2])
-    support = shift(support, dims[0] / 2 - com[0], dims[1] / 2 - com[1], dims[2] / 2 - com[2])
+    image = shift(image, int(dims[0]/2) - com[0], int(dims[1]/2) - com[1], int(dims[2]/2) - com[2])
+    support = shift(support, int(dims[0]/2) - com[0], int(dims[1]/2) - com[1], int(dims[2]/2) - com[2])
 
     # set com phase to zero, use as a reference
-    phi0 = m.atan2(image.imag[dims[0]/2, dims[1]/2, dims[2]/2], image.real[dims[0]/2, dims[1]/2, dims[2]/2])
+    phi0 = m.atan2(image.imag[int(dims[0]/2), int(dims[1]/2), int(dims[2]/2)], image.real[int(dims[0]/2), int(dims[1]/2), int(dims[2]/2)])
     print ('phi0', phi0)
     image = image * np.exp(-1j * phi0)
     return image, support
@@ -335,21 +335,6 @@ def get_crop(params, shape):
                 crop[i] = int(crop[i]*shape[i])
     return crop
 
-# def reshape(image, support, shape):
-#     # normalize image
-#     mx = max(np.absolute(image).ravel().tolist())
-#     image = image / mx
-#     image = np.reshape(image, shape)
-#
-#     support = np.reshape(support, shape)
-#
-#     image = np.swapaxes(image, 2, 0)
-#     image = np.swapaxes(image, 1, 0)
-#     support = np.swapaxes(support, 2, 0)
-#     support = np.swapaxes(support, 1, 0)
-#
-#     return image, support
-#
 
 def save_CX(conf, image, support, save_dir):
     image, support = center(image, support)
