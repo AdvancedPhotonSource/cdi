@@ -1,0 +1,5 @@
+amp_threshold = 2.0
+aliens = ((0,0,0,0,0,0), (0,0,0,0,0,0))
+binning = (1,1,1)
+center_shift = (0,0,0)
+adjust_dimensions = (-4, -4, -65, -65, -65, -65)

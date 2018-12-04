@@ -39,12 +39,13 @@ def main(arg):
     # find if there is "last" file in the given directory and use the last configuration from there if exists
     # otherwise use the default config
     last_conf_dir = os.path.join(conf_dir, 'last')
+    default_conf_dir = os.path.join(conf_dir, 'defaults')
 
     # try read configuration from last
     if os.path.isdir(last_conf_dir) and has_conf(last_conf_dir):
         read_from_dir = last_conf_dir
-    elif has_conf(conf_dir):
-        read_from_dir = conf_dir
+    elif os.path.isdir(default_conf_dir) and has_conf(default_conf_dir):
+        read_from_dir = default_conf_dir
     else:
         print('configured directory ' + conf_dir + ' does not contain file "config"')
         sys.exit(0)

@@ -10,7 +10,7 @@ import traits.api as tr
 from tvtk.api import tvtk
 import numpy as np
 import math as m
-import utils as ut
+import src_py.utilities.utils as ut
 
 __author__ = "Barbara Frosik"
 __copyright__ = "Copyright (c) 2016, UChicago Argonne, LLC."
@@ -39,6 +39,7 @@ class DispalyParams:
         if os.path.isfile(config):
             with open(config, 'r') as f:
                 config_map = cfg.Config(f.read())
+
         deg2rad = np.pi / 180.0
         try:
             self.lamda = config_map.lamda
@@ -53,17 +54,21 @@ class DispalyParams:
         except AttributeError:
             print ('gamma not defined')
         try:
-            self.arm = config_map.arm
+            self.arm = config_map.arm / 1000
         except AttributeError:
             print ('arm not defined')
         try:
-            self.dth = config_map.dth
+            self.dth = config_map.dth * deg2rad
         except AttributeError:
             print ('dth not defined')
         try:
+            binning = config_map.binning
+        except AttributeError:
+            binning = [1,1,1]
+        try:
             pixel = config_map.pixel
-            self.dpx = pixel[0] / self.arm
-            self.dpy = pixel[1] / self.arm
+            self.dpx = pixel[0] * binning[1] / self.arm
+            self.dpy = pixel[1] * binning[2] / self.arm
         except AttributeError:
             print ('pixel not defined')
         try:

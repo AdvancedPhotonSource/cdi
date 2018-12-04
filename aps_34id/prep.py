@@ -4,47 +4,37 @@ import numpy as np
 import tifffile as tif
 import copy
 import scipy.fftpack as sf
+from xrayutilities.io import spec as spec
 
 def parse_spec(specfile, scan):
-    # set detector to default (kind of hack)
-    detector = '34idcTIM2'
-    # extract parameters from spec file
-    f = open(specfile)
-    start = False
-    for line in f:
-        if line.startswith('#S %d '%scan):
-            start = True
-            l = line.split()
-            dth = (float(l[5])-float(l[4]))/int(l[6])
-            continue
-        if not start:
-            continue
-        if line.startswith('#P0 '):
-            l = line.split()
-            delta = float(l[1])
-            gamma = float(l[6])
-        elif line.startswith('#P3 '):
-            l = line.split()
-            arm = float(l[3])*1.E-3
-            energy = float(l[6])
-            lam = 12.398 / energy / 10
-        elif line.startswith('#UIMDET'):
-            l = line.split()
-            detector = l[1]
-        elif line.startswith('#UIMR5'):
-            l = line.split()
-            det_area = l[1:-1]
-            det_area1 = int(det_area[0]), int(det_area[1])
-            det_area2 = int(det_area[2]), int(det_area[3])
-        if line.startswith('#L '):
-            break
-    f.close()
-    return dth, delta, gamma, arm, lam, detector, det_area1, det_area2
+    # Scan numbers start at one but the list is 0 indexed
+    ss = spec.SPECFile(specfile)[scan - 1]
+
+    # Stuff from the header
+    detector = ss.getheader_element('UIMDET')
+    det_area = ss.getheader_element('UIMR5').split()
+    det_area1 = int(det_area[0]), int(det_area[1])
+    det_area2 = int(det_area[2]), int(det_area[3])
+    command = ss.command.split()
+    scanmot = command[1]
+    scanmot_del = (float(command[3]) - float(command[2])) / int(command[4])
+
+    # Motor stuff from the header
+    delta = ss.init_motor_pos['INIT_MOPO_Delta']
+    gamma = ss.init_motor_pos['INIT_MOPO_Gamma']
+    arm = ss.init_motor_pos['INIT_MOPO_camdist']
+    energy = ss.init_motor_pos['INIT_MOPO_Energy']
+    lam = 12.398 / energy / 10  # in nanometers
+
+    # returning the scan motor name as well.  Sometimes we scan things
+    # other than theta.  So we need to expand the capability of the display
+    # code.
+    return scanmot_del, delta, gamma, arm, lam, detector, det_area1, det_area2, scanmot
 
 
 def set_disp_conf(dth, delta, gamma, arm, lam, detector, disp_dir):
     # pixel size by detector
-    pixel = {'34idcTIM2':'[55.0e-6, 55.0e-6]'}
+    pixel = {'34idcTIM2:':'[55.0e-6, 55.0e-6]'}
 
     # create display configuration file from the parsed parameters
     temp_file = os.path.join(disp_dir, 'temp')
@@ -153,13 +143,18 @@ def prep_data(scan, det_area1, det_area2, data_dir, prep_data_dir, darkfile, whi
 
     # find the darkfield array
     dark_full = tif.imread(darkfile).astype(float)
-    dark_full = np.transpose(dark_full) #Ross' arrays are transposed from imread
-    dark = dark_full[slice(det_area1[0], det_area1[1]), slice(det_area2[0], det_area2[1])] #If fourth quad only
+    # Ross' arrays are transposed from imread
+    dark_full = np.transpose(dark_full)
+    # crop the corresponding quad or use the whole array, depending on what info was parsed from spec file
+    dark = dark_full[slice(det_area1[0], det_area1[1]), slice(det_area2[0], det_area2[1])]
 
     # find the whitefield array
     white_full = tif.imread(whitefile).astype(float)
-    white_full = np.transpose(white_full) #Ross' arrays are transposed from imread
-    white = white_full[slice(det_area1[0], det_area1[1]), slice(det_area2[0], det_area2[1])] #crop to the image
+    # Ross' arrays are transposed from imread
+    white_full = np.transpose(white_full)
+    # crop the corresponding quad or use the whole array, depending on what info was parsed from spec file
+    white = white_full[slice(det_area1[0], det_area1[1]), slice(det_area2[0], det_area2[1])]
+    # set the bad pixels to some large value
     white = np.where(white==0, 1e20, white) #Some large value
 
     if len(scan) == 1:
@@ -193,18 +188,14 @@ def prep_data(scan, det_area1, det_area2, data_dir, prep_data_dir, darkfile, whi
     else:
         b = arr
 
-    # if len(scan) == 1:
-    #     data_file = str(scan)+'_data'
-    # else:
-    #     data_file = str(scan[0])+'-'+str(scan[1])+'_data'
     data_file = 'prep_data.tif'
     data_file = os.path.join(prep_data_dir, data_file)
     tif.imsave(data_file, b.astype(np.int32))
 
 
 def prepare(working_dir, id, scan, data_dir, specfile, darkfile, whitefile):
-    # assuming all parameters are validated
-    #create directory to save prepared data prep_result_dir/id
+    # assuming all parameters were validated (i.e working directory exists, etc.)
+    #create directory to save prepared data ,<working_dir>/<id>/'prep'
     working_dir = os.path.join(working_dir, id)
     if not os.path.exists(working_dir):
         os.makedirs(working_dir)
@@ -218,7 +209,7 @@ def prepare(working_dir, id, scan, data_dir, specfile, darkfile, whitefile):
         os.makedirs(conf_dir)
 
     scan_end = scan[len(scan)-1]
-    dth, delta, gamma, arm, lam, detector, det_area1, det_area2 = parse_spec(specfile, scan_end)
+    dth, delta, gamma, arm, lam, detector, det_area1, det_area2, scanmot = parse_spec(specfile, scan_end)
 
     # disp prep
     set_disp_conf(dth, delta, gamma, arm, lam, detector, conf_dir)

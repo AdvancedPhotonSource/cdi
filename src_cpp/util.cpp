@@ -116,115 +116,28 @@ void Utils::GetMaxIndices(af::array arr, int* indices)
     printf("offset, ind1, ind2 ind3 %i %i %i %i\n", max_offset, indices[0], indices[1], indices[2]);
 }
 
-
-af::array Utils::ReverseGaussDistribution(af::dim4 data_dim, d_type * sgma, int alpha)
+af::array Utils::GaussDistribution(af::dim4 data_dim, d_type * sgma, int alpha)
 {
     // calculate multipliers
     int dimension = nD;  //this should be changed to determine size from sgma
     //initialize first element of the grid, assuming at least one dimension
     d_type multiplier = - 0.5 * alpha/pow(sgma[0],2);
-    af::array exponent =  pow(data_dim[0]/2 - abs(range(data_dim, 0)-(data_dim[0]-1)/2.0), 2) * multiplier;
+    af::array exponent =  pow( (range(data_dim, 0)-(data_dim[0]-1)/2.0).as(f64) ,2)* multiplier;
     af::array grid = exp(exponent);
-    
+
     //add grid in other dimensions
     for (int i = 1; i<dimension; i++)
     {
         multiplier = - 0.5 * alpha/pow(sgma[i],2);
-        exponent =  pow(data_dim[i]/2 - abs(range(data_dim, i)-(data_dim[i]-1)/2.0), 2) * multiplier;
+        exponent =  pow( (range(data_dim, i)-(data_dim[i]-1)/2.0).as(f64) ,2)* multiplier;
         af::array gi = exp(exponent);
         grid = grid * gi;
-        //grid = grid * exp(pow(data_dim[i]/2 - abs(range(data_dim, i)-(data_dim[i]+1)/2.0), 2) * multiplier);
     }
+    d_type g = sum<d_type>(pow(abs(grid), 2));
     d_type grid_total = sum<d_type>(grid);
     grid = grid/grid_total;
     return grid;
 }
-
-af::array Utils::GaussDistribution(af::dim4 data_dim, d_type * sgma, int alpha)
-{
-    // calculate multipliers
-    int dimension = nD;  //this should be changed to determine size from sgma
-//    af::array gridx = (range(data_dim, 1)-(data_dim[1]-1)/2.0);  // the range method produces wrong data
-    d_type multiplier = - 0.5 * alpha/pow(sgma[1],2);
-    double val;
-    std::vector<double> gridx_v;
-    for (int i = 0; i< data_dim[2]; i++)
-    {
-        for (int j=0; j< data_dim[1]; j++)
-        {
-            val = -(data_dim[1]-1)/2.0 + j;
-            for (int k=0; k< data_dim[0]; k++)
-            {
-                gridx_v.push_back(val);
-            }
-        }
-    }
-    af::array gridx(data_dim, &gridx_v[0]);
-    af::array exponent =  pow( gridx ,2)* multiplier;
-    af::array gridxx = exp(exponent);
-
-    multiplier = - 0.5 * alpha/pow(sgma[0],2);
-    std::vector<double> gridy_v;
-    for (int i = 0; i< data_dim[2]; i++)
-    {
-        for (int j=0; j< data_dim[1]; j++)
-        {
-            for (int k=0; k< data_dim[0]; k++)
-            {
-                val = -(data_dim[0]-1)/2.0 + k;
-                gridy_v.push_back(val);
-            }
-        }
-    }
-    af::array gridy(data_dim, &gridy_v[0]);
-    exponent =  pow( gridy ,2)* multiplier;
-    af::array gridyy = exp(exponent);
-       
-    multiplier = - 0.5 * alpha/pow(sgma[2],2);
-    std::vector<double> gridz_v;
-    for (int i = 0; i< data_dim[2]; i++)
-    {
-                val = -(data_dim[2]-1)/2.0 + i;
-        for (int j=0; j< data_dim[1]; j++)
-        {
-            for (int k=0; k< data_dim[0]; k++)
-            {
-                gridz_v.push_back(val);
-            }
-        }
-    }
-    af::array gridz(data_dim, &gridz_v[0]);
-    exponent =  pow( gridz ,2)* multiplier;
-    af::array gridzz = exp(exponent);
-       
-    af::array grid = gridxx * gridyy * gridzz;
-    d_type grid_total = sum<d_type>(grid);
-    grid = grid/grid_total;
-    return grid;
-}
-
-//af::array Utils::GaussDistribution(af::dim4 data_dim, d_type * sgma, int alpha)
-//{
-//    // calculate multipliers
-//    int dimension = nD;  //this should be changed to determine size from sgma
-//    //initialize first element of the grid, assuming at least one dimension
-//    d_type multiplier = - 0.5 * alpha/pow(sgma[0],2);
-//    af::array exponent =  pow( range(data_dim, 0)-(data_dim[0]-1)/2.0 ,2)* multiplier;
-//    af::array grid = exp(exponent);
-//       
-//    //add grid in other dimensions
-//    for (int i = 1; i<dimension; i++)
-//    {
-//        multiplier = - 0.5 * alpha/pow(sgma[i],2);
-//        exponent =  pow( range(data_dim, i)-(data_dim[i]-1)/2.0 ,2)* multiplier;
-//        af::array gi = exp(exponent);
-//        grid = grid * gi;
-//    }
-//    d_type grid_total = sum<d_type>(grid);
-//    grid = grid/grid_total;
-//    printf("grid sum, norm %f %f\n", sum<d_type>(grid), sum<d_type>(pow(grid,2)));
-//    return grid;
-//}
 
 af::array Utils::PadAround(af::array arr, af::dim4 new_dims, d_type pad)
 {

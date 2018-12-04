@@ -1,7 +1,7 @@
 #!/bin/sh
 
 
-export LD_LIBRARY_PATH=/usr/local/lib:/local/libconfig/lib:/local/af/lib
+#export LD_LIBRARY_PATH=/usr/local/lib:/local/libconfig/lib:/local/af/lib
 
 #export LD_LIBRARY_PATH=/home/beams/CXDUSER/CDI/libconfig/lib:/usr/lib64:/home/beams/CXDUSER/CDI/ArrayFire-v3.4.2/lib:/usr/local-linux/cuda-8.0/lib64:/usr/local-linux/cuda-8.0/nvvm/lib64
 
@@ -20,7 +20,6 @@ conf_dir=$4
 experiment_dir=$(python run_prepare.py $prefix $scans $conf_dir 2>&1 >/dev/null)
 
 python run_data.py $experiment_dir
-
 python run_rec.py $dev $experiment_dir
 
 p=$PATH
@@ -29,7 +28,7 @@ export PATH=$p
 
 python run_disp.py $experiment_dir
 
-#p=$PATH
-#p=${p//"anaconda2"/"anaconda3"}
-#export PATH=$p
+p=$PATH
+p=${p//"anaconda2"/"anaconda3"}
+export PATH=$p
 
