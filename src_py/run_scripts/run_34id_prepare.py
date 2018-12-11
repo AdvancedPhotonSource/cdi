@@ -75,16 +75,6 @@ def main(arg):
     print (experiment_dir)
     return experiment_dir
 
+
 if __name__ == "__main__":
     exit(main(sys.argv[1:]))
-
-
-# python run_prepare.py prefix scans conf_dir
-
-# python run_prepare.py '/home/beams/CXDUSER/CDI/cdi-master/test'
-#  'A_48-60'
-#  '48-60'
-#  '/net/s34data/export/34idc-data/2018/Startup18-2/ADStartup18-2a'
-#  '/net/s34data/export/34idc-data/2018/Startup18-2/Startup18-2a.spec'
-#  '/net/s34data/export/34idc-work/2018/Startup18-2/dark.tif'
-#  '/net/s34data/export/34idc-work/2018/Startup18-2/CelaWhiteField.tif'

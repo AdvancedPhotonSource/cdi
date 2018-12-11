@@ -8,11 +8,5 @@ export LD_LIBRARY_PATH=/usr/local/lib:/local/libconfig/lib:/local/af/lib
 #newest arrayfire version will work with cuda 9.1
 #export LD_LIBRARY_PATH=/home/beams/CXDUSER/CDI/arrayfire/lib:/home/beams/CXDUSER/CDI/libconfig/lib:/local/cuda-9.0/lib64:/local/cuda-9.0/nvvm/lib64
 
-p=$PATH
-p=${p//"anaconda2"/"anaconda3"}
-export PATH=$p
-rec_conf_file="/conf/config_rec"
-divider="/"
-
-python run_rec.py $1 $2$divider$3$rec_conf_file
-#python run_rec.py "opencl" "config_rec"
+python run_rec.py $1 $2
+#python run_rec.py "opencl" <experiment_dir>

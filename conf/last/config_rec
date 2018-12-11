@@ -4,7 +4,7 @@ threads = 1
 generations = 1
 low_resolution_generations = 0
 
-algorithm_sequence = ((3,("ER",20),("HIO",180)),(1,("ER",22)))
+algorithm_sequence = ((3,("ER",2),("HIO",2)),(1,("ER",2)))
 beta = .9
 
 twin_trigger = (2)
