@@ -2,7 +2,7 @@ To visualize reconstructed image file from data the following steps are needed:
 
 I. Beamline specific. We support solution for the APS beamline 34-ID.
     1. From data collected by detector create 3D tif file.
-    2. From experiment record create configuration file for processing display.
+    2. From experiment spec record create configuration file for processing display.
 II. For any beamline.
     3. Create configuration files.
     4. Prepare the 3D tif data file for reconstruction according to configuration.
@@ -10,50 +10,28 @@ II. For any beamline.
     5. Run reconstruction according to configuration.
     6. Run display processing according to configuration.
 
-How to run using command lines only:
+How to run using command line scripts:
 ------------------------------------
-1. python run_prepare.py
-         <working_dir>
-         <experiment_id>
-         <scans>
-         <detector_data_dir>
-         <spec_file>
-         <dark_file>
-         <white_file>
-2*. python create_default_config.py <working_dir> <experiment_id>
-3*. edit configuration files (important for the config_data):
-   <working_dir>/<experiment_id>/conf/config_data
-   <working_dir>/<experiment_id>/conf/config_rec
-   <working_dir>/<experiment_id>/conf/config_disp
-4. python run_data.py "<working_dir>/<experiment_id>/prep/prep_data" "<working_dir>/<experiment_id>/conf/config_data"
-5. source run_rec.sh <proc> "<working_dir>/<experiment_id>/conf/config_rec"
-6. source run_disp.sh "<working_dir>/<experiment_id>/conf/config_disp"
-7. the image.vtk file will be in "<working_dir>/<experiment_id>/results" directory
+1. to run everything:
+source everything.sh <device> <prefix> <scans> <conf_dir>
 
-*This steps are optional, it helps with creating configuration files, but one can use
-different configuration files
+2. to run separately:
+python run_prepare.py <pefix> <scans> <conf_dir>
+python run_data.py <experiment_dir>
+source run_rec.sh <device> <experiment_dir>
+python run_disp.py <experiment_dir>
+
+<device> - specifies processor/library to run reconstruction on ('cpu', 'opencl', 'cuda')
+<prefix> - arbitrary string that defines the experiment, it will be combine with the <scans> to derive experiment id
+<scans> - a range of scans to process, defined by first-last
+<conf_dir> - a directory containing configuration files (config, config_data, config_rec, config_disp)
+<experiment_dir> - a directory where the experiment files and results are located, derived from configured working directory and experiment id
 
 example:
-1. python run_prepare.py '/home/beams/CXDUSER/CDI/cdi-master/test' \
-  'A_48-60' \
-  '48-60' \
-  '/net/s34data/export/34idc-data/2018/Startup18-2/ADStartup18-2a' \
-  '/net/s34data/export/34idc-data/2018/Startup18-2/Startup18-2a.spec' \
-  '/net/s34data/export/34idc-work/2018/Startup18-2/dark.tif' \
-  '/net/s34data/export/34idc-work/2018/Startup18-2/CelaWhiteField.tif'
-2. python create_default_conf.py '/home/beams/CXDUSER/CDI/cdi-master/test' 'A_48-60'
-3. <edit> (/home/beams/CXDUSER/CDI/cdi-master/test/A_48-60/conf/config_data,
-         /home/beams/CXDUSER/CDI/cdi-master/test/A_48-60/conf/config_rec,
-         /home/beams/CXDUSER/CDI/cdi-master/test/A_48-60/conf/config_disp) if needed
-4. python run_data.py '/home/beams/CXDUSER/CDI/cdi-master/test' 'A_48-60'
-5. source run_rec.sh 'cuda' '/home/beams/CXDUSER/CDI/cdi-master/test' 'A_48-60'
-6. source run_disp.sh '/home/beams/CXDUSER/CDI/cdi-master/test' 'A_48-60'
-
-How to run using GUI and command lines:
----------------------------------------
-1. python aps_34id/cdi_conf_window.py (to start GUI)
-2. Fill out working directory and Reconstruction ID (where the prep, and config will be created),
-   and run tabs in order they appear: '34ID prep', 'Data', 'Reconstruction', 'Display'. This
-   will create prep_data and configuration files in <working_dir>/<experiment_id>/conf/ directory
-3. Use the configuration files when running steps 4, 5, 6.
-
+1. running all pieces
+source everything.sh 'opencl' 'B' '290-290' 'config/last'
+2. running one by one
+python run_prepare.py 'B' '290-290' 'conf/defaults'
+python run_data.py '/net/s34data/export/34idc-data/2018/Chung1118/test/B_290-290'
+source run_rec.sh 'opencl' '/net/s34data/export/34idc-data/2018/Chung1118/test/B_290-290'
+python run_disp.py '/net/s34data/export/34idc-data/2018/Chung1118/test/B_290-290'

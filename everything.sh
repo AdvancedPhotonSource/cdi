@@ -13,9 +13,5 @@ prefix=$2
 scans=$3
 conf_dir=$4
 
-experiment_dir=$(python run_prepare.py $prefix $scans $conf_dir 2>&1 >/dev/null)
-python run_data.py $experiment_dir
-python run_rec.py $dev $experiment_dir
-python run_disp.py $experiment_dir
-
+python everything.py $dev $prefix $scans $conf_dir
 

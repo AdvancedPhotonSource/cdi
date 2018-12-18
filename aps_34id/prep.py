@@ -155,7 +155,8 @@ def prep_data(scan, det_area1, det_area2, data_dir, prep_data_dir, darkfile, whi
     # crop the corresponding quad or use the whole array, depending on what info was parsed from spec file
     white = white_full[slice(det_area1[0], det_area1[1]), slice(det_area2[0], det_area2[1])]
     # set the bad pixels to some large value
-    white = np.where(white==0, 1e20, white) #Some large value
+    #white = np.where(white==0, 1e20, white) #Some large value
+    white = np.where(white<5000, 1e20, white) #Some large value
 
     if len(scan) == 1:
         arr = read_scan(dirs[scan[0]], dark, white)
@@ -337,6 +338,5 @@ def create_default_config(working_dir, id):
 #         '/net/s34data/export/34idc-work/2018/Startup18-2/dark.tif',
 #         '/net/s34data/export/34idc-work/2018/Startup18-2/CelaWhiteField.tif')
 # create_default_config('/local/bfrosik/cdi/test', 'A')
-
 
 

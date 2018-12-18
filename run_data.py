@@ -2,6 +2,7 @@ import src_py.controller.data as dt
 import sys
 import argparse
 import os
+import shutil
 
 
 def main(arg):
@@ -15,6 +16,10 @@ def main(arg):
 
     dt.prep(prep_file, experiment_dir)
     print ('done preparing data')
+    # copy experiment config into last config
+    conf = os.path.join(experiment_dir, 'conf', 'config_data')
+    last = os.path.join('conf', 'last', 'config_data')
+    shutil.copy(conf, last)
 
 
 if __name__ == "__main__":

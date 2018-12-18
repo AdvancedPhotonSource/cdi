@@ -122,7 +122,7 @@ def prep(fname, conf_info):
 
     if not pads is None:
         # adjust the size, either zero pad or crop array
-        print ('adjusting dimention')
+        print ('adjusting dimensions')
         prep_data = ut.adjust_dimensions(prep_data, pads)
     else:
         prep_data = ut.adjust_dimensions(prep_data, (0,0,0,0,0,0))

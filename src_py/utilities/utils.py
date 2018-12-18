@@ -16,6 +16,7 @@ import tifffile as tf
 import pylibconfig2 as cfg
 import numpy as np
 import os
+import logging
 
 __author__ = "Barbara Frosik"
 __copyright__ = "Copyright (c) 2016, UChicago Argonne, LLC."
@@ -27,6 +28,18 @@ __all__ = ['get_array_from_tif',
            'adjust_dimensions',
            'crop_center',
            'flip']
+
+
+def get_logger(name, ldir=''):
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.DEBUG)
+    log_file = os.path.join(ldir, 'default.log')
+    fh = logging.FileHandler(log_file)
+    fh.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
+    return logger
 
 
 def get_array_from_tif(filename):
@@ -186,6 +199,11 @@ def binning(array, binsizes):
             new_shape = list(binned_array.shape)
     return binned_array
    
+# ar = np.asarray([1,2,3,4,5,6,7,8,9,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6,7,8,9])
+# ar.resize((5,9))
+# print ('ar', ar)
+# b = binning(ar, (2,2))
+# print ('b',b)
 
 def get_centered(array, center_shift):
     """
@@ -236,25 +254,42 @@ def adjust_dimensions(arr, pad):
     array : array
         the padded/cropped array
     """
-    dims = arr.shape
-    new_dims = []
+    logger = get_logger('adjust_dimensions')
+    old_dims = arr.shape
     new_pad = []
-    new_crop = []
+    crop = []
+    for i in range(len(old_dims)):
+        tmp_dim = old_dims[i] + pad[2*i] + pad[2*i+1]
+        # find what needs to be cropped
+        crop.append(max(0, -pad[2*i]))
+        crop.append(max(0, -pad[2*i+1]))
+    arr = arr[crop[0]:old_dims[0]-crop[1], crop[2]:old_dims[1]-crop[3], crop[4]:old_dims[2]-crop[5]]
+
+    logger.info('cutting from to ' + str(crop[0]) + ', ' + str(old_dims[0]-crop[1]) + ', ' + str(crop[2]) + ', ' \
+                + str(old_dims[1]-crop[3]) + ', ' + str(crop[4]) + ', ' + str(old_dims[2]-crop[5]))
+    dims = arr.shape
+
     for i in range(len(dims)):
-        new_dims.append(get_good_dim(dims[i] + pad[2*i] + pad[2*i+1]))
-        # find what was added as result of getting good dimentions and divide it in half to distribute to both ends
-        good_adj_front = int((1+new_dims[i] - (dims[i] + pad[2*i] + pad[2*i+1]))/2)
-        pad_front = max(0, int(good_adj_front/2) + pad[2*i])
+        # find a good dimension and find padding
+        new_dim = get_good_dim(dims[i])
+        pad_front = max(0, int((new_dim+1 - dims[i])/2))
         new_pad.append(pad_front)
-        new_pad.append(max(0, new_dims[i]-dims[i]-pad_front))
-        crop_front = -pad[2*i] - good_adj_front
-        new_crop.append(max(0, crop_front))
+        pad_end = max(0, new_dim-dims[i]-pad_front)
+        new_pad.append(pad_end)
 
     arr = np.lib.pad(arr, ((new_pad[0], new_pad[1]), (new_pad[2], new_pad[3]), (new_pad[4], new_pad[5])), 'constant',
                       constant_values=((0.0, 0.0), (0.0, 0.0), (0.0, 0.0))).copy()
 
-    return arr[new_crop[0]:new_crop[0]+new_dims[0], new_crop[1]:new_crop[1]+new_dims[1], new_crop[2]:new_crop[2]+new_dims[1]]
+    logger.info('pads ' + str(new_pad[0]) + ', ' + str(new_pad[1]) + ', ' + str(new_pad[2]) + ', ' + str(new_pad[3]) \
+            + ', ' + str(new_pad[4]) + ', ' + str(new_pad[5]))
+    logger.info('old dim, new dim (' + str(dims[0]) + ',' + str(dims[1]) + ',' + str(dims[2]) + ') (' + str(arr.shape[0]) +\
+        ',' + str(arr.shape[1]) + ',' + str(arr.shape[1]) + ')')
 
+    return arr
+
+# ar = np.zeros((81,256,256))
+# pads = (0,0,-20,-30,4,-20)
+# adjust_dimensions(ar,pads)
 
 def crop_center(arr, new_size):
     size = arr.shape

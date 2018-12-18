@@ -7,6 +7,7 @@ import numpy as np
 import src_py.controller.reconstruction as rec
 import src_py.controller.gen_rec as gen_rec
 import src_py.utilities.utils as ut
+import shutil
 
 
 def interrupt_thread(arg):
@@ -58,6 +59,11 @@ def reconstruction(proc, experiment_dir):
     else:
         rec.reconstruction(proc, data, experiment_dir, config_map)
     print ('done with reconstruction')
+
+    # copy experiment config into last config
+    conf = os.path.join(experiment_dir, 'conf', 'config_rec')
+    last = os.path.join('conf', 'last', 'config_rec')
+    shutil.copy(conf, last)
 
     p.terminate()
 

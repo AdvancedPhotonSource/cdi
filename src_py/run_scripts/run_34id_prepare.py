@@ -6,12 +6,31 @@ import aps_34id.prep as prep
 import shutil
 
 
+def prepare(working_dir, id, scan, data_dir, specfile, darkfile, whitefile):
+    experiment_dir = os.path.join(working_dir, id)
+    experiment_conf_dir = os.path.join(experiment_dir, 'conf')
+    if not os.path.exists(experiment_conf_dir):
+        os.makedirs(experiment_conf_dir)
+
+    prep.prepare(working_dir, id, scan, data_dir, specfile, darkfile, whitefile)
+    # copy experiment config into last config
+    main_conf = os.path.join(working_dir, id, 'conf', 'config')
+    last = os.path.join('conf', 'last', 'config')
+    shutil.copy(main_conf, last)
+
+    return experiment_dir
+
+
+def copy_conf(src, dest):
+    main_conf = os.path.join(src, 'config')
+    shutil.copy(main_conf, dest)
+    conf_data = os.path.join(src, 'config_data')
+    shutil.copy(conf_data, dest)
+    conf_rec = os.path.join(src, 'config_rec')
+    shutil.copy(conf_rec, dest)
+
+
 def main(arg):
-    def has_conf(dir):
-        conf = os.path.join(dir, 'config')
-        return os.path.isfile(conf)
-
-
     parser = argparse.ArgumentParser()
     parser.add_argument("id", help="prefix to name of the experiment/data reconstruction")
     parser.add_argument("scan", help="a range of scans to prepare data from")
@@ -20,6 +39,17 @@ def main(arg):
     scan = args.scan
     id = args.id + '_' + scan
     print ('reading data file for experiment ' + id)
+
+    conf_dir = args.conf_dir
+    if not os.path.isdir(conf_dir):
+        print ('configured directory ' + conf_dir + ' does not exist')
+        sys.exit(0)
+
+    main_conf = os.path.join(conf_dir, 'config')
+    if not os.path.isfile(main_conf):
+        print ('the configuration directory does not contain "config" file')
+        sys.exit(0)
+
     try:
         # convert it to list of int
         scan_range = scan.split('-')
@@ -30,49 +60,13 @@ def main(arg):
         print ('enter numeric values for scan range')
         sys.exit(0)
 
-    conf_dir = args.conf_dir
-
-    if not os.path.isdir(conf_dir):
-        print ('configured directory ' + conf_dir + ' does not exist')
-        sys.exit(0)
-
-    # find if there is "last" directory in the given directory and use the last configuration from there if exists
-    # otherwise use the "defaults" directory. If this does not exist, check if the conf_dir has the configuration
-    last_conf_dir = os.path.join(conf_dir, 'last')
-    default_conf_dir = os.path.join(conf_dir, 'defaults')
-
-    # try read configuration from last
-    if os.path.isdir(last_conf_dir) and has_conf(last_conf_dir):
-        read_from_dir = last_conf_dir
-    elif os.path.isdir(default_conf_dir) and has_conf(default_conf_dir):
-        read_from_dir = default_conf_dir
-    elif has_conf(conf_dir):
-        read_from_dir = conf_dir
-    else:
-        print('configured directory ' + conf_dir + ' does not contain file "config"')
-        sys.exit(0)
-
-    main_conf = os.path.join(read_from_dir, 'config')
+    main_conf = os.path.join(conf_dir, 'config')
     with open(main_conf, 'r') as f:
         config_map = cfg.Config(f.read())
 
-    experiment_dir = os.path.join(config_map.working_dir, id)
-    experiment_conf_dir = os.path.join(experiment_dir, 'conf')
-    if not os.path.exists(experiment_conf_dir):
-        os.makedirs(experiment_conf_dir)
-
     # copy config_data, config_rec, cofig_disp files from cofig directory into the experiment conf directory
-    shutil.copy(main_conf, experiment_conf_dir)
-    conf_data = os.path.join(read_from_dir,'config_data')
-    shutil.copy(conf_data, experiment_conf_dir)
-    conf_rec = os.path.join(read_from_dir,'config_rec')
-    shutil.copy(conf_rec, experiment_conf_dir)
-    conf_disp = os.path.join(read_from_dir,'config_disp')
-    if os.path.isfile(conf_disp):
-        shutil.copy(conf_disp, experiment_conf_dir)
-
-    prep.prepare(config_map.working_dir, id, scan_num, config_map.data_dir, config_map.specfile, config_map.darkfile, config_map.whitefile)
-    print (experiment_dir)
+    experiment_dir = prep.prepare(config_map.working_dir, id, scan_num, config_map.data_dir, config_map.specfile, config_map.darkfile, config_map.whitefile)
+    copy_conf(conf_dir, experiment_dir)
     return experiment_dir
 
 
