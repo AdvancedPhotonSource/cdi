@@ -4,11 +4,11 @@ import shutil
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
-import src_py.run_scripts.run_data as run_dt
-import src_py.run_scripts.run_rec as run_rc
-import src_py.run_scripts.run_disp as run_dp
-import src_py.utilities.utils as ut
-import src_py.run_scripts.run_34id_prepare as prep
+import reccdi.src_py.run_scripts.run_data as run_dt
+import reccdi.src_py.run_scripts.run_rec as run_rc
+import reccdi.src_py.run_scripts.run_disp as run_dp
+import reccdi.src_py.utilities.utils as ut
+import reccdi.src_py.run_scripts.run_34id_prepare as prep
 
 
 def select_file(start_dir):

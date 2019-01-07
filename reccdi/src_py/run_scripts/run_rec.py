@@ -4,9 +4,9 @@ import os
 import argparse
 from multiprocessing import Process
 import numpy as np
-import src_py.controller.reconstruction as rec
-import src_py.controller.gen_rec as gen_rec
-import src_py.utilities.utils as ut
+import reccdi.src_py.controller.reconstruction as rec
+import reccdi.src_py.controller.gen_rec as gen_rec
+import reccdi.src_py.utilities.utils as ut
 import shutil
 
 

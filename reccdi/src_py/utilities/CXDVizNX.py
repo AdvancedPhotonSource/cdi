@@ -10,7 +10,7 @@ import traits.api as tr
 from tvtk.api import tvtk
 import numpy as np
 import math as m
-import src_py.utilities.utils as ut
+import reccdi.src_py.utilities.utils as ut
 
 __author__ = "Barbara Frosik"
 __copyright__ = "Copyright (c) 2016, UChicago Argonne, LLC."

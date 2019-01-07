@@ -1,8 +1,8 @@
-import src_py.utilities.CXDVizNX as cx
+import reccdi.src_py.utilities.CXDVizNX as cx
 import argparse
 import sys
 import os
-import src_py.utilities.utils as ut
+import reccdi.src_py.utilities.utils as ut
 import numpy as np
 
 

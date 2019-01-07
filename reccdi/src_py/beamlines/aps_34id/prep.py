@@ -196,6 +196,8 @@ def prep_data(scan, det_area1, det_area2, data_dir, prep_data_dir, darkfile, whi
 
 def prepare(working_dir, id, scan, data_dir, specfile, darkfile, whitefile):
     # assuming all parameters were validated (i.e working directory exists, etc.)
+    # 34-idc experiment ids contain scan range. The id parameter does include the range string prepended
+    # with _
     #create directory to save prepared data ,<working_dir>/<id>/'prep'
     working_dir = os.path.join(working_dir, id)
     if not os.path.exists(working_dir):

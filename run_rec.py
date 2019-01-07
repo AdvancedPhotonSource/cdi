@@ -4,9 +4,10 @@ import os
 import argparse
 from multiprocessing import Process
 import numpy as np
-import src_py.controller.reconstruction as rec
-import src_py.controller.gen_rec as gen_rec
-import src_py.utilities.utils as ut
+import reccdi.src_py.controller.reconstruction as rec
+import reccdi.src_py.controller.gen_rec as gen_rec
+import reccdi.src_py.utilities.utils as ut
+import shutil
 
 
 def interrupt_thread(arg):
@@ -22,8 +23,14 @@ def interrupt_thread(arg):
 
 
 def reconstruction(proc, experiment_dir):
+    if os.path.exists('stopfile'):
+        os.remove('stopfile')
+    p = Process(target = interrupt_thread, args = (1,))
+    p.start()
+
     print ('starting reconstruction')
     conf = os.path.join(experiment_dir, 'conf', 'config_rec')
+    print ('rec conf', conf)
     config_map = ut.read_config(conf)
     if config_map is None:
         print ("can't read configuration file")
@@ -53,6 +60,12 @@ def reconstruction(proc, experiment_dir):
         rec.reconstruction(proc, data, experiment_dir, config_map)
     print ('done with reconstruction')
 
+    # copy experiment config into last config
+    conf = os.path.join(experiment_dir, 'conf', 'config_rec')
+    last = os.path.join('conf', 'last', 'config_rec')
+    shutil.copy(conf, last)
+
+    p.terminate()
 
 def main(arg):
     parser = argparse.ArgumentParser()
@@ -66,12 +79,12 @@ def main(arg):
 
 
 if __name__ == "__main__":
-        if os.path.exists('stopfile'):
-            os.remove('stopfile')
-        p = Process(target = interrupt_thread, args = (1,))
-        p.start()
-        main(sys.argv[1:])
-        p.terminate()
+    if os.path.exists('stopfile'):
+        os.remove('stopfile')
+    p = Process(target = interrupt_thread, args = (1,))
+    p.start()
+    main(sys.argv[1:])
+    p.terminate()
 
 #python run_rec.py 'opencl' 'config_rec'
         

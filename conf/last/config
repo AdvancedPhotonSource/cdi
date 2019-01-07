@@ -1,6 +1,5 @@
-working_dir = "/net/s34data/export/34idc-data/2018"
+working_dir = "test"
 data_dir = "/net/s34data/export/34idc-data/2018/Chung1118/ADChung1118a"
 specfile = "/net/s34data/export/34idc-data/2018/Chung1118/Chung1118a.spec"
 darkfile = "/net/s34data/export/34idc-work/2018/Chung1118/dark.tif"
 whitefile = "/net/s34data/export/34idc-work/2018/Chung1118/CelaWhiteField.tif"
-

@@ -16,7 +16,7 @@ How to run using command line scripts:
 source everything.sh <device> <prefix> <scans> <conf_dir>
 
 2. to run separately:
-python run_prepare.py <pefix> <scans> <conf_dir>
+python run_34id_prepare.py <pefix> <scans> <conf_dir>
 python run_data.py <experiment_dir>
 source run_rec.sh <device> <experiment_dir>
 python run_disp.py <experiment_dir>
@@ -29,9 +29,9 @@ python run_disp.py <experiment_dir>
 
 example:
 1. running all pieces
-source everything.sh 'opencl' 'B' '290-290' 'config/last'
+source everything.sh 'opencl' 'B' '290-290' 'conf/last'
 2. running one by one
-python run_prepare.py 'B' '290-290' 'conf/defaults'
+python run_34id_prepare.py 'B' '290-290' 'conf/defaults'
 python run_data.py '/net/s34data/export/34idc-data/2018/Chung1118/test/B_290-290'
 source run_rec.sh 'opencl' '/net/s34data/export/34idc-data/2018/Chung1118/test/B_290-290'
 python run_disp.py '/net/s34data/export/34idc-data/2018/Chung1118/test/B_290-290'

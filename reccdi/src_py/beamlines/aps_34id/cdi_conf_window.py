@@ -4,8 +4,11 @@ import shutil
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
-from src_py.run_scripts import *
-import prep
+import reccdi.src_py.run_scripts.run_data as run_dt
+import reccdi.src_py.run_scripts.run_rec as run_rc
+import reccdi.src_py.run_scripts.run_disp as run_dp
+import reccdi.src_py.utilities.utils as ut
+import reccdi.src_py.run_scripts.run_34id_prepare as prep
 
 
 def select_file(start_dir):
@@ -24,6 +27,21 @@ def select_dir(start_dir):
         return str(dialog.selectedFiles()[0])
 
 
+def write_conf(conf_map, dir, file):
+    # create "temp" file first and then overrite existing configuration file
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+    conf_file = os.path.join(dir, file)
+    temp_file = os.path.join(dir, 'temp')
+    with open(temp_file, 'a') as f:
+        for key in conf_map:
+            value = conf_map[key]
+            if len(value) > 0:
+                f.write(key + ' = ' + conf_map[key] + '\n')
+    f.close()
+    shutil.move(temp_file, conf_file)
+
+
 class cdi_conf(QWidget):
     def __init__(self, parent=None):
         super(cdi_conf, self).__init__(parent)
@@ -33,6 +51,10 @@ class cdi_conf(QWidget):
         uplayout.addRow("Working Directory", self.set_work_dir_button)
         self.Id_widget = QLineEdit()
         uplayout.addRow("Reconstruction ID", self.Id_widget)
+        self.scan_widget = QLineEdit()
+        uplayout.addRow("scan(s)", self.scan_widget)
+        self.run_button = QPushButton('run_everything', self)
+        uplayout.addWidget(self.run_button)
 
         vbox = QVBoxLayout()
         vbox.addLayout(uplayout)
@@ -42,19 +64,133 @@ class cdi_conf(QWidget):
 
         self.setLayout(vbox)
         self.setWindowTitle("CDI Reconstruction")
+        self.set_init()
 
-        self.Id_widget.textChanged.connect(self.set_id)
         self.set_work_dir_button.clicked.connect(self.set_working_dir)
+        self.Id_widget.textChanged.connect(self.set_id)
+        self.scan_widget.textChanged.connect(self.set_scan)
+        self.run_button.clicked.connect(self.run_everything)
+
+
+    def set_working_dir(self):
+        self.working_dir = select_dir(self.working_dir)
+        self.set_work_dir_button.setStyleSheet("Text-align:left")
+        self.set_work_dir_button.setText(self.working_dir)
 
 
     def set_id(self):
         self.id = str(self.Id_widget.text())
+        self.set_experiment_dir()
 
 
-    def set_working_dir(self):
-        self.working_dir = select_dir('/local/bfrosik/cdi')
+    def set_scan(self):
+        self.scan = str(self.scan_widget.text())
+        self.set_experiment_dir()
+
+
+    def set_experiment_dir(self):
+        if self.id is not None and self.scan is not None:
+            self.exp_id = self.id + '_' + self.scan
+            self.experiment_dir = os.path.join(self.working_dir, self.exp_id)
+
+
+    def run_everything(self):
+        self.t.prepare()
+        self.t.model_data()
+        self.t.reconstruction()
+        self.t.display()
+
+
+    def set_init(self):
+        self.id = None
+        self.scan = None
+        # check for the "conf" directory in the running directory
+        if os.path.isdir('conf/last'):
+            self.set_from_conf('conf/last')
+        elif os.path.isdir('conf/defaults'):
+            self.set_from_conf('conf/defaults')
+
+
+    def set_from_conf(self, dir):
+        print ('dir', dir)
+        main_conf = os.path.join(dir, 'config')
+        conf_map = ut.read_config(main_conf)
+        # initialize to the value from config file
+        self.working_dir = conf_map.working_dir
+        self.t.data_dir = conf_map.data_dir
+        self.t.specfile = conf_map.specfile
+        self.t.darkfile = conf_map.darkfile
+        self.t.whitefile = conf_map.whitefile
+        # set the text in the window
         self.set_work_dir_button.setStyleSheet("Text-align:left")
         self.set_work_dir_button.setText(self.working_dir)
+        self.t.data_dir_button.setStyleSheet("Text-align:left")
+        self.t.data_dir_button.setText(self.t.data_dir)
+        self.t.spec_file_button.setStyleSheet("Text-align:left")
+        self.t.spec_file_button.setText(self.t.specfile)
+        self.t.dark_file_button.setStyleSheet("Text-align:left")
+        self.t.dark_file_button.setText(self.t.darkfile)
+        self.t.white_file_button.setStyleSheet("Text-align:left")
+        self.t.white_file_button.setText(self.t.whitefile)
+
+        # initialize "Data" tab
+        data_conf = os.path.join(dir, 'config_data')
+        conf_map = ut.read_config(data_conf)
+        try:
+            self.t.aliens.setText(str(conf_map.aliens).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.t.amp_threshold.setText(str(conf_map.amp_threshold).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.t.binning.setText(str(conf_map.binning).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.t.center_shift.setText(str(conf_map.center_shift).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.t.adjust_dimensions.setText(str(conf_map.adjust_dimensions).replace(" ", ""))
+        except AttributeError:
+            pass
+
+        # initialize "Reconstruction" tab
+        rec_conf = os.path.join(dir, 'config_rec')
+        conf_map = ut.read_config(rec_conf)
+        try:
+            self.t.device.setText(str(conf_map.device).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.t.threads.setText(str(conf_map.threads).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.t.gc.setText(str(conf_map.garbage_trigger).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.t.alg_seq.setText(str(conf_map.algorithm_sequence).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.t.beta.setText(str(conf_map.beta).replace(" ", ""))
+        except AttributeError:
+            pass
+
+        for feat_id in self.t.features.feature_dir:
+            self.t.features.feature_dir[feat_id].init_config(conf_map)
+
+        # initialize "Display" tab
+        disp_conf = os.path.join(dir, 'config_disp')
+        conf_map = ut.read_config(disp_conf)
+        try:
+            self.t.crop.setText(str(conf_map.crop).replace(" ", ""))
+        except AttributeError:
+            pass
 
 
 class cdi_conf_tab(QTabWidget):
@@ -62,7 +198,6 @@ class cdi_conf_tab(QTabWidget):
         super(cdi_conf_tab, self).__init__(parent)
         self.main_win = main_win
         self.tab1 = QWidget()
-        self.prep_result_dir = self.id = self.detector = self.scan = self.data_dir = self.specfile = None
         self.tab2 = QWidget()
         self.tab3 = QWidget()
         self.tab4 = QWidget()
@@ -79,14 +214,10 @@ class cdi_conf_tab(QTabWidget):
 
     def tab1UI(self):
         layout = QFormLayout()
-        # self.det_widget = QLineEdit()
-        # layout.addRow("Detector", self.det_widget)
         self.data_dir_button = QPushButton()
         layout.addRow("data directory", self.data_dir_button)
         self.spec_file_button = QPushButton()
         layout.addRow("spec file", self.spec_file_button)
-        self.scan_widget = QLineEdit()
-        layout.addRow("scan(s)", self.scan_widget)
         self.dark_file_button = QPushButton()
         layout.addRow("darkfield file", self.dark_file_button)
         self.white_file_button = QPushButton()
@@ -120,15 +251,13 @@ class cdi_conf_tab(QTabWidget):
 
         # this will create config_data file and run data script
         # to generate data ready for recondtruction
-        self.config_data_button.clicked.connect(self.run_data)
+        self.config_data_button.clicked.connect(self.model_data)
 
 
     def tab3UI(self):
         layout = QVBoxLayout()
         ulayout = QFormLayout()
         llayout = QHBoxLayout()
-        self.save_dir = QLineEdit()
-        ulayout.addRow("save results dir", self.save_dir)
         self.cont = QCheckBox()
         ulayout.addRow("continuation", self.cont)
         self.cont.setChecked(False)
@@ -154,7 +283,7 @@ class cdi_conf_tab(QTabWidget):
         self.tab3.setAutoFillBackground(True)
         self.tab3.setLayout(layout)
 
-        self.config_rec_button.clicked.connect(self.run_rec)
+        self.config_rec_button.clicked.connect(self.reconstruction)
         self.cont.stateChanged.connect(lambda: self.toggle_cont(ulayout))
         self.rec_default_button.clicked.connect(self.rec_default)
 
@@ -176,64 +305,87 @@ class cdi_conf_tab(QTabWidget):
         layout = QFormLayout()
         self.crop = QLineEdit()
         layout.addRow("crop", self.crop)
-        self.save_disp_dir = QLineEdit()
-        layout.addRow("save display dir", self.save_disp_dir)
         self.config_disp_button = QPushButton('process display', self)
         layout.addWidget(self.config_disp_button)
         self.tab4.setLayout(layout)
 
-        self.config_disp_button.clicked.connect(self.run_disp)
+        self.config_disp_button.clicked.connect(self.display)
 
 
     def set_spec_file(self):
-        self.specfile = select_file('/net/s34data/export/34idc-data/2018')
+        self.specfile = select_file(self.specfile)
         self.spec_file_button.setStyleSheet("Text-align:left")
         self.spec_file_button.setText(self.specfile)
 
 
     def set_dark_file(self):
-        self.darkfile = select_file('/net/s34data/export/34idc-work/2018')
+        self.darkfile = select_file(self.darkfile)
         self.dark_file_button.setStyleSheet("Text-align:left")
         self.dark_file_button.setText(self.darkfile)
 
 
     def set_white_file(self):
-        self.whitefile = select_file('/net/s34data/export/34idc-work/2018')
+        self.whitefile = select_file(self.whitefile)
         self.white_file_button.setStyleSheet("Text-align:left")
         self.white_file_button.setText(self.whitefile)
 
 
     def set_data_dir(self):
-        self.data_dir = select_dir('/net/s34data/export/34idc-data/2018')
+        self.data_dir = select_dir(self.data_dir)
         self.data_dir_button.setStyleSheet("Text-align:left")
         self.data_dir_button.setText(self.data_dir)
 
 
     def prepare(self):
-        scan = str(self.scan_widget.text())
-        if  self.main_win.working_dir is not None and \
-            self.main_win.id is not None and\
-            scan is not None and \
-            self.data_dir is not None and \
-            self.specfile is not None:
-            try:
-                # after checking that scan is entered convert it to list of int
-                scan_range = scan.split('-')
-                for i in range(len(scan_range)):
-                    scan_range[i] = int(scan_range[i])
-            except:
-                print ('enter numeric values for scan range')
-        else:
-            print ('enter all fields')
-        prep.prepare(self.main_win.working_dir, self.main_win.id, scan_range, self.data_dir, self.specfile, self.darkfile, self.whitefile)
+        scan = str(self.main_win.scan_widget.text())
+        if  self.main_win.working_dir is None or \
+            self.main_win.id is None or\
+            scan is None or \
+            self.data_dir is None or \
+            self.specfile is None:
+            print ('enter all parameters: working_dir, id, scan, data_dir, specfile')
+            return
 
+        try:
+            # after checking that scan is entered convert it to list of int
+            scan_range = scan.split('-')
+            for i in range(len(scan_range)):
+                scan_range[i] = int(scan_range[i])
+        except:
+            print('enter numeric values for scan range')
 
-    def run_data(self):
         conf_map = {}
-        # data_out_dir = '"' + self.main_win.working_dir + '/' + self.main_win.id + '/data' + '"'
-        # conf_map['data_dir'] = data_out_dir
+        if len(self.main_win.working_dir) > 0:
+            conf_map['working_dir'] = '"' + str(self.main_win.working_dir) + '"'
+        else:
+            print ("working_dir not defined")
+        if len(self.data_dir) > 0:
+            conf_map['data_dir'] = '"' + str(self.data_dir) + '"'
+        else:
+            print ("data_dir not defined")
+        if len(self.specfile) > 0:
+            conf_map['specfile'] = '"' + str(self.specfile) + '"'
+        else:
+            print ("specfile not defined")
+        if len(self.darkfile) > 0:
+            conf_map['darkfile'] = '"' + str(self.darkfile) + '"'
+        else:
+            print ("darkfile not defined")
+        if len(self.whitefile) > 0:
+            conf_map['whitefile'] = '"' + str(self.whitefile) + '"'
+        else:
+            print ("whitefile not defined")
+
+        conf_dir = os.path.join(self.main_win.experiment_dir, 'conf')
+        write_conf(conf_map, conf_dir, 'config')
+
+        prep.prepare(self.main_win.working_dir, self.main_win.exp_id, scan_range, self.data_dir, self.specfile, self.darkfile, self.whitefile)
+
+
+    def model_data(self):
+        conf_map = {}
         if len(self.aliens.text()) > 0:
-            conf_map['aliens'] = str(self.aliens.text())
+            conf_map['aliens'] = str(self.aliens.text()).replace('\n','')
         else:
             print ("aliens not defined")
         if len(self.amp_threshold.text()) > 0:
@@ -242,33 +394,31 @@ class cdi_conf_tab(QTabWidget):
             print ('amplitude threshold not defined. Quiting operation.')
             return
         if len(self.binning.text()) > 0:
-            conf_map['binning'] = str(self.binning.text())
+            conf_map['binning'] = str(self.binning.text()).replace('\n','')
         else:
             print ("binning not defined")
         if len(self.center_shift.text()) > 0:
-            conf_map['center_shift'] = str(self.center_shift.text())
+            conf_map['center_shift'] = str(self.center_shift.text()).replace('\n','')
         else:
             print ("center shift not defined")
         if len(self.adjust_dimensions.text()) > 0:
-            conf_map['adjust_dimensions'] = str(self.adjust_dimensions.text())
+            conf_map['adjust_dimensions'] = str(self.adjust_dimensions.text()).replace('\n','')
         else:
             print ("adjust dimensions not defined")
 
-        self.create_config('config_data', conf_map)
+        #self.create_config('config_data', conf_map)
+        conf_dir = os.path.join(self.main_win.experiment_dir, 'conf')
+        write_conf(conf_map, conf_dir, 'config_data')
 
-        experiment_dir = os.path.join(self.main_win.working_dir, self.main_win.id)
-        run_data(experiment_dir)
+        run_dt.data(self.main_win.experiment_dir)
 
 
-
-    def run_rec(self):
+    def reconstruction(self):
         conf_map = {}
-        # conf_map['data_dir'] = '"' + self.main_win.working_dir + '/' + self.main_win.id + '/data' + '"'
-        # conf_map['save_dir'] = str(self.save_dir.text())
         conf_map['threads'] = str(self.threads.text())
-        conf_map['device'] = str(self.device.text())
-        conf_map['garbage_trigger'] = str(self.gc.text())
-        conf_map['algorithm_sequence'] = str(self.alg_seq.text())
+        conf_map['device'] = str(self.device.text()).replace('\n','')
+        conf_map['garbage_trigger'] = str(self.gc.text()).replace('\n','')
+        conf_map['algorithm_sequence'] = str(self.alg_seq.text()).replace('\n','')
         conf_map['beta'] = str(self.beta.text())
         if self.cont.isChecked():
             conf_map['continue_dir'] = str(self.cont_dir.text())
@@ -276,55 +426,24 @@ class cdi_conf_tab(QTabWidget):
         for feat_id in self.features.feature_dir:
             self.features.feature_dir[feat_id].add_config(conf_map)
 
-        self.create_config('config_rec', conf_map)
+        #self.create_config('config_rec', conf_map)
+        conf_dir = os.path.join(self.main_win.experiment_dir, 'conf')
+        write_conf(conf_map, conf_dir, 'config_rec')
 
-        experiment_dir = os.path.join(self.main_win.working_dir, self.main_win.id)
-
-        run_rec('opencl', experiment_dir)
-
-
-    def create_config(self, conf_file, conf_map):
-        valid = True
-        working_dir = os.path.join(self.main_win.working_dir, self.main_win.id)
-        if not os.path.exists(working_dir):
-            os.makedirs(working_dir)
-        conf_dir = os.path.join(working_dir, 'conf')
-        if not os.path.exists(conf_dir):
-            os.makedirs(conf_dir)
-        conf_file = os.path.join(conf_dir, conf_file)
-        temp_file = os.path.join(self.main_win.working_dir, self.main_win.id, 'conf', 'temp')
-        with open(temp_file, 'a') as f:
-            for key in conf_map:
-                value = conf_map[key]
-                if len(value) == 0:
-                    print ('the ' + key + ' is not configured')
-                    valid = False
-                    break
-                f.write(key + ' = ' + conf_map[key] + '\n')
-        f.close()
-        if valid:
-            shutil.move(temp_file, conf_file)
+        run_rc.reconstruction('cpu', self.main_win.experiment_dir)
 
 
-    def run_disp(self):
+    def display(self):
         if len(self.crop.text()) == 0:
             print ('crop not configured')
-            #return
 
-        working_dir = os.path.join(self.main_win.working_dir, self.main_win.id)
-        if not os.path.exists(working_dir):
-            os.makedirs(working_dir)
-        conf_dir = os.path.join(working_dir, 'conf')
-
-        if not os.path.exists(conf_dir):
-            os.makedirs(conf_dir)
-        disp_conf_file = os.path.join(self.main_win.working_dir, self.main_win.id, 'conf', 'config_disp')
-        temp_file = os.path.join(self.main_win.working_dir, self.main_win.id, 'conf', 'temp')
+        disp_conf_file = os.path.join(self.main_win.experiment_dir, 'conf', 'config_disp')
+        temp_file = os.path.join(self.main_win.experiment_dir, 'conf', 'temp')
         with open(temp_file, 'a') as temp:
             try:
                 with open(disp_conf_file, 'r') as f:
                     for line in f:
-                        if not line.startswith('crop')and not line.startswith('save_dir'):
+                        if not line.startswith('crop') and not line.startswith('binning'):
                             temp.write(line)
                 f.close()
             except:
@@ -332,16 +451,11 @@ class cdi_conf_tab(QTabWidget):
 
             if len(self.crop.text()) != 0:
                 temp.write('crop = ' + str(self.crop.text()) + '\n')
-            if len(self.save_disp_dir.text()) == 0:
-                temp.write('save_dir = ' + working_dir + '/results\n')
-            else:
-                temp.write('save_dir = ' + str(self.save_disp_dir.text()) + '\n')
+
         temp.close()
         shutil.move(temp_file, disp_conf_file)
 
-        experiment_dir = os.path.join(self.main_win.working_dir, self.main_win.id)
-
-        run_disp('opencl')
+        run_dp.to_vtk(self.main_win.experiment_dir)
 
 
     def rec_default(self):
@@ -349,11 +463,10 @@ class cdi_conf_tab(QTabWidget):
             len(self.main_win.working_dir) == 0 or len(self.main_win.id) == 0:
                 print ('Working Directory or Reconstruction ID not configured')
         else:
-            self.save_dir.setText('"' + str(self.main_win.working_dir) + '/' + str(self.main_win.id) + '/results' + '"')
             self.threads.setText('1')
             self.device.setText('(3)')
             self.gc.setText('(1000)')
-            self.alg_seq.setText('((5,("ER",20),("HIO",180)),(1,("ER",40),("HIO",160)),(4,("ER",20),("HIO",180)))')
+            self.alg_seq.setText('((3,("ER",20),("HIO",180)),(1,("ER",20)))')
             self.beta.setText('.9')
             self.cont.setChecked(False)
 
@@ -400,6 +513,10 @@ class Feature(object):
             self.add_feat_conf(conf_map)
 
     def add_feat_conf(self, conf_map):
+        pass
+
+
+    def init_config(self, conf_map):
         pass
 
 
@@ -450,6 +567,21 @@ class low_resolution(Feature):
         self.id = 'low resolution'
 
 
+    def init_config(self, conf_map):
+        try:
+            self.res_triggers.setText(str(conf_map.resolution_trigger).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.sigma_range.setText(str(conf_map.iter_res_sigma_range).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.det_range.setText(str(conf_map.iter_res_det_range).replace(" ", ""))
+        except AttributeError:
+            pass
+
+
     def fill_active(self, layout):
         self.res_triggers = QLineEdit()
         layout.addRow("low resolution triggers", self.res_triggers)
@@ -461,21 +593,44 @@ class low_resolution(Feature):
 
     def rec_default(self):
         #TODO add to accept fractions in trigger, so the default will be (.5,1)
-        self.res_triggers.setText('(0, 1, 500)')
+        self.res_triggers.setText('(0, 1, 320)')
         self.sigma_range.setText('(2.0)')
         self.det_range.setText('(.7)')
 
 
     def add_feat_conf(self, conf_map):
-        conf_map['resolution_trigger'] = str(self.res_triggers.text())
-        conf_map['iter_res_sigma_range'] = str(self.sigma_range.text())
-        conf_map['iter_res_det_range'] = str(self.det_range.text())
+        conf_map['resolution_trigger'] = str(self.res_triggers.text()).replace('\n','')
+        conf_map['iter_res_sigma_range'] = str(self.sigma_range.text()).replace('\n','')
+        conf_map['iter_res_det_range'] = str(self.det_range.text()).replace('\n','')
 
 
 class amplitude_support(Feature):
     def __init__(self):
         super(amplitude_support, self).__init__()
         self.id = 'amplitude support'
+
+
+    def init_config(self, conf_map):
+        try:
+            self.support_triggers.setText(str(conf_map.amp_support_trigger).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.support_type.setText(str(conf_map.support_type).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.support_area.setText(str(conf_map.support_area).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.threshold.setText(str(conf_map.support_threshold).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.sigma.setText(str(conf_map.support_sigma).replace(" ", ""))
+        except AttributeError:
+            pass
 
 
     def fill_active(self, layout):
@@ -500,17 +655,32 @@ class amplitude_support(Feature):
 
 
     def add_feat_conf(self, conf_map):
-        conf_map['amp_support_trigger'] = str(self.support_triggers.text())
-        conf_map['support_type'] = str(self.support_type.text())
+        conf_map['amp_support_trigger'] = str(self.support_triggers.text()).replace('\n','')
+        conf_map['support_type'] = '"' + str(self.support_type.text()) + '"'
         conf_map['support_threshold'] = str(self.threshold.text())
         conf_map['support_sigma'] = str(self.sigma.text())
-        conf_map['support_area'] = str(self.support_area.text())
+        conf_map['support_area'] = str(self.support_area.text()).replace('\n','')
 
 
 class phase_support(Feature):
     def __init__(self):
         super(phase_support, self).__init__()
         self.id = 'phase support'
+
+
+    def init_config(self, conf_map):
+        try:
+            self.phase_triggers.setText(str(conf_map.phase_support_trigger).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.phase_min.setText(str(conf_map.phase_min).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.phase_max.setText(str(conf_map.phase_max).replace(" ", ""))
+        except AttributeError:
+            pass
 
 
     def fill_active(self, layout):
@@ -529,7 +699,7 @@ class phase_support(Feature):
 
 
     def add_feat_conf(self, conf_map):
-        conf_map['phase_support_trigger'] = str(self.phase_triggers.text())
+        conf_map['phase_support_trigger'] = str(self.phase_triggers.text()).replace('\n','')
         conf_map['phase_min'] = str(self.phase_min.text())
         conf_map['phase_max'] = str(self.phase_max.text())
 
@@ -538,6 +708,29 @@ class pcdi(Feature):
     def __init__(self):
         super(pcdi, self).__init__()
         self.id = 'pcdi'
+
+
+    def init_config(self, conf_map):
+        try:
+            self.pcdi_triggers.setText(str(conf_map.pcdi_trigger).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.pcdi_type.setText(str(conf_map.partial_coherence_type).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.pcdi_iter.setText(str(conf_map.partial_coherence_iteration_num).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.pcdi_normalize.setText(str(conf_map.partial_coherence_normalize).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.pcdi_roi.setText(str(conf_map.partial_coherence_roi).replace(" ", ""))
+        except AttributeError:
+            pass
 
 
     def fill_active(self, layout):
@@ -562,17 +755,24 @@ class pcdi(Feature):
 
 
     def add_feat_conf(self, conf_map):
-        conf_map['pcdi_trigger'] = str(self.pcdi_triggers.text())
-        conf_map['partial_coherence_type'] = str(self.pcdi_type.text())
+        conf_map['pcdi_trigger'] = str(self.pcdi_triggers.text()).replace('\n','')
+        conf_map['partial_coherence_type'] = '"' + str(self.pcdi_type.text()) + '"'
         conf_map['partial_coherence_iteration_num'] = str(self.pcdi_iter.text())
         conf_map['partial_coherence_normalize'] = str(self.pcdi_normalize.text())
-        conf_map['partial_coherence_roi'] = str(self.pcdi_roi.text())
+        conf_map['partial_coherence_roi'] = str(self.pcdi_roi.text()).replace('\n','')
 
 
 class twin(Feature):
     def __init__(self):
         super(twin, self).__init__()
         self.id = 'twin'
+
+
+    def init_config(self, conf_map):
+        try:
+            self.twin_triggers.setText(str(conf_map.twin_trigger).replace(" ", ""))
+        except AttributeError:
+            pass
 
 
     def fill_active(self, layout):
@@ -585,13 +785,20 @@ class twin(Feature):
 
 
     def add_feat_conf(self, conf_map):
-        conf_map['twin_trigger'] = str(self.twin_triggers.text())
+        conf_map['twin_trigger'] = str(self.twin_triggers.text()).replace('\n','')
 
 
 class average(Feature):
     def __init__(self):
         super(average, self).__init__()
         self.id = 'average'
+
+
+    def init_config(self, conf_map):
+        try:
+            self.average_triggers.setText(str(conf_map.average_trigger).replace(" ", ""))
+        except AttributeError:
+            pass
 
 
     def fill_active(self, layout):
@@ -604,7 +811,8 @@ class average(Feature):
 
 
     def add_feat_conf(self, conf_map):
-        conf_map['avarage_trigger'] = str(self.average_triggers.text())
+        conf_map['avarage_trigger'] = str(self.average_triggers.text()).replace('\n','')
+
 
 
 class Features(QWidget):

@@ -1,4 +1,4 @@
-import src_py.controller.data as dt
+import reccdi.src_py.controller.data as dt
 import sys
 import argparse
 import os

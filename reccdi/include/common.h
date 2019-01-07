@@ -7,7 +7,7 @@ See LICENSE file.
 #ifndef common_h
 #define common_h
 
-// defines the type of the data; can be float or double. The def_type will get replaced when running initializing script.
+// defines the type of the data; can be float or double. The double will get replaced when running initializing script.
 typedef double d_type;
 
 const int nD = 3;

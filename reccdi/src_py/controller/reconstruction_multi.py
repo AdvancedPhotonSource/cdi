@@ -19,9 +19,9 @@ visualization.
 
 
 import os
-import src_py.controller.fast_module as calc
+import reccdi.src_py.utilities.utils as ut
+import reccdi.src_py.controller.fast_module as calc
 from parsl.app.app import python_app
-import src_py.utilities.utils as ut
 import time
 
 

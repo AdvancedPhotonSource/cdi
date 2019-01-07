@@ -19,11 +19,9 @@ visualization.
 
 import numpy as np
 import scipy.fftpack as sf
-import src_py.cyth.bridge_cpu as bridge_cpu
-import src_py.cyth.bridge_opencl as bridge_opencl
-#import src_py.cyth.bridge_cuda as bridge_cuda
-import os
-import threading
+import reccdi.src_py.cyth.bridge_cpu as bridge_cpu
+import reccdi.src_py.cyth.bridge_opencl as bridge_opencl
+#import reccdi.src_py.cyth.bridge_cuda as bridge_cuda
 
 
 __author__ = "Barbara Frosik"

@@ -2,7 +2,7 @@ import argparse
 import pylibconfig2 as cfg
 import sys
 import os
-import aps_34id.prep as prep
+import reccdi.src_py.beamlines.aps_34id.prep as prep
 import shutil
 
 
@@ -30,17 +30,10 @@ def copy_conf(src, dest):
     shutil.copy(conf_rec, dest)
 
 
-def main(arg):
-    parser = argparse.ArgumentParser()
-    parser.add_argument("id", help="prefix to name of the experiment/data reconstruction")
-    parser.add_argument("scan", help="a range of scans to prepare data from")
-    parser.add_argument("conf_dir", help="directory where the configuration files are located")
-    args = parser.parse_args()
-    scan = args.scan
-    id = args.id + '_' + scan
+def parse_prepare(prefix, scan, conf_dir):
+    id = prefix + '_' + scan
     print ('reading data file for experiment ' + id)
 
-    conf_dir = args.conf_dir
     if not os.path.isdir(conf_dir):
         print ('configured directory ' + conf_dir + ' does not exist')
         sys.exit(0)
@@ -64,10 +57,24 @@ def main(arg):
     with open(main_conf, 'r') as f:
         config_map = cfg.Config(f.read())
 
+    prep.prepare(config_map.working_dir, id, scan_num, config_map.data_dir, config_map.specfile, config_map.darkfile, config_map.whitefile)
+    experiment_dir = os.path.join(config_map.working_dir, id)
     # copy config_data, config_rec, cofig_disp files from cofig directory into the experiment conf directory
-    experiment_dir = prep.prepare(config_map.working_dir, id, scan_num, config_map.data_dir, config_map.specfile, config_map.darkfile, config_map.whitefile)
-    copy_conf(conf_dir, experiment_dir)
+    copy_conf(conf_dir, os.path.join(experiment_dir, 'conf'))
     return experiment_dir
+
+
+def main(arg):
+    parser = argparse.ArgumentParser()
+    parser.add_argument("id", help="prefix to name of the experiment/data reconstruction")
+    parser.add_argument("scan", help="a range of scans to prepare data from")
+    parser.add_argument("conf_dir", help="directory where the configuration files are located")
+    args = parser.parse_args()
+    scan = args.scan
+    id = args.id
+    conf_dir = args.conf_dir
+
+    return parse_prepare(id, scan, conf_dir)
 
 
 if __name__ == "__main__":

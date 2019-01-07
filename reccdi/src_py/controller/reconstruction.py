@@ -20,9 +20,9 @@ visualization.
 import numpy as np
 # import matplotlib.pyplot as plt
 import os
-import src_py.controller.fast_module as calc
-import src_py.utilities.utils as ut
-import src_py.controller.reconstruction_multi as multi
+import reccdi.src_py.controller.fast_module as calc
+import reccdi.src_py.utilities.utils as ut
+import reccdi.src_py.controller.reconstruction_multi as multi
 
 
 __author__ = "Barbara Frosik"
