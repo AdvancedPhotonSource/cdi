@@ -37,22 +37,26 @@ def prep(fname, conf_info):
     after inspecting the data.
     3. binning - adding amplitudes of several consecutive points. Binning can be done in any dimension.
     4. amplitudes are set to sqrt
-    5. centering - finding the greatest amplitude and locating it at a center of new array. Typically several new rows/columns/slices
-    are added. These are filled with zeros. When changing the dimension the code finds the smallest possible dimension that is
-    supported by opencl library (multiplier of 2, 3, and 5).
+    5. cropping and padding. If the adjust_dimention is negative in any dimension, the array is cropped in this dimension.
+    The cropping is followed by padding in the dimensions that have positive adjust dimension. After adjusting, the dimensions
+    are adjusted further to find the smallest dimension that is supported by opencl library (multiplier of 2, 3, and 5).
+    6. centering - finding the greatest amplitude and locating it at a center of new array. If shift center is defined, the
+    center will be shifted accordingly. The shifted elements are rolled into the other end of array.
+
+    The modified data is then saved in data directory.
 
     Parameters
     ----------
-    config_map : dict
-        configuration map
+    fname : str
+        tif file containing raw data
 
-    data : array
-        a 3D np array containing experiment data
+    conf_info : str
+        experiment directory or configuration file. If it is directory, the "conf/config_data" will be
+        appended to determine configuration file
 
     Returns
     -------
-    data : array
-        a 3D np array containing data after the preprocessing
+    nothing
     """
 
     data = ut.get_array_from_tif(fname)

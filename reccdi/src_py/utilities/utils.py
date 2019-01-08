@@ -207,14 +207,15 @@ def binning(array, binsizes):
 
 def get_centered(array, center_shift):
     """
-    This function finds a greatest value in the array, and puts it in a center of a new array. The extra elements in the new 
-    array are set to 0.
+    This function finds a greatest value in the array, and puts it in a center of a new array. If center_shift is
+    not zeros, the array will be shifted accordingly. The shifted elements are rolled into the other end of array.
+
 
     Parameters
     ----------
     array : array
         the original array to be centered
-        
+
     center_shift : list
         a list defining shift of the center
 

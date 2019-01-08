@@ -11,6 +11,10 @@ import shutil
 
 
 def interrupt_thread(arg):
+    """
+    This function is part of interrupt mechanism. It detects ctl-c signal and creates an empty file named "stopfile".
+    The file is discovered by fast module and the discovery prompts termonation of the process.
+    """
     def int_handler(signal, frame):
         open('stopfile', 'a').close()
 
@@ -23,6 +27,13 @@ def interrupt_thread(arg):
 
 
 def reconstruction(proc, experiment_dir):
+    """
+    This function starts the interruption discovery thread and the recontruction thread.
+
+    It reads configuration file defined as <experiment_dir>/conf/config_rec.
+    If multiple generations are configured, it will start reconstruction from "reconstruction_multi"
+    script, otherwise from "reconstruction" script.
+    """
     if os.path.exists('stopfile'):
         os.remove('stopfile')
     p = Process(target = interrupt_thread, args = (1,))

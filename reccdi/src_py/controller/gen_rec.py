@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 # #########################################################################
 # Copyright (c) , UChicago Argonne, LLC. All rights reserved.             #
@@ -9,20 +7,15 @@
 
 
 """
-Please make sure the installation :ref:`pre-requisite-reference-label` are met.
-This module controls the reconstruction process. The user has to provide parameters such as type of processor, data, and configuration.
-The processor specifies which library will be used by CFM (Calc Fast Module) that performs the processor intensive calculations. The module
-can be run on cpu, or gpu. Depending on the gpu hardware and library, one can use opencl or cuda library.
-The module starts the data preparation routines, calls for reconstruction using the CFM, and prepares the reconstructed data for
-visualization.
+This module controls the genetic algoritm process.
 """
 
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-import reccdi.src_py.controller.reconstruction as single
-import reccdi.src_py.controller.reconstruction_multi as multi
-import reccdi.src_py.utilities.utils as ut
+import src_py.controller.reconstruction as single
+import src_py.controller.reconstruction_multi as multi
+import src_py.utilities.utils as ut
 
 
 __author__ = "Barbara Frosik"
@@ -34,7 +27,7 @@ __all__ = ['read_config',
 
 class Generation:
     """
-    This class encapsulates generation.
+    This class holds fields relevant to generations according to configuration.
     """
     def __init__(self, config_map):
         try:
@@ -112,39 +105,114 @@ class Generation:
                 return np.ones(shape)
 
 
+    def breed(self, images, supports, errs):
+        """
+        This function ranks the multiple reconstruction results by errs (the smallest last error, the better
+        reconstruction). It breeds next generation by combining the reconstructed images, centered, as follows:
+        1. best image,
+        2. 1/2 of best image + 1/2 of second image
+        3. 1/3 of best image + 1/3 of second image + 1/3 of third image
+        ..... and so on
+        For each combined image the support is calculated and coherence is set to None.
+        The number of bred images matches the number of reconstructions.
+
+        Parameters
+        ----------
+        images : list
+            list of images arrays
+
+        supports : list
+            list of supports arrays
+
+        errs : list
+            list of errors (now each element is another list by iterations, but should we take the last error?)
+
+        Returns
+        -------
+        child_images : list
+            list of bred images
+        child_supports : list
+            list of calculated supports corresponding to child_images
+        child_cohs : list
+            list of child coherence, set to None
+        """
+
+        def combine(num_mix):
+            weight = 1.0/num_mix
+            image = weight * best_image
+            for ind in range(1, num_mix):
+                #center each image before adding
+                image += weight * ut.get_centered(images[ranks[ind]], (0,0,0))
+            if num_mix == 1:
+                support = supports[0]
+            else:
+                # calculate support using sigma=1.0
+                convag = ut.gauss_conv_fft(image)
+                max_convag = max(convag)
+                convag = convag / max_convag
+                support = np.where((convag >= .1), 1, 0)
+            return image, support
+
+        species = len(errs)
+        child_images = []
+        child_supports = []
+        child_cohs = []
+        # TODO we may not need the iteration errors, just the last one to rank reconstructions
+        errs_last = []
+        for i in range (species):
+            errs_last.append(tuple(errs[i][-1], i))
+
+        # ranks keeps indexes of species from best to worst
+        ranks = list(np.argsort(errs_last)).reverse()
+        best_image = ut.get_centered(images[ranks[i]], (0,0,0))
+        # mix the images: 1. the best 100%, 2. 50% best + 50% second, 3. 33% best + 33% second + 33% third, ...
+        # support is calculated off of the miex image, coherence is None
+        for i in range(1, species+1):
+            child_image, child_support = combine(i)
+            child_images.append(child_image)
+            child_supports.append(child_support)
+            child_cohs.append(None)
+
+        return child_images, child_supports, child_cohs
+
+
 def save_results(image, support, coherence, save_dir):
-    if not save_dir.endswith('/'):
-        save_dir = save_dir + '/'
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    #data_file = data_dir + 'datafile%s.npy' % str(prep_no)
-    np.save(save_dir + 'image', image)
-    np.save(save_dir + 'support', support)
-    np.save(save_dir + 'coherence', coherence)
+    image_file = os.path.join(save_dir, 'image')
+    support_file = os.path.join(save_dir, 'support')
+    coh_file = os.path.join(save_dir, 'coherence')
+    np.save(image_file, image)
+    np.save(support_file, support)
+    np.save(coh_file, coherence)
 
 
 def reconstruction(generations, proc, data, conf_info, config_map):
     """
-    This function is called by the user. It checks whether the data is valid and configuration file exists.
-    It calls function to pre-process the data, and then to run reconstruction.
-    The reconstruction results, image and errors are returned.
+    This function controls reconstruction utilizing genetic algorithm.
 
     Parameters
     ----------
-    proc : str
-        a string indicating the processor type
+    generation : int
+        number of generations
 
-    conf : str
-        configuration file name
+    proc : str
+        processor to run on (cpu, opencl, or cuda)
+
+    data : numpy array
+        initial data
+
+    conf_info : str
+        experiment directory or configuration file. If it is directory, the "conf/config_rec" will be
+        appended to determine configuration file
+
+    conf_map : dict
+        a dictionary from parsed configuration file
 
     Returns
     -------
-    image : array
-        a 3D np array containing reconstructed image
-
-    er : array
-        a vector containing mean error for each iteration
+    nothing
     """
 
     try:
@@ -157,6 +225,8 @@ def reconstruction(generations, proc, data, conf_info, config_map):
     except:
         threads = 1
 
+    # init starting values
+    # if multiple threads configured (typical for genetic algorithm), use "reconstruction_multi" module
     if threads > 1:
         images = []
         supports = []
@@ -166,6 +236,7 @@ def reconstruction(generations, proc, data, conf_info, config_map):
             supports.append(None)
             cohs.append(None)
         rec = multi
+        # load parls configuration
         rec.load_config(threads)
     else:
         images = None
@@ -176,7 +247,7 @@ def reconstruction(generations, proc, data, conf_info, config_map):
     errors = []
 
     gen_obj = Generation(config_map)
-    # the results are not kept
+
     if os.path.isdir(conf_info):
         experiment_dir = conf_info
         conf = os.path.join(experiment_dir, 'conf', 'config_rec')
@@ -189,12 +260,14 @@ def reconstruction(generations, proc, data, conf_info, config_map):
             errors.append(None)
             gen_data = gen_obj.get_data(g, data)
             images, supports, cohs, errs = rec.rec(proc, gen_data, conf, config_map, images, supports, cohs)
-            # here will be logic to pick the best threads
             errors[g] = errs
+            images, supports, cohs = gen_obj.breed(images, supports, errs)
     for g in range(low_resolution_generations, generations):
         errors.append(None)
         images, supports, cohs, errs = rec.rec(proc, data, conf, config_map, images, supports, cohs)
         errors[g] = errs
+        # TODO should we breed the last generation?
+        images, supports, cohs = gen_obj.breed(images, supports, errs)
 
     print ('done gen')
         # if g == 0:

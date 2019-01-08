@@ -33,6 +33,46 @@ __all__ = ['read_config',
 
 
 def rec(proc, data, conf, config_map, image, support, coh):
+    """
+    This function starts and returns results of reconstruction. The parameters must be initialized.
+
+    Parameters
+    ----------
+    proc : str
+        a string indicating the processor type
+
+    data : numpy array
+        data array
+
+    conf : str
+        configuration file name
+
+    config_map : dict
+        parsed configuration
+
+    image : numpy array
+        reconstructed image for further reconstruction, or None for initial
+
+    support : numpy array
+        support of reconstructed image, or None
+
+    coh : numpy array
+        coherence of reconstructed images, or None
+
+    Returns
+    -------
+    image : numpy array
+        reconstructed image
+
+    support : numpy array
+        support of reconstructed images
+
+    coh : numpy array
+        coherence of reconstructed images
+
+    errs : list
+        list of errors (should we take the last error?)
+    """
     try:
         devices = config_map.device
     except:
@@ -48,25 +88,29 @@ def rec(proc, data, conf, config_map, image, support, coh):
 
 def reconstruction(proc, data, conf_info, config_map):
     """
-    This function is called by the user. It checks whether the data is valid and configuration file exists.
-    It calls function to pre-process the data, and then to run reconstruction.
-    The reconstruction results, image and errors are returned.
+    This function starts the reconstruction. It checks whether it is continuation of reconstruction defined by
+    configuration. If continuation, the arrays of image, support, coherence are read from cont_directory,
+    otherwise, they are initialized to None. After the arrays are initialized, they are passed for the reconstruction.
+    The results are saved in the configured directory.
 
     Parameters
     ----------
     proc : str
-        a string indicating the processor type
+        a string indicating the processor type (cpu, opencl, cuda)
 
-    conf : str
-        configuration file name
+    data : numpy array
+        data array
+
+    conf_info : str
+        configuration file name or experiment directory. If directory, the configuration file is
+        defined as <experiment dir>/conf/config_rec
+
+    config_map : dict
+        parsed configuration
 
     Returns
     -------
-    image : array
-        a 3D np array containing reconstructed image
-
-    er : array
-        a vector containing mean error for each iteration
+    nothing
     """
 
     # how many reconstructions to start

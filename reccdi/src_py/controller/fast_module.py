@@ -42,22 +42,40 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
     proc : str
         a string indicating the processor type
 
-    data : array
-        a 3D np array containing pre-processed experiment data
+    device : int
+        device id assigned to this reconstruction
 
     conf : dict
         configuration map
 
+    data : array
+        a 3D np array containing pre-processed experiment data
+
+    coh_dims : tuple
+        shape of coherence array
+
+    image : numpy array
+        initial image for reconstruction or None
+
+    support : numpy array
+        support corresponding to image or None
+
+    coherence : numpy array
+       coherence corresponding to image
+
     Returns
     -------
-    image_r : array
-        a 3D np real part array containing reconstructed image
+    image : numpy array
+        reconstructed image
 
-    image_i : array
-        a 3D np imaginary part array containing reconstructed image
+    support : numpy array
+        support for reconstructed image
 
-    er : array
-        a vector containing mean error for each iteration
+    coherence : numpy array
+        coherence for reconstructed image
+
+    er : list
+        a vector containing errors for each iteration
     """
     if proc == 'cpu':
         #bridge = bridge_cpu

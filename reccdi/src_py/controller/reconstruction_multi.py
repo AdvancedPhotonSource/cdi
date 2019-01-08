@@ -55,6 +55,26 @@ def load_config(threads):
 
 
 def assign_devices(devices, threads):
+    """
+    This function pairs device id with reconstruction run. When running multiple reconstructions, it should be
+    distributed between available gpus. The GPUs might be configured. If not, it is left to Parsl logic how
+    the GPUs are utilized.
+
+    Parameters
+    ----------
+    devices : list
+        list containing ids of devices
+
+    threads : int
+        number of reconstructions (each in own thread)
+
+    Returns
+    -------
+    dev : list
+        list containing devices allocated subsequently to threads. If the device was not configured, it will
+        be set to -1, which leaves the allocation to Parsl
+    """
+
     dev_no = len(devices)
     dev = []
     for thread in range(threads):
@@ -67,12 +87,73 @@ def assign_devices(devices, threads):
 
 @python_app
 def run_fast_module(proc, device, conf, data, coh_dims, prev_image, prev_support, prev_coh):
+    """
+    This function runs in the thread palarellized by Parsl.
+
+    Parameters
+    ----------
+    proc : str
+        string defining library used 'cpu' or 'opencl' or 'cuda'
+
+    device : int
+        device allocated to this thread or -1 if not configured
+
+    conf : str
+        configuration file
+
+    data : numpy array
+        data array
+
+    coh_dims : tuple
+        shape of coherence array
+
+    prev_image : numpy array or None
+        previously reconstructed image (if continuation or genetic algorithm) or None
+
+    prev_support : numpy array or None
+        support of previously reconstructed image (if continuation or genetic algorithm) or None
+
+    prev_coh : numpy array or None
+        coherence of previously reconstructed image (if continuation or genetic algorithm) or None
+
+    Returns
+    -------
+    image : numpy array
+        reconstructed image
+
+    support : numpy array
+        support of reconstructed image
+
+    coherence : coherence of reconstructed image
+
+    error : list containing errors for iterations
+    """
     image, support, coherence, error = calc.fast_module_reconstruction(proc, device, conf, data, coh_dims,
                                                                        prev_image, prev_support, prev_coh)
     return image, support, coherence, error
 
 
 def read_results(read_dir):
+    """
+    This function retrieves results of multiple reconstructions from read_dir sub-directories and
+    loads them into lists.
+
+    Parameters
+    ----------
+    read_dir : str
+        directory that contains results of reconstructions
+
+    Returns
+    -------
+    images : list
+        list of numpy arrays containing reconstructed images
+
+    supports : list
+        list of numpy arrays containing support of reconstructed images
+
+    cohs : list
+        list of numpy arrays containing coherence of reconstructed images
+    """
     images = []
     supports = []
     cohs = []
@@ -87,12 +168,77 @@ def read_results(read_dir):
 
 
 def save_results(threads, images, supports, cohs, save_dir):
+    """
+    This function saves results of multiple reconstructions to directory tree in save_dir.
+
+    Parameters
+    ----------
+    threads : int
+        number of reconstruction sets results
+
+    images : list
+        list of numpy arrays containing reconstructed images
+
+    supports : list
+        list of numpy arrays containing support of reconstructed images
+
+    cohs : list
+        list of numpy arrays containing coherence of reconstructed images
+
+    save_dir : str
+        a directory to save the results
+
+    Returns
+    -------
+    nothing
+    """
     for i in range(threads):
         subdir = os.path.join(save_dir, str(i))
         ut.save_results(images[i], supports[i], cohs[i], subdir)
 
 
 def rec(proc, data, conf, config_map, images, supports, cohs):
+    """
+    This function controls the multiple reconstructions. It invokes a loop to execute parallel resconstructions,
+    wait for all threads to deliver results, and store te results.
+
+    Parameters
+    ----------
+    proc : str
+        a string indicating the processor type
+
+    data : numpy array
+        data array
+
+    conf : str
+        configuration file name
+
+    config_map : dict
+        parsed configuration
+
+    images : list
+        list of numpy arrays containing reconstructed images for further reconstruction, or None for initial
+
+    supports : list
+        list of numpy arrays containing support of reconstructed images, or None
+
+    cohs : list
+        list of numpy arrays containing coherence of reconstructed images, or None
+
+    Returns
+    -------
+    images : list
+        list of numpy arrays containing reconstructed images
+
+    supports : list
+        list of numpy arrays containing support of reconstructed images
+
+    cohs : list
+        list of numpy arrays containing coherence of reconstructed images
+
+    errs : list
+        list of lists of errors (now each element is another list by iterations, but should we take the last error?)
+    """
     try:
         devices = config_map.device
     except:
@@ -126,25 +272,33 @@ def rec(proc, data, conf, config_map, images, supports, cohs):
 
 def reconstruction(threads, proc, data, conf_info, config_map):
     """
-    This function is called by the user. It checks whether the data is valid and configuration file exists.
-    It calls function to pre-process the data, and then to run reconstruction.
-    The reconstruction results, image and errors are returned.
+    This function starts the reconstruction. It checks whether it is continuation of reconstruction defined by
+    configuration. If continuation, the lists contaning arrays of images, supports, coherence for multiple threads
+    are read from cont_directory, otherwise, they are initialized to None.
+    After the lists are initialized, they are passed for the multi-reconstruction.
+    The results are saved in the configured directory.
 
     Parameters
     ----------
-    proc : str
-        a string indicating the processor type
+    threads : int
+        number of threads
 
-    conf : str
-        configuration file name
+    proc : str
+        a string indicating the processor type (cpu, opencl, cuda)
+
+    data : numpy array
+        data array
+
+    conf_info : str
+        configuration file name or experiment directory. If directory, the configuration file is
+        defined as <experiment dir>/conf/config_rec
+
+    config_map : dict
+        parsed configuration
 
     Returns
     -------
-    image : array
-        a 3D np array containing reconstructed image
-
-    er : array
-        a vector containing mean error for each iteration
+    nothing
     """
 
     cont = False
@@ -173,6 +327,7 @@ def reconstruction(threads, proc, data, conf_info, config_map):
     start = time.time()
 
     if os.path.isdir(conf_info):
+        # if conf_info is directory, look for subdir "conf" and "config_rec" in it
         experiment_dir = conf_info
         conf = os.path.join(experiment_dir, 'conf', 'config_rec')
     else:
