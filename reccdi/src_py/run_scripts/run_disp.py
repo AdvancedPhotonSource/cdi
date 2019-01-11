@@ -76,4 +76,4 @@ def main(arg):
 if __name__ == "__main__":
         main(sys.argv[1:])
 
-#python run_disp.py 'config_disp'
+#python run_disp.py experiment_dir

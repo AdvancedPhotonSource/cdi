@@ -78,7 +78,13 @@ def reconstruction(proc, experiment_dir):
 
     p.terminate()
 
+
 def main(arg):
+    if os.path.exists('stopfile'):
+        os.remove('stopfile')
+    p = Process(target=interrupt_thread, args=(1,))
+    p.start()
+
     parser = argparse.ArgumentParser()
     parser.add_argument("proc", help="the processor the code will run on, can be 'cpu', 'opencl', or 'cuda'.")
     parser.add_argument("experiment_dir", help="experiment directory.")
@@ -88,14 +94,11 @@ def main(arg):
 
     reconstruction(proc, experiment_dir)
 
-
-if __name__ == "__main__":
-    if os.path.exists('stopfile'):
-        os.remove('stopfile')
-    p = Process(target = interrupt_thread, args = (1,))
-    p.start()
-    main(sys.argv[1:])
     p.terminate()
 
-#python run_rec.py 'opencl' 'config_rec'
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
+
+#python run_rec.py opencl experiment_dir
         
