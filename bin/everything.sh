@@ -1,7 +1,7 @@
 #!/bin/sh
 
 
-export LD_LIBRARY_PATH=/local/libconfig/lib:/usr/local/lib:/local/af/lib/:l/lib64:l/nvvm/lib64
+export LD_LIBRARY_PATH=LIB_PATH
 
 dev=$1
 prefix=$2

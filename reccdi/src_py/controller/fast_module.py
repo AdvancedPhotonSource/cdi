@@ -21,7 +21,7 @@ import numpy as np
 import scipy.fftpack as sf
 import reccdi.src_py.cyth.bridge_cpu as bridge_cpu
 import reccdi.src_py.cyth.bridge_opencl as bridge_opencl
-#import reccdi.src_py.cyth.bridge_cuda as bridge_cuda
+import reccdi.src_py.cyth.bridge_cuda as bridge_cuda
 
 
 __author__ = "Barbara Frosik"
@@ -93,7 +93,6 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
 
     dims = data.shape
     dims1 = (dims[2], dims[1], dims[0])
-    #fast_module = bridge.PyBridge()
 
     data_l = data.flatten().tolist()
     if image is None:
