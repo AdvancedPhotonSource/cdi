@@ -11,15 +11,15 @@ II. For any beamline.
     6. Run display processing according to configuration.
 
 How to run using command line scripts:
-------------------------------------
+--------------------------------------
 1. to run everything:
-source everything.sh <device> <prefix> <scans> <conf_dir>
+source bin/everything.sh <device> <prefix> <scans> <conf_dir>
 
 2. to run separately:
-python run_34id_prepare.py <pefix> <scans> <conf_dir>
-python run_data.py <experiment_dir>
-source run_rec.sh <device> <experiment_dir>
-python run_disp.py <experiment_dir>
+python bin/run_34id_prepare.py <pefix> <scans> <conf_dir>
+python bin/run_data.py <experiment_dir>
+source bin/run_rec.sh <device> <experiment_dir>
+python bin/run_disp.py <experiment_dir>
 
 <device> - specifies processor/library to run reconstruction on ('cpu', 'opencl', 'cuda')
 <prefix> - arbitrary string that defines the experiment, it will be combine with the <scans> to derive experiment id
@@ -29,9 +29,13 @@ python run_disp.py <experiment_dir>
 
 example:
 1. running all pieces
-source everything.sh 'opencl' 'B' '290-290' 'conf/last'
+source bin/everything.sh 'opencl' 'B' '290-290' 'conf/last'
 2. running one by one
-python run_34id_prepare.py 'B' '290-290' 'conf/defaults'
-python run_data.py '/net/s34data/export/34idc-data/2018/Chung1118/test/B_290-290'
-source run_rec.sh 'opencl' '/net/s34data/export/34idc-data/2018/Chung1118/test/B_290-290'
-python run_disp.py '/net/s34data/export/34idc-data/2018/Chung1118/test/B_290-290'
+python bin/run_34id_prepare.py 'B' '290-290' 'conf/defaults'
+python bin/run_data.py '/net/s34data/export/34idc-data/2018/Chung1118/test/B_290-290'
+source bin/run_rec.sh 'opencl' '/net/s34data/export/34idc-data/2018/Chung1118/test/B_290-290'
+python bin/run_disp.py '/net/s34data/export/34idc-data/2018/Chung1118/test/B_290-290'
+
+How to run using GUI:
+---------------------
+1. source bin/cdi_window.sh
