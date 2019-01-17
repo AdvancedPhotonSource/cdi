@@ -80,11 +80,6 @@ def reconstruction(proc, experiment_dir):
 
 
 def main(arg):
-    if os.path.exists('stopfile'):
-        os.remove('stopfile')
-    p = Process(target=interrupt_thread, args=(1,))
-    p.start()
-
     parser = argparse.ArgumentParser()
     parser.add_argument("proc", help="the processor the code will run on, can be 'cpu', 'opencl', or 'cuda'.")
     parser.add_argument("experiment_dir", help="experiment directory.")
@@ -93,8 +88,6 @@ def main(arg):
     experiment_dir = args.experiment_dir
 
     reconstruction(proc, experiment_dir)
-
-    p.terminate()
 
 
 if __name__ == "__main__":
