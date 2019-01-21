@@ -82,7 +82,7 @@ af::array PartialCoherence::ApplyPartialCoherence(af::array abs_amplitudes)
     return converged;
 }
 
-af::array PartialCoherence::UpdatePartialCoherence(af::array abs_amplitudes)
+void PartialCoherence::UpdatePartialCoherence(af::array abs_amplitudes)
 {
     af::array abs_amplitudes_centered = shift(abs_amplitudes, dims[0]/2, dims[1]/2, dims[2]/2, dims[3]/2);
     af::array roi_abs_amplitudes = Utils::CropCenter(abs_amplitudes_centered, roi_dims).copy();
@@ -90,6 +90,7 @@ af::array PartialCoherence::UpdatePartialCoherence(af::array abs_amplitudes)
     af::array roi_combined_amp = 2*roi_abs_amplitudes - roi_amplitudes_prev;
     OnTrigger(roi_combined_amp);   // use_2k_1 from matlab program
     printf("Updating coherence\n");
+
 }
 
 void PartialCoherence::OnTrigger(af::array arr)

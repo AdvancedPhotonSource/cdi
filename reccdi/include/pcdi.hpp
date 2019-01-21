@@ -43,7 +43,7 @@ public:
     void Init(af::array data);
     void SetPrevious(af::array abs_amplitudes);
     af::array ApplyPartialCoherence(af::array abs_image);
-    af::array UpdatePartialCoherence(af::array abs_image);
+    void UpdatePartialCoherence(af::array abs_image);
     af::array GetKernelArray();
 };
 
