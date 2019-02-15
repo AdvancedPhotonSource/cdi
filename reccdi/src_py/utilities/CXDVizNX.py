@@ -67,8 +67,10 @@ class DispalyParams:
             binning = [1,1,1]
         try:
             pixel = config_map.pixel
-            self.dpx = pixel[0] * binning[1] / self.arm
-            self.dpy = pixel[1] * binning[2] / self.arm
+            #self.dpx = pixel[0] * binning[1] / self.arm
+            #self.dpy = pixel[1] * binning[2] / self.arm
+            self.dpx = pixel[0] * binning[2] / self.arm
+            self.dpy = pixel[1] * binning[1] / self.arm
         except AttributeError:
             print ('pixel not defined')
         try:

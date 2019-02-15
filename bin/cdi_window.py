@@ -450,7 +450,7 @@ class cdi_conf_tab(QTabWidget):
                 pass
 
             if len(self.crop.text()) != 0:
-                temp.write('crop = ' + str(self.crop.text()) + '\n')
+                temp.write('crop = ' + str(self.crop.text()).replace('\n','') + '\n')
 
         temp.close()
         shutil.move(temp_file, disp_conf_file)
