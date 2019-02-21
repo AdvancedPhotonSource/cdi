@@ -20,7 +20,7 @@ visualization.
 import numpy as np
 import reccdi.src_py.utilities.utils as ut
 import os
-
+import tifffile as tif
 
 __author__ = "Barbara Frosik"
 __copyright__ = "Copyright (c) 2016, UChicago Argonne, LLC."
@@ -72,15 +72,40 @@ def prep(fname, conf_info):
         print ("can't read configuration file")
         return
 
+    # saving file for Kenley project - AI aliens removing
+    print ('saving for AI')
+    d_f = os.path.join(experiment_dir, 'prep', 'prep_data.npy')
+    np.save(d_f, data)
+
     print ('data dimensions before prep', data.shape)
     # zero out the aliens, aliens are the same for each data prep
     try:
         aliens = config_map.aliens
         print ('removing aliens')
         for alien in aliens:
-            data[alien[0]:alien[3], alien[1]:alien[4], alien[2]:alien[5]] = 0
+            data[alien[2]:alien[5], alien[1]:alien[4], alien[0]:alien[3]] = 0
+        # saving file for Kenley project - AI aliens removing
+        aliens_f = os.path.join(experiment_dir, 'prep', 'aliens')
+        with open(aliens_f, 'a') as a_f:
+            try:
+                with open(conf, 'r') as f:
+                    for line in f:
+                        if line.startswith('aliens'):
+                            a_f.write(line + '\n')
+                            break
+                f.close()
+                a_f.close()
+            except:
+                pass
+
     except AttributeError:
         pass
+
+    # saving file for Kenley project - AI aliens removing
+    d_f = os.path.join(experiment_dir, 'prep', 'prep_no_aliens.npy')
+    np.save(d_f, data)
+    d_f = os.path.join(experiment_dir, 'prep', 'prep_no_aliens.tif')
+    tif.imsave(d_f, data.astype(np.int32))
 
     try:
         amp_threshold = config_map.amp_threshold
