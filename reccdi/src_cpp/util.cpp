@@ -133,7 +133,6 @@ af::array Utils::GaussDistribution(af::dim4 data_dim, d_type * sgma, int alpha)
         af::array gi = exp(exponent);
         grid = grid * gi;
     }
-    d_type g = sum<d_type>(pow(abs(grid), 2));
     d_type grid_total = sum<d_type>(grid);
     grid = grid/grid_total;
     return grid;

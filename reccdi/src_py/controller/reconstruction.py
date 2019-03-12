@@ -83,7 +83,10 @@ def rec(proc, data, conf, config_map, image, support, coh):
     except:
         coh_dims = None
 
-    return calc.fast_module_reconstruction(proc, devices[0], conf, data, coh_dims, image, support, coh)
+    image, support, coh, er = calc.fast_module_reconstruction(proc, devices[0], conf, data, coh_dims, image, support, coh)
+
+    # errs contain errors for each iteration
+    return image, support, coh, er
 
 
 def reconstruction(proc, data, conf_info, config_map):

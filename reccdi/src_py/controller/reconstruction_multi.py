@@ -197,7 +197,7 @@ def save_results(threads, images, supports, cohs, save_dir):
         ut.save_results(images[i], supports[i], cohs[i], subdir)
 
 
-def rec(proc, data, conf, config_map, images, supports, cohs):
+def rec(proc, data, conf, config_map, images, supports, cohs=None):
     """
     This function controls the multiple reconstructions. It invokes a loop to execute parallel resconstructions,
     wait for all threads to deliver results, and store te results.
@@ -245,8 +245,8 @@ def rec(proc, data, conf, config_map, images, supports, cohs):
         devices = [-1]
 
     # assign device for each thread
-    threads = config_map.threads
-    devices = assign_devices(devices, threads)
+    species = config_map.species
+    devices = assign_devices(devices, species)
 
     try:
         coh_dims = tuple(config_map.partial_coherence_roi)
@@ -255,10 +255,14 @@ def rec(proc, data, conf, config_map, images, supports, cohs):
 
     res = []
     errs = []
-    for i in range(threads):
+    for i in range(species):
+        if cohs is None:
+            coh = None
+        else:
+            coh = cohs[i]
         res.append(None)
         errs.append(None)
-        res[i] = run_fast_module(proc, devices[i], conf, data, coh_dims, images[i], supports[i], cohs[i])
+        res[i] = run_fast_module(proc, devices[i], conf, data, coh_dims, images[i], supports[i], coh)
 
     # Wait for all Parsl runs to complete..
     complete_results = [i.result() for i in res]
@@ -267,21 +271,22 @@ def rec(proc, data, conf, config_map, images, supports, cohs):
         supports[i] = r[1]
         cohs[i] = r[2]
         errs[i] = r[3]
-    return images, supports, cohs, errs
+    # return only error from last iteration for each reconstruction
+    return images, supports, cohs, errs[-1,:]
 
 
-def reconstruction(threads, proc, data, conf_info, config_map):
+def reconstruction(species, proc, data, conf_info, config_map):
     """
     This function starts the reconstruction. It checks whether it is continuation of reconstruction defined by
-    configuration. If continuation, the lists contaning arrays of images, supports, coherence for multiple threads
+    configuration. If continuation, the lists contaning arrays of images, supports, coherence for multiple species
     are read from cont_directory, otherwise, they are initialized to None.
     After the lists are initialized, they are passed for the multi-reconstruction.
     The results are saved in the configured directory.
 
     Parameters
     ----------
-    threads : int
-        number of threads
+    species : int
+        number of species
 
     proc : str
         a string indicating the processor type (cpu, opencl, cuda)
@@ -318,12 +323,12 @@ def reconstruction(threads, proc, data, conf_info, config_map):
         images = []
         supports = []
         cohs = []
-        for _ in range(threads):
+        for _ in range(species):
             images.append(None)
             supports.append(None)
             cohs.append(None)
 
-    load_config(threads)
+    load_config(species)
     start = time.time()
 
     if os.path.isdir(conf_info):
@@ -347,7 +352,7 @@ def reconstruction(threads, proc, data, conf_info, config_map):
         if experiment_dir is not None:
             save_dir = os.path.join(experiment_dir, save_dir)
 
-    save_results(threads, images, supports, cohs, save_dir)
+    save_results(species, images, supports, cohs, save_dir)
 
     print('done')
 

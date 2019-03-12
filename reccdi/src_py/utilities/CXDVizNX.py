@@ -338,7 +338,7 @@ def get_crop(params, shape):
     return crop
 
 
-def save_CX(conf, image, support, save_dir):
+def save_CX(conf, image, support, coh, save_dir):
     image, support = center(image, support)
     #    image = remove_ramp(image)
     params = DispalyParams(conf)
@@ -352,4 +352,11 @@ def save_CX(conf, image, support, save_dir):
     viz.set_array(support)
     support_file = os.path.join(save_dir, 'support')
     viz.write_structured_grid(support_file)
+    if coh is not None:
+        # investigate if pad_center before fft or after
+        coh = np.fft.fftshift(np.fft.fftn(np.fft.fftshift(coh))).real
+        coh = ut.get_zero_padded_centered(coh, image.shape)
+        coh_file = os.path.join(save_dir, 'coherence')
+        viz.set_array(coh)
+        viz.write_structured_grid(coh_file)
 

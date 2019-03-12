@@ -19,6 +19,7 @@ export LD_LIBRARY_PATH=$lc_dir/lib:/usr/local/lib:$af_dir/lib/:$cuda_dir/lib64:$
 lib_path='LIB_PATH'
 sed -i 's?'$lib_path'?'$lc_dir/lib:/usr/local/lib:$af_dir/lib/:$cuda_dir/lib64:$cuda_dir/nvvm/lib64'?g' bin/everything.sh
 sed -i 's?'$lib_path'?'$lc_dir/lib:/usr/local/lib:$af_dir/lib/:$cuda_dir/lib64:$cuda_dir/nvvm/lib64'?g' bin/run_rec.sh
+sed -i 's?'$lib_path'?'$lc_dir/lib:/usr/local/lib:$af_dir/lib/:$cuda_dir/lib64:$cuda_dir/nvvm/lib64'?g' bin/cdi_window.sh
 
 echo -n "enter data type (float/double) > "
 read data_type

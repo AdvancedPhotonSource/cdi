@@ -16,6 +16,7 @@ import os
 import reccdi.src_py.controller.reconstruction as single
 import reccdi.src_py.controller.reconstruction_multi as multi
 import reccdi.src_py.utilities.utils as ut
+import reccdi.src_py.utilities.utils_ga as gut
 
 
 __author__ = "Barbara Frosik"
@@ -38,6 +39,31 @@ class Generation:
             self.low_resolution_generations = config_map.low_resolution_generations
         except AttributeError:
             self.low_resolution_generations = 0
+
+        try:
+            self.metric = config_map.metric
+        except AttributeError:
+            self.metric = 'chi'
+
+        try:
+            self.is_cross_breed = config_map.is_cross_breed
+        except AttributeError:
+            self.is_cross_breed = True
+
+        if self.is_cross_breed:
+            self.prev_two_best = [None, None]  # keep two best images from previous generation
+
+        try:
+            self.worst_remove_no = config_map.worst_remove_no
+        except AttributeError:
+            self.worst_remove_no = None
+
+        try:
+            self.breed_modes = config_map.breed_modes
+        except AttributeError:
+            self.breed_modes = []
+        for i in range(len(self.breed_modes), self.generations):
+            self.breed_modes.append('none')
 
         if self.low_resolution_generations > 0:
             try:
@@ -105,14 +131,53 @@ class Generation:
                 return np.ones(shape)
 
 
-    def breed(self, images, supports, errs):
+    def order(self, images_errs):
+        rank_property = []
+        reverse = False
+        images = images_errs[0]
+        errs = images_errs[1]
+        species = len(images)
+        for i in range (species):
+            image = images[i]
+            if self.metric == 'chi':
+                rank_property.append(errs[i])
+            elif self.metric == 'sharpness':
+                rank_property.append(sum(abs(image)^4))
+            elif self.metric == 'summed_phase':
+                rank_property.append(sum(gut.sum_phase_tight_support(image)))
+                reverse = True
+            elif self.metric == 'area':
+                support = gut.shrink_wrap(image, .2, .5)
+                rank_property.append(sum(support))
+                reverse = True
+            elif self.metric == 'TV':
+                gradients = np.gradient(image)
+                TV = np.zeros(image.shape)
+                for gr in gradients:
+                    TV += abs(gr)
+                rank_property.append(TV)
+            else:
+                # metric is 'chi'
+                rank_property.append(errs[i][-1])
+
+        # ranks keeps indexes of species from best to worst
+        # for most of the metric types the minimum of the metric is best, but for
+        # 'summed_phase' and 'area' it is oposite, so reversing the order
+        ranks = np.argsort(rank_property)
+        if reverse:
+            ranks = ranks.reverse()
+
+        # order the initial array according to rank
+        ordered = []
+        for i in range(species):
+            ordered.append(images_errs[ranks[i]])
+        return ordered
+
+
+    def breed(self, images, errs, gen, threshold, sigma):
         """
-        This function ranks the multiple reconstruction results by errs (the smallest last error, the better
-        reconstruction). It breeds next generation by combining the reconstructed images, centered, as follows:
-        1. best image,
-        2. 1/2 of best image + 1/2 of second image
-        3. 1/3 of best image + 1/3 of second image + 1/3 of third image
-        ..... and so on
+        This function ranks the multiple reconstruction. It breeds next generation by combining the reconstructed
+        images, centered
         For each combined image the support is calculated and coherence is set to None.
         The number of bred images matches the number of reconstructions.
 
@@ -136,44 +201,142 @@ class Generation:
         child_cohs : list
             list of child coherence, set to None
         """
+        img_errs = zip(images, errs)
+        species = len(img_errs)
+        ordered = self.order(img_errs)
+        if self.worst_remove_no is not None:
+            species = species - self.worst_remove_no[gen]
+            ordered = ordered[0 : species]
 
-        def combine(num_mix):
-            weight = 1.0/num_mix
-            image = weight * best_image
-            for ind in range(1, num_mix):
-                #center each image before adding
-                image += weight * ut.get_centered(images[ranks[ind]], (0,0,0))
-            if num_mix == 1:
-                support = supports[0]
+        # if configured to cross breed, include two best species from previous generation and order again
+        if self.is_cross_breed:
+            if len(self.prev_two_best) > 0:
+                ordered.append(self.prev_two_best)
+                ordered = self.order(ordered, species + 2)
+            self.prev_two_best[0] = ordered[0]
+            self.prev_two_best[1] = ordered[1]
+
+        [ims, ers] = list(*ordered)
+        dims = len(ims[0].shape)
+
+        breed_mode = self.breed_modes[gen]
+        ims_arr = np.stack(ims)
+
+        alpha = ims[0]
+        alpha = gut.zero_phase(alpha, 0)
+
+        # put the best into the bred population
+        child_images = [alpha]
+        child_supports = [ut.shrink_wrap(alpha, threshold, sigma)]
+
+        for ind in range(1, len(ims)):
+            beta = ims[ind]
+            beta = gut.zero_phase(beta, 0)
+            alpha = gut.check_get_conj_reflect(beta, alpha)
+            alpha_s = gut.align_arrays(beta, alpha)
+            alpha_s = gut.zero_phase(alpha_s, 0)
+            ph_alpha = np.angle(alpha_s)
+            beta = gut.zero_phase_cc(beta, alpha_s)
+            ph_beta = np.angle(beta)
+
+            if breed_mode == 'sqrt_ab':
+                beta = np.sqrt(abs(alpha_s) * abs(beta)) * np.exp(0.5j * (ph_beta + ph_alpha))
+
+            elif breed_mode == 'max_all':
+                amp = max(abs(ims_arr), dims)
+                beta = amp * np.exp(1j * ph_beta)
+
+            elif breed_mode == 'Dhalf' or breed_mode == 'Dhalf-best':
+                nhalf = round(len(ims)/2)
+                delta = nhalf * ims[ind] - np.sum(np.stack(ims[:nhalf]), dims)
+                beta = beta + delta
+
+            elif breed_mode == 'dsqrt':
+                amp = abs(beta)^.5
+                beta = amp * np.exp(1j * ph_beta)
+
+            elif breed_mode == 'pixel_switch':
+                cond = np.random.random_sample(beta.shape)
+                beta = np.where((cond > 0.5), beta, alpha_s)
+
+            elif breed_mode == 'b_pa':
+                beta = abs(beta) * np.exp(1j * (ph_alpha))
+
+            elif breed_mode == '2ab_a_b':
+                beta = 2*(beta * alpha_s) / (beta + alpha_s)
+
+            elif breed_mode == '2a-b_pa':
+                beta = (2*abs(alpha_s)-abs(beta)) * np.exp(1j *ph_alpha)
+
+            elif breed_mode == 'sqrt_ab_pa':
+                beta = np.sqrt(abs(alpha_s) * abs(beta)) * np.exp(1j * ph_alpha)
+
+            elif breed_mode == 'sqrt_ab_pa_recip':
+                temp1 = np.fftshift(np.fftn(np.fftshift(beta)))
+                temp2 = np.fftshift(np.fftn(np.fftshift(alpha_s)))
+                temp = np.sqrt(abs(temp1) * abs(temp2)) * np.exp(1j * np.angle(temp2))
+                beta = np.fftshift(np.ifftn(np.fftshift(temp)))
+
+            elif breed_mode == 'sqrt_ab_recip':
+                temp1 = np.fftshift(np.fftn(np.fftshift(beta)))
+                temp2 = np.fftshift(np.fftn(np.fftshift(alpha_s)))
+                temp = np.sqrt(abs(temp1) *abs(temp2)) *np.exp(.5j *np.angle(temp1)) *np.exp(.5j *np.angle(temp2))
+                beta = np.fftshift(np.ifftn(np.fftshift(temp)))
+
+            elif breed_mode == 'max_ab':
+                beta = max(abs(alpha_s), abs(beta)) * np.exp(.5j *(ph_beta + ph_alpha))
+
+            elif breed_mode == 'max_ab_pa':
+                beta = max(abs(alpha_s), abs(beta)) * np.exp(1j *ph_alpha)
+
+            elif breed_mode == 'min_ab_pa':
+                beta = min(abs(alpha_s), abs(beta)) * np.exp(1j *ph_alpha)
+
+            elif breed_mode == 'avg_ab':
+                beta = 0.5 *(alpha_s + beta)
+
+            elif breed_mode == 'avg_ab_pa':
+                beta = 0.5 *(abs(alpha_s) + abs(beta)) * np.exp(1j *(ph_alpha))
             else:
-                # calculate support using sigma=1.0
-                convag = ut.gauss_conv_fft(image)
-                max_convag = max(convag)
-                convag = convag / max_convag
-                support = np.where((convag >= .1), 1, 0)
-            return image, support
+                # The following modes include gamma; gamma is in index 1
+                # gamma = zero_phase(gamma, val);
+                # ph_gamma = atan2(imag(gamma), real(gamma));
 
-        species = len(errs)
-        child_images = []
-        child_supports = []
-        child_cohs = []
-        # TODO we may not need the iteration errors, just the last one to rank reconstructions
-        errs_last = []
-        for i in range (species):
-            errs_last.append(tuple(errs[i][-1], i))
+                gamma = ims[1]
+                gamma = gut.zero_phase(gamma, 0)
+                if ind > 1:
+                    gamma = gut.check_get_conj_reflect(beta, gamma)
+                    ph_gamma, gamma_s = gut.align_and_zero_phase(abs(beta), abs(gamma))
+                else:
+                    gamma_s = gamma
+                    ph_gamma = np.atan2(gamma.imag, gamma.real)
 
-        # ranks keeps indexes of species from best to worst
-        ranks = list(np.argsort(errs_last)).reverse()
-        best_image = ut.get_centered(images[ranks[i]], (0,0,0))
-        # mix the images: 1. the best 100%, 2. 50% best + 50% second, 3. 33% best + 33% second + 33% third, ...
-        # support is calculated off of the miex image, coherence is None
-        for i in range(1, species+1):
-            child_image, child_support = combine(i)
-            child_images.append(child_image)
-            child_supports.append(child_support)
-            child_cohs.append(None)
+                if breed_mode == 'sqrt_abg':
+                    beta = (abs(alpha_s) *abs(beta) *abs(gamma_s)) ^(1/3) *np.exp(1j *(ph_beta+ph_alpha+ph_gamma)/3.0)
 
-        return child_images, child_supports, child_cohs
+                elif breed_mode == 'sqrt_abg_pa':
+                    beta = (abs(alpha_s) *abs(beta) *abs(gamma_s)) ^(1/3) *np.exp(1j *ph_alpha)
+
+                elif breed_mode == 'max_abg':
+                    beta = max(max(abs(alpha_s), abs(beta)), abs(gamma_s)) *np.exp(1j *(ph_beta+ph_alpha+ph_gamma)/3.0)
+
+                elif breed_mode == 'max_abg_pa':
+                    beta = max(max(abs(alpha_s), abs(beta)),abs(gamma_s)) *np.exp(1j *ph_alpha)
+
+                elif breed_mode == 'avg_abg':
+                    beta = (1/3)*(alpha_s+beta+gamma_s)
+
+                elif breed_mode == 'avg_abg_pa':
+                    beta = (1/3)*(abs(alpha_s)+abs(beta)+abs(gamma_s)) *np.exp(1j *ph_alpha)
+
+                elif breed_mode == 'avg_sqrt':
+                    amp=( (abs(beta))^1/3+(abs(alpha_s))^1/3+(abs(gamma_s))^1/3)/3
+                    beta = amp^3 * np.exp(1j *ph_beta)
+
+            child_images.append(beta)
+            child_supports.append(gut.shrink_wrap(beta, threshold, sigma))
+
+        return child_images, child_supports
 
 
 def save_results(image, support, coherence, save_dir):
@@ -221,30 +384,37 @@ def reconstruction(generations, proc, data, conf_info, config_map):
         low_resolution_generations = 0
 
     try:
-        threads = config_map.threads
+        support_threshold = config_map.support_threshold
     except:
-        threads = 1
+        support_threshold = .1
+
+    try:
+        support_sigma = config_map.support_sigma
+    except:
+        support_sigma = 1.0
+
+    try:
+        species = config_map.species
+    except:
+        species = 1
 
     # init starting values
-    # if multiple threads configured (typical for genetic algorithm), use "reconstruction_multi" module
-    if threads > 1:
+    # if multiple species configured (typical for genetic algorithm), use "reconstruction_multi" module
+    if species > 1:
         images = []
         supports = []
         cohs = []
-        for _ in range(threads):
+        for _ in range(species):
             images.append(None)
             supports.append(None)
             cohs.append(None)
         rec = multi
         # load parls configuration
-        rec.load_config(threads)
+        rec.load_config(species)
     else:
         images = None
         supports = None
-        cohs = None
         rec = single
-
-    errors = []
 
     gen_obj = Generation(config_map)
 
@@ -257,49 +427,18 @@ def reconstruction(generations, proc, data, conf_info, config_map):
 
     if low_resolution_generations > 0:
         for g in range(low_resolution_generations):
-            errors.append(None)
             gen_data = gen_obj.get_data(g, data)
-            images, supports, cohs, errs = rec.rec(proc, gen_data, conf, config_map, images, supports, cohs)
-            errors[g] = errs
-            images, supports, cohs = gen_obj.breed(images, supports, errs)
+            images, supports, cohs, errs = rec.rec(proc, gen_data, conf, config_map, images, supports)
+            # here can save the generation results
+            if len(images) > 1 and gen_obj.breed_modes[g] is not 'none':
+                images, supports = gen_obj.breed(images, errs, g, support_threshold, support_sigma)
     for g in range(low_resolution_generations, generations):
-        errors.append(None)
-        images, supports, cohs, errs = rec.rec(proc, data, conf, config_map, images, supports, cohs)
-        errors[g] = errs
-        # TODO should we breed the last generation?
-        images, supports, cohs = gen_obj.breed(images, supports, errs)
-
+        images, supports, cohs, errs = rec.rec(proc, data, conf, config_map, images, supports)
+        # here can save the generation results
+        if g < (generations-1) and len(images) > 1 and gen_obj.breed_modes[g] is not 'none':
+            images, supports= gen_obj.breed(images, errs, g, support_threshold, support_sigma)
+        else:
+            img_errs = zip(images, errs)
+            ordered = gen_obj.order(img_errs)
+            [ims, ers] = list(*ordered)
     print ('done gen')
-        # if g == 0:
-        #     errors[0][0].pop(0)
-        #     print ('errors0', errors[0][0])
-        #     plt.plot(errors[0][0])
-        #     plt.ylabel('errors')
-        #     plt.show()
-
-        #image = previous[0][0]
-        # print ('image norm', ut.get_norm(image), '---------------------')
-        # errors = previous[0][3]
-        # errors.pop(0)
-        # plt.plot(errors)
-        # plt.ylabel('errors')
-        # plt.show()
-
-    # image = images[0]
-    # print ('image norm', ut.get_norm(image), '---------------------')
-    # errors.pop(0)
-    # plt.plot(errors[0])
-    # plt.ylabel('errors')
-    # plt.show()
-
-    #
-    # try:
-    #     save_dir = config_map.save_dir
-    #     if not save_dir.endswith('/'):
-    #         save_dir = save_dir + '/'
-    # except AttributeError:
-    #     save_dir = 'results/'
-    #
-    #     save_results(results, save_dir)
-    #
-

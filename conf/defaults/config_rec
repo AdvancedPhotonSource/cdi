@@ -1,4 +1,4 @@
-threads = 2
+//threads = 2, replaced by species
 //device = (4)
 
 generations = 1
@@ -77,6 +77,8 @@ garbage_trigger = (1,1)
 // GENERATIONS
 //generations = 2              // number of generations
 
+//species = 2                // number of species in first generation
+
 //low_resolution_generations = 0
                              // number of generations low resolution is applied to, starting from first gen
 
@@ -106,6 +108,23 @@ garbage_trigger = (1,1)
 //low_resolution_alg = "GAUSS"
                              // algorithm to use to apply resolution. Supported algorithms:
                              // GAUSS
+
+//metric = "chi"             // defines ranking mechanism
+                             // "sharpness" by sharpness, best with smallest sharpness
+                             // "summed_phase", by summed phase, best with the highest value
+                             // "area", by area, best with the highest value
+                             // "chi", by error (last iteration), best with the smallest value
+                             // "TV"
+
+//is_cross_breed = True      // If True the genetic algorithm will use the best two from previous
+                             // generation for breeding
+
+//breed_modes = ['sqrt_ab', 'none']
+                             // defines how to breed next generation
+                             // default for generation 'none'
+//worst_remove_no = [0, 0]
+                             // numbers of species to remove from subsequent generation
+                             // default for generation 0
 
 
 // RECONSTRUCTION PARAMETERS USED BY FAST MODULE

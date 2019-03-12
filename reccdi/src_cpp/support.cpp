@@ -56,7 +56,7 @@ void Support::UpdateAmp(const af::array ds_image, d_type sig, int iter)
 
     last_sigma = sig;
     update_iter = iter;
-//    printf("support sum %f\n", sum<d_type>(support_array));
+
 }
 
 void Support::UpdatePhase(const af::array ds_image, int iter)

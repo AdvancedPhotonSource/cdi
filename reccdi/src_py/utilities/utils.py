@@ -205,7 +205,7 @@ def binning(array, binsizes):
 # b = binning(ar, (2,2))
 # print ('b',b)
 
-def get_centered(array, center_shift):
+def get_centered(arr, center_shift):
     """
     This function finds a greatest value in the array, and puts it in a center of a new array. If center_shift is
     not zeros, the array will be shifted accordingly. The shifted elements are rolled into the other end of array.
@@ -213,7 +213,7 @@ def get_centered(array, center_shift):
 
     Parameters
     ----------
-    array : array
+    arr : array
         the original array to be centered
 
     center_shift : list
@@ -224,15 +224,45 @@ def get_centered(array, center_shift):
     array : array
         the centered array
     """
-    max_coordinates = list(np.unravel_index(np.argmax(array), array.shape))
+    max_coordinates = list(np.unravel_index(np.argmax(arr), arr.shape))
     max_coordinates = np.add(max_coordinates, center_shift)
-    shape = array.shape
+    shape = arr.shape
+    centered = arr
+    for i in range (len(max_coordinates)):
+        centered = np.roll(centered, int(shape[i]/2)-max_coordinates[i], i)
 
-    array = np.roll(array, int(shape[0]/2)-max_coordinates[0], 0) 
-    array = np.roll(array, int(shape[1]/2)-max_coordinates[1], 1) 
-    centered = np.roll(array, int(shape[2]/2)-max_coordinates[2], 2) 
+    return centered
 
-    return centered    
+def get_zero_padded_centered(arr, new_shape):
+    """
+    This function pads the array with zeros to the new shape with the array in the center.
+
+    Parameters
+    ----------
+    arr : array
+        the original array to be padded and centered
+
+    new_shape : tuple
+        a list of new dimensions
+
+    Returns
+    -------
+    array : array
+        the zero padded centered array
+    """
+    shape = arr.shape
+    pad = []
+    c_vals = []
+    for i in range (len(new_shape)):
+        pad.append((0, new_shape[i] - shape[i]))
+        c_vals.append((0.0, 0.0))
+    arr = np.lib.pad(arr, (pad), 'constant', constant_values=c_vals)
+
+    centered = arr
+    for i in range (len(new_shape)):
+        centered = np.roll(centered, int((new_shape[i] - shape[i] + 1)/2), i)
+
+    return centered
 
 
 def adjust_dimensions(arr, pad):
@@ -257,52 +287,57 @@ def adjust_dimensions(arr, pad):
     """
     logger = get_logger('adjust_dimensions')
     old_dims = arr.shape
-    new_pad = []
-    crop = []
+    cropped = arr
     for i in range(len(old_dims)):
-        tmp_dim = old_dims[i] + pad[2*i] + pad[2*i+1]
-        # find what needs to be cropped
-        crop.append(max(0, -pad[2*i]))
-        crop.append(max(0, -pad[2*i+1]))
-    arr = arr[crop[0]:old_dims[0]-crop[1], crop[2]:old_dims[1]-crop[3], crop[4]:old_dims[2]-crop[5]]
-
-    logger.info('cutting from to ' + str(crop[0]) + ', ' + str(old_dims[0]-crop[1]) + ', ' + str(crop[2]) + ', ' \
-                + str(old_dims[1]-crop[3]) + ', ' + str(crop[4]) + ', ' + str(old_dims[2]-crop[5]))
-    dims = arr.shape
-
-    for i in range(len(dims)):
+        crop_front = max(0, -pad[2*i])
+        crop_end = max(0, -pad[2*i+1])
+        splitted = np.split(cropped, [crop_front, old_dims[i]-crop_end], axis=i)
+        cropped = splitted[1]
+    # logger.info('cutting from to ' + str(crop[0]) + ', ' + str(old_dims[0]-crop[1]) + ', ' + str(crop[2]) + ', ' \
+    #             + str(old_dims[1]-crop[3]) + ', ' + str(crop[4]) + ', ' + str(old_dims[2]-crop[5]))
+    dims = cropped.shape
+    c_vals = []
+    new_pad = []
+    for i in range (len(dims)):
         # find a good dimension and find padding
-        new_dim = get_good_dim(dims[i])
-        pad_front = max(0, int((new_dim+1 - dims[i])/2))
-        new_pad.append(pad_front)
-        pad_end = max(0, new_dim-dims[i]-pad_front)
-        new_pad.append(pad_end)
+        temp_dim = old_dims[i] + pad[2*i] + pad[2*i+1]
+        new_dim = get_good_dim(temp_dim)
+        added = new_dim - temp_dim
+        # if the pad is positive
+        pad_front = max(0, pad[2*i]) + int(added/2)
+        pad_end = new_dim - dims[i] - pad_front
+        new_pad.append((pad_front, pad_end))
+        c_vals.append((0.0, 0.0))
+    adjusted = np.lib.pad(cropped, (new_pad), 'constant', constant_values=c_vals)
 
-    arr = np.lib.pad(arr, ((new_pad[0], new_pad[1]), (new_pad[2], new_pad[3]), (new_pad[4], new_pad[5])), 'constant',
-                      constant_values=((0.0, 0.0), (0.0, 0.0), (0.0, 0.0))).copy()
+    # logger.info('pads ' + str(new_pad[0]) + ', ' + str(new_pad[1]) + ', ' + str(new_pad[2]) + ', ' + str(new_pad[3]) \
+    #         + ', ' + str(new_pad[4]) + ', ' + str(new_pad[5]))
+    # logger.info('old dim, new dim (' + str(dims[0]) + ',' + str(dims[1]) + ',' + str(dims[2]) + ') (' + str(arr.shape[0]) +\
+    #     ',' + str(arr.shape[1]) + ',' + str(arr.shape[1]) + ')')
 
-    logger.info('pads ' + str(new_pad[0]) + ', ' + str(new_pad[1]) + ', ' + str(new_pad[2]) + ', ' + str(new_pad[3]) \
-            + ', ' + str(new_pad[4]) + ', ' + str(new_pad[5]))
-    logger.info('old dim, new dim (' + str(dims[0]) + ',' + str(dims[1]) + ',' + str(dims[2]) + ') (' + str(arr.shape[0]) +\
-        ',' + str(arr.shape[1]) + ',' + str(arr.shape[1]) + ')')
-
-    return arr
+    return adjusted
 
 # ar = np.zeros((81,256,256))
-# pads = (0,0,-20,-30,4,-20)
-# adjust_dimensions(ar,pads)
+# pads = (5,-7,-20,-30,4,-20)
+# arr = adjust_dimensions(ar,pads)
+# print (arr.shape)
 
 def crop_center(arr, new_size):
     size = arr.shape
-    return arr[ int((size[0]-new_size[0])/2) : int((size[0]-new_size[0])/2) + new_size[0], int((size[1]-new_size[1])/2) : int((size[1]-new_size[1])/2) + new_size[1], int((size[2]-new_size[2])/2) : int((size[2]-new_size[2])/2) + new_size[2]]
+    cropped = arr
+    for i in range(len(size)):
+        crop_front = int((size[i]-new_size[i])/2)
+        crop_end = crop_front + new_size[i]
+        splitted = np.split(cropped, [crop_front, crop_end], axis=i)
+        print (splitted[0].shape, splitted[1].shape, splitted[2].shape)
+        cropped = splitted[1]
 
+    return cropped
 
-def get_init_array(shape):
-    half_shape = (shape[0]/2, shape[1]/2, shape[2]/2)
-    arr = np.ones(half_shape)
-    return np.lib.pad(arr, ((half_shape[0]/2, half_shape[0]-half_shape[0]/2), (half_shape[1]/2, half_shape[1]-half_shape[1]/2), (half_shape[2]/2, half_shape[2]-half_shape[2]/2)), 'constant',
-                      constant_values=((0.0, 0.0), (0.0, 0.0), (0.0, 0.0)))
-
+# ar = np.zeros((81,256,256))
+# new_size = (40, 200,100)
+# arr = crop_center(ar,new_size)
+# print (arr.shape)
 
 def get_norm(arr):
     return sum(sum(sum(abs(arr)**2)))
@@ -324,6 +359,55 @@ def flip(m, axis):
     return m[tuple(indexer)]
 
 
+def gaussian(shape, sigmas, alpha=1):
+    grid = np.full(shape, 1.0)
+    for i in range(len(shape)):
+        # prepare indexes for tile and transpose
+        tile_shape = list(shape)
+        tile_shape.pop(i)
+        tile_shape.append(1)
+        trans_shape = list(range(len(shape)-1))
+        trans_shape.insert(i, len(shape)-1)
+
+        multiplier = - 0.5 * alpha / pow(sigmas[i], 2)
+        line = np.linspace(-(shape[i]-1)/2.0, (shape[i]-1)/2.0, shape[i])
+        gi = np.tile(line, tile_shape)
+        gi = np.transpose(gi, tuple(trans_shape))
+        exponent = np.power(gi, 2) * multiplier
+        gi = np.exp(exponent)
+        grid = grid * gi
+
+    grid_total = np.sum (grid)
+    return grid / grid_total
+
+
+def gauss_conv_fft(arr, sigmas):
+    arr_sum = np.sum(abs(arr))
+    arr_f = np.fft.ifftshift(np.fft.fftn(np.fft.ifftshift(arr)))
+    shape = list(arr.shape)
+    for i in range(len(sigmas)):
+        sigmas[i] = shape[i]/2.0/np.pi/sigmas[i]
+    convag = arr_f * gaussian(shape, sigmas)
+    convag = np.fft.ifftshift(np.fft.ifftn(np.fft.ifftshift(convag)))
+    convag = convag.real
+    convag = np.clip(convag, 0, None)
+    correction = arr_sum / np.sum(convag)
+    convag *= correction
+    return convag
+
+
+def shrink_wrap(arr, threshold, sigma, type='gauss'):
+    sigmas = [sigma]*len(arr.shape)
+    if type == 'gauss':
+        convag = gauss_conv_fft(abs(arr), sigmas)
+        max_convag = np.amax(convag)
+        convag = convag / max_convag
+        support = np.where(convag >= threshold, 1, 0)
+        return support
+    else:
+        return None
+
+
 def read_results(read_dir):
     try:
         imagefile = os.path.join(read_dir, 'image.npy')
@@ -341,6 +425,7 @@ def read_results(read_dir):
         pass
 
     return image, support, coh
+
 
 def save_results(image, support, coh, save_dir):
     if not os.path.exists(save_dir):
