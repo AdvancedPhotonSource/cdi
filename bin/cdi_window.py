@@ -45,6 +45,8 @@ def write_conf(conf_map, dir, file):
 class cdi_conf(QWidget):
     def __init__(self, parent=None):
         super(cdi_conf, self).__init__(parent)
+        self.id = None
+        self.scan = None
         uplayout = QFormLayout()
 
         self.set_work_dir_button = QPushButton()
@@ -64,7 +66,7 @@ class cdi_conf(QWidget):
 
         self.setLayout(vbox)
         self.setWindowTitle("CDI Reconstruction")
-        self.set_init()
+        self.init_work_dir()
 
         self.set_work_dir_button.clicked.connect(self.set_working_dir)
         self.Id_widget.textChanged.connect(self.set_id)
@@ -92,6 +94,7 @@ class cdi_conf(QWidget):
         if self.id is not None and self.scan is not None:
             self.exp_id = self.id + '_' + self.scan
             self.experiment_dir = os.path.join(self.working_dir, self.exp_id)
+            self.init_from_conf()
 
 
     def run_everything(self):
@@ -101,29 +104,39 @@ class cdi_conf(QWidget):
         self.t.display()
 
 
-    def set_init(self):
-        self.id = None
-        self.scan = None
-        # check for the "conf" directory in the running directory
+    def init_work_dir(self):
         if os.path.isdir('conf/last'):
-            self.set_from_conf('conf/last')
+            dir = 'conf/last'
         elif os.path.isdir('conf/defaults'):
-            self.set_from_conf('conf/defaults')
-
-
-    def set_from_conf(self, dir):
-        print ('dir', dir)
+            dir = 'conf/defaults'
+        else:
+            self.msg_window('exiting, neither configuration file "conf/last/config" nor "conf/defaults/config" exists')
+            sys.exit(0)
         main_conf = os.path.join(dir, 'config')
         conf_map = ut.read_config(main_conf)
         # initialize to the value from config file
         self.working_dir = conf_map.working_dir
+        self.set_work_dir_button.setStyleSheet("Text-align:left")
+        self.set_work_dir_button.setText(self.working_dir)
+
+
+    def init_from_conf(self):
+        if os.path.isfile(os.path.join(self.experiment_dir, 'conf', 'config')):
+            dir = self.experiment_dir + '/conf'
+        elif os.path.isdir('conf/last'):
+            dir = 'conf/last'
+        elif os.path.isdir('conf/defaults'):
+            dir = 'conf/defaults'
+        else:
+            self.msg_window('exiting, neither configuration file "conf/last/config" nor "conf/defaults/config" exists')
+            sys.exit(0)
+        main_conf = os.path.join(dir, 'config')
+        conf_map = ut.read_config(main_conf)
         self.t.data_dir = conf_map.data_dir
         self.t.specfile = conf_map.specfile
         self.t.darkfile = conf_map.darkfile
         self.t.whitefile = conf_map.whitefile
         # set the text in the window
-        self.set_work_dir_button.setStyleSheet("Text-align:left")
-        self.set_work_dir_button.setText(self.working_dir)
         self.t.data_dir_button.setStyleSheet("Text-align:left")
         self.t.data_dir_button.setText(self.t.data_dir)
         self.t.spec_file_button.setStyleSheet("Text-align:left")
@@ -191,6 +204,14 @@ class cdi_conf(QWidget):
             self.t.crop.setText(str(conf_map.crop).replace(" ", ""))
         except AttributeError:
             pass
+
+
+    def msg_window(self, text):
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Information)
+        msg.setText(text)
+        msg.setWindowTitle("Info")
+        msg.exec_()
 
 
 class cdi_conf_tab(QTabWidget):
@@ -261,6 +282,11 @@ class cdi_conf_tab(QTabWidget):
         self.cont = QCheckBox()
         ulayout.addRow("continuation", self.cont)
         self.cont.setChecked(False)
+        self.proc = QComboBox()
+        self.proc.addItem("opencl")
+        self.proc.addItem("cpu")
+        self.proc.addItem("cuda")
+        ulayout.addRow("processor type", self.proc)
         self.device = QLineEdit()
         ulayout.addRow("device(s)", self.device)
         self.threads = QLineEdit()
@@ -343,7 +369,7 @@ class cdi_conf_tab(QTabWidget):
             scan is None or \
             self.data_dir is None or \
             self.specfile is None:
-            print ('enter all parameters: working_dir, id, scan, data_dir, specfile')
+            self.msg_window('enter all parameters: working_dir, id, scan, data_dir, specfile')
             return
 
         try:
@@ -352,29 +378,31 @@ class cdi_conf_tab(QTabWidget):
             for i in range(len(scan_range)):
                 scan_range[i] = int(scan_range[i])
         except:
-            print('enter numeric values for scan range')
+            self.msg_window('enter numeric values for scan range')
 
         conf_map = {}
         if len(self.main_win.working_dir) > 0:
             conf_map['working_dir'] = '"' + str(self.main_win.working_dir) + '"'
         else:
-            print ("working_dir not defined")
+            self.msg_window("working_dir not defined")
+            return
         if len(self.data_dir) > 0:
             conf_map['data_dir'] = '"' + str(self.data_dir) + '"'
-        else:
-            print ("data_dir not defined")
         if len(self.specfile) > 0:
             conf_map['specfile'] = '"' + str(self.specfile) + '"'
         else:
-            print ("specfile not defined")
+            self.msg_window("specfile not defined")
+            return
         if len(self.darkfile) > 0:
             conf_map['darkfile'] = '"' + str(self.darkfile) + '"'
         else:
-            print ("darkfile not defined")
+            self.msg_window("darkfile not defined")
+            return
         if len(self.whitefile) > 0:
             conf_map['whitefile'] = '"' + str(self.whitefile) + '"'
         else:
-            print ("whitefile not defined")
+            self.msg_window("whitefile not defined")
+            return
 
         conf_dir = os.path.join(self.main_win.experiment_dir, 'conf')
         write_conf(conf_map, conf_dir, 'config')
@@ -383,85 +411,90 @@ class cdi_conf_tab(QTabWidget):
 
 
     def model_data(self):
-        conf_map = {}
-        if len(self.aliens.text()) > 0:
-            conf_map['aliens'] = str(self.aliens.text()).replace('\n','')
-        else:
-            print ("aliens not defined")
-        if len(self.amp_threshold.text()) > 0:
-            conf_map['amp_threshold'] = str(self.amp_threshold.text())
-        else:
-            print ('amplitude threshold not defined. Quiting operation.')
-            return
-        if len(self.binning.text()) > 0:
-            conf_map['binning'] = str(self.binning.text()).replace('\n','')
-        else:
-            print ("binning not defined")
-        if len(self.center_shift.text()) > 0:
-            conf_map['center_shift'] = str(self.center_shift.text()).replace('\n','')
-        else:
-            print ("center shift not defined")
-        if len(self.adjust_dimensions.text()) > 0:
-            conf_map['adjust_dimensions'] = str(self.adjust_dimensions.text()).replace('\n','')
-        else:
-            print ("adjust dimensions not defined")
+        if os.path.isfile(os.path.join(self.main_win.experiment_dir, 'prep','prep_data.npy')):
+            conf_map = {}
+            if len(self.aliens.text()) > 0:
+                conf_map['aliens'] = str(self.aliens.text()).replace('\n','')
+            if len(self.amp_threshold.text()) > 0:
+                conf_map['amp_threshold'] = str(self.amp_threshold.text())
+            else:
+                self.msg_window('amplitude threshold not defined. Quiting operation.')
+                return
+            if len(self.binning.text()) > 0:
+                conf_map['binning'] = str(self.binning.text()).replace('\n','')
+            if len(self.center_shift.text()) > 0:
+                conf_map['center_shift'] = str(self.center_shift.text()).replace('\n','')
+            if len(self.adjust_dimensions.text()) > 0:
+                conf_map['adjust_dimensions'] = str(self.adjust_dimensions.text()).replace('\n','')
 
-        #self.create_config('config_data', conf_map)
-        conf_dir = os.path.join(self.main_win.experiment_dir, 'conf')
-        write_conf(conf_map, conf_dir, 'config_data')
+            conf_dir = os.path.join(self.main_win.experiment_dir, 'conf')
+            write_conf(conf_map, conf_dir, 'config_data')
 
-        run_dt.data(self.main_win.experiment_dir)
+            run_dt.data(self.main_win.experiment_dir)
+        else:
+            self.msg_window('Please, run data preparation in previous tab to activate this function')
+
+
+    def msg_window(self, text):
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Information)
+        msg.setText(text)
+        msg.setWindowTitle("Info")
+        msg.exec_()
 
 
     def reconstruction(self):
-        conf_map = {}
-        conf_map['threads'] = str(self.threads.text())
-        conf_map['device'] = str(self.device.text()).replace('\n','')
-        conf_map['garbage_trigger'] = str(self.gc.text()).replace('\n','')
-        conf_map['algorithm_sequence'] = str(self.alg_seq.text()).replace('\n','')
-        conf_map['beta'] = str(self.beta.text())
-        if self.cont.isChecked():
-            conf_map['continue_dir'] = str(self.cont_dir.text())
+        if os.path.isfile(os.path.join(self.main_win.experiment_dir, 'data', 'data.npy')):
+            conf_map = {}
+            conf_map['threads'] = str(self.threads.text())
+            conf_map['device'] = str(self.device.text()).replace('\n','')
+            conf_map['garbage_trigger'] = str(self.gc.text()).replace('\n','')
+            conf_map['algorithm_sequence'] = str(self.alg_seq.text()).replace('\n','')
+            conf_map['beta'] = str(self.beta.text())
+            if self.cont.isChecked():
+                conf_map['continue_dir'] = str(self.cont_dir.text())
 
-        for feat_id in self.features.feature_dir:
-            self.features.feature_dir[feat_id].add_config(conf_map)
+            for feat_id in self.features.feature_dir:
+                self.features.feature_dir[feat_id].add_config(conf_map)
 
-        #self.create_config('config_rec', conf_map)
-        conf_dir = os.path.join(self.main_win.experiment_dir, 'conf')
-        write_conf(conf_map, conf_dir, 'config_rec')
+            #self.create_config('config_rec', conf_map)
+            conf_dir = os.path.join(self.main_win.experiment_dir, 'conf')
+            write_conf(conf_map, conf_dir, 'config_rec')
 
-        run_rc.reconstruction('cpu', self.main_win.experiment_dir)
+            run_rc.reconstruction(str(self.proc.currentText()), self.main_win.experiment_dir)
+        else:
+            self.msg_window('Please, run model data in previous tab to activate this function')
 
 
     def display(self):
-        if len(self.crop.text()) == 0:
-            print ('crop not configured')
+        if os.path.isfile(os.path.join(self.main_win.experiment_dir, 'results', 'image.vtk')):
+            disp_conf_file = os.path.join(self.main_win.experiment_dir, 'conf', 'config_disp')
+            temp_file = os.path.join(self.main_win.experiment_dir, 'conf', 'temp')
+            with open(temp_file, 'a') as temp:
+                try:
+                    with open(disp_conf_file, 'r') as f:
+                        for line in f:
+                            if not line.startswith('crop') and not line.startswith('binning'):
+                                temp.write(line)
+                    f.close()
+                except:
+                    pass
 
-        disp_conf_file = os.path.join(self.main_win.experiment_dir, 'conf', 'config_disp')
-        temp_file = os.path.join(self.main_win.experiment_dir, 'conf', 'temp')
-        with open(temp_file, 'a') as temp:
-            try:
-                with open(disp_conf_file, 'r') as f:
-                    for line in f:
-                        if not line.startswith('crop') and not line.startswith('binning'):
-                            temp.write(line)
-                f.close()
-            except:
-                pass
+                if len(self.crop.text()) != 0:
+                    temp.write('crop = ' + str(self.crop.text()).replace('\n','') + '\n')
 
-            if len(self.crop.text()) != 0:
-                temp.write('crop = ' + str(self.crop.text()).replace('\n','') + '\n')
+            temp.close()
+            shutil.move(temp_file, disp_conf_file)
 
-        temp.close()
-        shutil.move(temp_file, disp_conf_file)
-
-        run_dp.to_vtk(self.main_win.experiment_dir)
+            run_dp.to_vtk(self.main_win.experiment_dir)
+        else:
+            self.msg_window('Please, run reconstruction in previous tab to activate this function')
 
 
     def rec_default(self):
         if  self.main_win.working_dir is None or self.main_win.id is None or \
             len(self.main_win.working_dir) == 0 or len(self.main_win.id) == 0:
-                print ('Working Directory or Reconstruction ID not configured')
+            self.msg_window('Working Directory or Reconstruction ID not configured')
         else:
             self.threads.setText('1')
             self.device.setText('(3)')
