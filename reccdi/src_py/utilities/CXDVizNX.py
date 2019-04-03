@@ -70,20 +70,13 @@ class DispalyParams:
             pixel = config_map.pixel
             self.dpx = pixel[0] * self.binning[0] / self.arm
             self.dpy = pixel[1] * self.binning[1] / self.arm
-            # self.dpx = pixel[0] / self.arm
-            # self.dpy = pixel[1] / self.arm
         except AttributeError:
             print ('pixel not defined')
         try:
             self.crop = config_map.crop
-            # for i in range(len(self.crop)):
-            #     self.crop[i] = self.crop[i] * binning[i]
         except AttributeError:
             self.crop = None
             print ('crop not defined')
-        # self.dx = 1.0 * binning[0] / shape[0]
-        # self.dy = 1.0 * binning[1] / shape[1]
-        # self.dz = 1.0 * binning[2] / shape[2]
 
 
 class CXDViz(tr.HasTraits):
@@ -118,9 +111,12 @@ class CXDViz(tr.HasTraits):
         Bstar = np.zeros(3)
         Cstar = np.zeros(3)
 
-        dQdpx[0] = -m.cos(tth) * m.cos(gam)
+        # dQdpx[0] = -m.cos(tth) * m.cos(gam)
+        # dQdpx[1] = 0.0
+        # dQdpx[2] = +m.sin(tth) * m.cos(gam)
+        dQdpx[0] = -m.cos(tth)
         dQdpx[1] = 0.0
-        dQdpx[2] = +m.sin(tth) * m.cos(gam)
+        dQdpx[2] = +m.sin(tth)
 
         dQdpy[0] = m.sin(tth) * m.sin(gam)
         dQdpy[1] = -m.cos(gam)
