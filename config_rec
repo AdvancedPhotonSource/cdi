@@ -27,7 +27,7 @@ continue_dir = "cont"
                              // directory from which results are read for reconstruction continuation
                              // if the directory contains subdirectories, a thread will start for each subdirectory
 
-threads = 1
+samples = 1
                              // number of reconstructions to start with
 
 device = [0,0]

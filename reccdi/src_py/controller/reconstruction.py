@@ -118,12 +118,12 @@ def reconstruction(proc, data, conf_info, config_map):
 
     # how many reconstructions to start
     try:
-        threads = config_map.threads
+        samples = config_map.samples
     except:
-        threads = 1
+        samples = 1
 
-    if threads > 1:
-        multi.reconstruction(threads, proc, data, conf_info, config_map)
+    if samples > 1:
+        multi.reconstruction(samples, proc, data, conf_info, config_map)
     else:
         cont = False
         try:
@@ -160,7 +160,7 @@ def reconstruction(proc, data, conf_info, config_map):
             if experiment_dir is not None:
                 save_dir = os.path.join(experiment_dir, save_dir)
 
-        ut.save_results(image, support, coh, save_dir)
+        ut.save_results(image, support, coh, np.asarray(errs), save_dir)
 
         print('done')
 

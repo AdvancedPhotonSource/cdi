@@ -23,6 +23,7 @@ import reccdi.src_py.utilities.utils as ut
 import reccdi.src_py.controller.fast_module as calc
 from parsl.app.app import python_app
 import time
+import numpy as np
 
 
 __author__ = "Barbara Frosik"
@@ -32,7 +33,7 @@ __all__ = ['read_config',
            'reconstruction']
 
 
-def load_config(threads):
+def load_config(samples):
     import parsl
     from parsl.config import Config
     from parsl.executors.ipp import IPyParallelExecutor
@@ -45,7 +46,7 @@ def load_config(threads):
                 provider=LocalProvider(
                     channel=LocalChannel(),
                     init_blocks=1,
-                    max_blocks=threads,
+                    max_blocks=samples,
                     parallelism=1,
                 )
             )
@@ -54,7 +55,7 @@ def load_config(threads):
     dfk = parsl.load(local_config)
 
 
-def assign_devices(devices, threads):
+def assign_devices(devices, samples):
     """
     This function pairs device id with reconstruction run. When running multiple reconstructions, it should be
     distributed between available gpus. The GPUs might be configured. If not, it is left to Parsl logic how
@@ -65,21 +66,21 @@ def assign_devices(devices, threads):
     devices : list
         list containing ids of devices
 
-    threads : int
-        number of reconstructions (each in own thread)
+    samples : int
+        number of reconstructions (each in own sample)
 
     Returns
     -------
     dev : list
-        list containing devices allocated subsequently to threads. If the device was not configured, it will
+        list containing devices allocated subsequently to samples. If the device was not configured, it will
         be set to -1, which leaves the allocation to Parsl
     """
 
     dev_no = len(devices)
     dev = []
-    for thread in range(threads):
-        if thread < dev_no:
-            dev.append(devices[thread])
+    for sample in range(samples):
+        if sample < dev_no:
+            dev.append(devices[sample])
         else:
             dev.append(-1)
     return dev
@@ -88,7 +89,7 @@ def assign_devices(devices, threads):
 @python_app
 def run_fast_module(proc, device, conf, data, coh_dims, prev_image, prev_support, prev_coh):
     """
-    This function runs in the thread palarellized by Parsl.
+    This function runs in the sample palarellized by Parsl.
 
     Parameters
     ----------
@@ -96,7 +97,7 @@ def run_fast_module(proc, device, conf, data, coh_dims, prev_image, prev_support
         string defining library used 'cpu' or 'opencl' or 'cuda'
 
     device : int
-        device allocated to this thread or -1 if not configured
+        device allocated to this sample or -1 if not configured
 
     conf : str
         configuration file
@@ -128,9 +129,9 @@ def run_fast_module(proc, device, conf, data, coh_dims, prev_image, prev_support
 
     error : list containing errors for iterations
     """
-    image, support, coherence, error = calc.fast_module_reconstruction(proc, device, conf, data, coh_dims,
+    image, support, coherence, errors = calc.fast_module_reconstruction(proc, device, conf, data, coh_dims,
                                                                        prev_image, prev_support, prev_coh)
-    return image, support, coherence, error
+    return image, support, coherence, errors
 
 
 def read_results(read_dir):
@@ -167,13 +168,13 @@ def read_results(read_dir):
     return images, supports, cohs
 
 
-def save_results(threads, images, supports, cohs, save_dir):
+def save_results(samples, images, supports, cohs, errs, save_dir):
     """
     This function saves results of multiple reconstructions to directory tree in save_dir.
 
     Parameters
     ----------
-    threads : int
+    samples : int
         number of reconstruction sets results
 
     images : list
@@ -192,15 +193,15 @@ def save_results(threads, images, supports, cohs, save_dir):
     -------
     nothing
     """
-    for i in range(threads):
+    for i in range(samples):
         subdir = os.path.join(save_dir, str(i))
-        ut.save_results(images[i], supports[i], cohs[i], subdir)
+        ut.save_results(images[i], supports[i], cohs[i], np.asarray(errs[i]), subdir)
 
 
 def rec(proc, data, conf, config_map, images, supports, cohs=None):
     """
     This function controls the multiple reconstructions. It invokes a loop to execute parallel resconstructions,
-    wait for all threads to deliver results, and store te results.
+    wait for all samples to deliver results, and store te results.
 
     Parameters
     ----------
@@ -244,9 +245,9 @@ def rec(proc, data, conf, config_map, images, supports, cohs=None):
     except:
         devices = [-1]
 
-    # assign device for each thread
-    species = config_map.species
-    devices = assign_devices(devices, species)
+    # assign device for each sample
+    samples = config_map.samples
+    devices = assign_devices(devices, samples)
 
     try:
         coh_dims = tuple(config_map.partial_coherence_roi)
@@ -255,7 +256,7 @@ def rec(proc, data, conf, config_map, images, supports, cohs=None):
 
     res = []
     errs = []
-    for i in range(species):
+    for i in range(samples):
         if cohs is None:
             coh = None
         else:
@@ -272,21 +273,21 @@ def rec(proc, data, conf, config_map, images, supports, cohs=None):
         cohs[i] = r[2]
         errs[i] = r[3]
     # return only error from last iteration for each reconstruction
-    return images, supports, cohs, errs[-1,:]
+    return images, supports, cohs, errs
 
 
-def reconstruction(species, proc, data, conf_info, config_map):
+def reconstruction(samples, proc, data, conf_info, config_map):
     """
     This function starts the reconstruction. It checks whether it is continuation of reconstruction defined by
-    configuration. If continuation, the lists contaning arrays of images, supports, coherence for multiple species
+    configuration. If continuation, the lists contaning arrays of images, supports, coherence for multiple samples
     are read from cont_directory, otherwise, they are initialized to None.
     After the lists are initialized, they are passed for the multi-reconstruction.
     The results are saved in the configured directory.
 
     Parameters
     ----------
-    species : int
-        number of species
+    samples : int
+        number of samples
 
     proc : str
         a string indicating the processor type (cpu, opencl, cuda)
@@ -323,12 +324,12 @@ def reconstruction(species, proc, data, conf_info, config_map):
         images = []
         supports = []
         cohs = []
-        for _ in range(species):
+        for _ in range(samples):
             images.append(None)
             supports.append(None)
             cohs.append(None)
 
-    load_config(species)
+    load_config(samples)
     start = time.time()
 
     if os.path.isdir(conf_info):
@@ -352,7 +353,7 @@ def reconstruction(species, proc, data, conf_info, config_map):
         if experiment_dir is not None:
             save_dir = os.path.join(experiment_dir, save_dir)
 
-    save_results(species, images, supports, cohs, save_dir)
+    save_results(samples, images, supports, cohs, errs, save_dir)
 
     print('done')
 

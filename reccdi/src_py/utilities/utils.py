@@ -60,6 +60,10 @@ def get_array_from_tif(filename):
     return tf.imread(filename)
 
 
+def save_tif(ar, tif_file):
+    tf.imsave(tif_file, ar.astype(np.int32))
+
+
 def read_config(config):
     """
     This function gets configuration file. It checks if the file exists and parses it into a map.
@@ -198,12 +202,16 @@ def binning(array, binsizes):
             binned_array = np.sum(binned_array, axis=ax+1)
             new_shape = list(binned_array.shape)
     return binned_array
-   
+
+
 # ar = np.asarray([1,2,3,4,5,6,7,8,9,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6,7,8,9])
 # ar.resize((5,9))
 # print ('ar', ar)
 # b = binning(ar, (2,2))
 # print ('b',b)
+# c = binning1(ar,(2,2))
+# print ('c',c)
+
 
 def get_centered(arr, center_shift):
     """
@@ -427,7 +435,7 @@ def read_results(read_dir):
     return image, support, coh
 
 
-def save_results(image, support, coh, save_dir):
+def save_results(image, support, coh, errs, save_dir):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
@@ -435,8 +443,20 @@ def save_results(image, support, coh, save_dir):
     np.save(image_file, image)
     support_file = os.path.join(save_dir, 'support')
     np.save(support_file, support)
+    errs_file = os.path.join(save_dir, 'errors')
+    np.save(errs_file, errs)
     if not coh is None:
         coh_file = os.path.join(save_dir, 'coherence')
         np.save(coh_file, coh)
 
 
+def sub_pixel_shift(arr, row_shift, col_shift, z_shift):
+    # arr is 3D
+    buf2ft = np.fft.fftn(arr)
+    shape = arr.shape
+    Nr = np.fft.ifftshift(np.array(list(range(-int(np.floor(shape[0]/2)), shape[0]-int(np.floor(shape[0]/2))))))
+    Nc = np.fft.ifftshift(np.array(list(range(-int(np.floor(shape[1]/2)), shape[1]-int(np.floor(shape[1]/2))))))
+    Nz = np.fft.ifftshift(np.array(list(range(-int(np.floor(shape[2]/2)), shape[2]-int(np.floor(shape[2]/2))))))
+    [Nc, Nr, Nz] = np.meshgrid(Nc, Nr, Nz)
+    Greg = buf2ft * np.exp(1j * 2 * np.pi * (-row_shift * Nr / shape[0] - col_shift * Nc / shape[1] - z_shift * Nz / shape[2]))
+    return np.fft.ifftn(Greg)

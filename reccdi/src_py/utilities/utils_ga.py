@@ -144,17 +144,6 @@ def register_3d_reconstruction(ref_arr, arr):
     return shift_2, shift_1, shift_0
 
 
-def sub_pixel_shift(arr, row_shift, col_shift, z_shift):
-    # arr is 3D
-    buf2ft = np.fft.fftn(arr)
-    shape = arr.shape
-    Nr = np.fft.ifftshift(np.array(list(range(-int(np.floor(shape[0]/2)), shape[0]-int(np.floor(shape[0]/2))))))
-    Nc = np.fft.ifftshift(np.array(list(range(-int(np.floor(shape[1]/2)), shape[1]-int(np.floor(shape[1]/2))))))
-    Nz = np.fft.ifftshift(np.array(list(range(-int(np.floor(shape[2]/2)), shape[2]-int(np.floor(shape[2]/2))))))
-    [Nc, Nr, Nz] = np.meshgrid(Nc, Nr, Nz)
-    Greg = buf2ft * np.exp(1j * 2 * np.pi * (-row_shift * Nr / shape[0] - col_shift * Nc / shape[1] - z_shift * Nz / shape[2]))
-    return np.fft.ifftn(Greg)
-
 def print_max(arr):
     max_coord = list(np.unravel_index(np.argmax(abs(arr)), arr.shape))
     print ('max coord, value', abs(arr[max_coord[0],max_coord[1],max_coord[2]]), max_coord)
@@ -178,7 +167,7 @@ def zero_phase_cc(arr1, arr2):
 
 def align_arrays(ref_arr, arr):
     (shift_2, shift_1, shift_0) = register_3d_reconstruction(abs(ref_arr), abs(arr))
-    return sub_pixel_shift(arr, shift_2, shift_1, shift_0)
+    return ut.sub_pixel_shift(arr, shift_2, shift_1, shift_0)
 
 # ref_arr = np.load('/home/phoebus/BFROSIK/temp/test/A_78-97/results/image.npy')
 # arr = np.load('/home/phoebus/BFROSIK/temp/test/B_78-97/results/image.npy')

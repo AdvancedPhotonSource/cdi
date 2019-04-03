@@ -69,7 +69,7 @@ def get_normalized_slice(file, dark, white):
     return slice
 
 
-def read_scan(dir, dark, white):
+def read_scan(dir, dark, white, auto_correct):
     slices = 0
     files = []
     files_dir = {}
@@ -79,6 +79,9 @@ def read_scan(dir, dark, white):
             #it's assumed that the files end with four digits and 'tif' or 'tiff' extension
             key = temp[0][-4:]
             files_dir[key] = file
+    if auto_correct and len(files_dir) < 81:
+        return None
+
     ordered_keys = sorted(list(files_dir.keys()))
 
     for key in ordered_keys:
@@ -129,17 +132,22 @@ def combine_part(part_f, slice_sum, refpart, part):
     return slice_sum + shift(part, pixelshift)
 
 
-def prep_data(scan, det_area1, det_area2, data_dir, prep_data_dir, darkfile, whitefile):
+def prep_data(scan, det_area1, det_area2, data_dir, prep_data_dir, darkfile, whitefile, auto_correct=False, exclude_scans=[]):
     # build sub-directories map
-    dirs = {}
+    if len(scan) == 1:
+        scan.append(scan[0])
+    dirs = []
     for name in os.listdir(data_dir):
         subdir = os.path.join(data_dir, name)
         if os.path.isdir(subdir):
             try:
                 index = int(name[-4:])
-                dirs[index] = subdir
+                if index >= scan[0] and index <= scan[1] and not index in exclude_scans:
+                    dirs.append(subdir)
             except:
                 continue
+        if index >= scan[1]:
+            break
 
     # find the darkfield array
     dark_full = tif.imread(darkfile).astype(float)
@@ -159,23 +167,22 @@ def prep_data(scan, det_area1, det_area2, data_dir, prep_data_dir, darkfile, whi
     white = np.where(white<5000, 1e20, white) #Some large value
 
     if len(scan) == 1:
-        arr = read_scan(dirs[scan[0]], dark, white)
+        arr = read_scan(dirs[0], dark, white, auto_correct)
     else:
         refpart = None
-        for set_no in range(scan[0], scan[1]+1):
-            try:
-                #this will load scans from one directory into an array
-                part = read_scan(dirs[set_no], dark, white)
-                if refpart is None:
-                    # make the first part a reference
-                    slice_sum = np.abs(copy.deepcopy(part))
-                    refpart = sf.fftn(part)
-                else:
-                    # add the arrays together
-                    part_f = sf.fftn(part)
-                    slice_sum = combine_part(part_f, slice_sum, refpart, part)
-            except KeyError:
-                pass
+        for dir in dirs:
+            #this will load scans from one directory into an array
+            part = read_scan(dir, dark, white, auto_correct)
+            if part is None:
+                continue
+            if refpart is None:
+                # make the first part a reference
+                slice_sum = np.abs(copy.deepcopy(part))
+                refpart = sf.fftn(part)
+            else:
+                # add the arrays together
+                part_f = sf.fftn(part)
+                slice_sum = combine_part(part_f, slice_sum, refpart, part)
         arr = np.transpose(np.abs(slice_sum).astype(np.int32))
 
     # if the full sensor was used for the image (i.e. the data size is 512x512)
@@ -194,7 +201,7 @@ def prep_data(scan, det_area1, det_area2, data_dir, prep_data_dir, darkfile, whi
     tif.imsave(data_file, b.astype(np.int32))
 
 
-def prepare(working_dir, id, scan, data_dir, specfile, darkfile, whitefile):
+def prepare(working_dir, id, scan, data_dir, specfile, darkfile, whitefile, auto_correct, exclude_scans):
     # assuming all parameters were validated (i.e working directory exists, etc.)
     # 34-idc experiment ids contain scan range. The id parameter does include the range string prepended
     # with _
@@ -218,7 +225,7 @@ def prepare(working_dir, id, scan, data_dir, specfile, darkfile, whitefile):
     set_disp_conf(dth, delta, gamma, arm, lam, detector, conf_dir)
 
     # data prep
-    prep_data(scan, det_area1, det_area2, data_dir, prep_data_dir, darkfile, whitefile)
+    prep_data(scan, det_area1, det_area2, data_dir, prep_data_dir, darkfile, whitefile, auto_correct, exclude_scans)
 
 #prepare('/local/bfrosik/cdi/test', 'A', 'DET1', [38,39], '/net/s34data/export/34idc-data/2018/Startup18-2/ADStartup18-2a', '/net/s34data/export/34idc-data/2018/Startup18-2/Startup18-2a.spec')
 
@@ -261,7 +268,7 @@ def config_rec(working_dir, id):
     conf_map = {}
     conf_map['data_dir'] = '"' + working_dir + '/' + id + '/data"'
     conf_map['save_dir'] = '"' + working_dir + '/' + id + '/results"'
-    conf_map['threads'] = '1'
+    conf_map['samples'] = '1'
     conf_map['device'] = '(0)'
     conf_map['garbage_trigger'] = '(1000)'
     conf_map['algorithm_sequence'] = '((5,("ER",20),("HIO",180)),(1,("ER",40),("HIO",160)),(4,("ER",20),("HIO",180)))'

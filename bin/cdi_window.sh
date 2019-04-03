@@ -7,4 +7,4 @@ p=${p//"CXDUSER/anaconda"/"CXDUSER/CDI/anaconda"}
 export PATH=$p
 
 export LD_LIBRARY_PATH=LIB_PATH
-python bin/cdi_conf_window.py
+python bin/cdi_window.py

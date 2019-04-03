@@ -97,15 +97,14 @@ def prep(fname, conf_info):
                 a_f.close()
             except:
                 pass
+        # saving file for Kenley project - AI aliens removing
+        d_f = os.path.join(experiment_dir, 'prep', 'prep_no_aliens.npy')
+        np.save(d_f, data)
+        d_f = os.path.join(experiment_dir, 'prep', 'prep_no_aliens.tif')
+        tif.imsave(d_f, data.astype(np.int32))
 
     except AttributeError:
         pass
-
-    # saving file for Kenley project - AI aliens removing
-    d_f = os.path.join(experiment_dir, 'prep', 'prep_no_aliens.npy')
-    np.save(d_f, data)
-    d_f = os.path.join(experiment_dir, 'prep', 'prep_no_aliens.tif')
-    tif.imsave(d_f, data.astype(np.int32))
 
     try:
         amp_threshold = config_map.amp_threshold
@@ -114,20 +113,45 @@ def prep(fname, conf_info):
         print ('define amplitude threshold. Exiting')
         return
 
-    try:
-        binsizes = config_map.binning
-    except AttributeError:
-        binsizes = None
+    # zero out the noise
+    prep_data = np.where(data < amp_threshold, 0, data)
 
     try:
-        pads = tuple(config_map.adjust_dimensions)
+        binsizes = config_map.binning
+        # The bins are entered in reverse order
+        binsizes.reverse()
+        print ('binning')
+        prep_data = ut.binning(prep_data, binsizes)
     except AttributeError:
-        pads = None
+        pass
+
+    # square root data
+    prep_data = np.sqrt(prep_data)
+
+    try:
+        pads = config_map.adjust_dimensions
+        # adjust the size, either pad with 0s or crop array
+        print ('adjusting dimensions')
+        # need to reverse the padding
+        pairs = []
+        for i in range(int(len(pads)/2)):
+            pair = pads[2*i:2*i+2]
+            pairs.append(pair)
+        pairs.reverse()
+        pads = []
+        for pair in pairs:
+            pads.extend(pair)
+        prep_data = ut.adjust_dimensions(prep_data, pads)
+    except AttributeError:
+        prep_data = ut.adjust_dimensions(prep_data, (0,0,0,0,0,0))
 
     try:
         center_shift = tuple(config_map.center_shift)
+        center_shift.reverse()
+        print ('shift center')
+        prep_data = ut.get_centered(prep_data, center_shift)
     except AttributeError:
-        center_shift = None
+        prep_data = ut.get_centered(prep_data, [0,0,0])
 
     try:
         data_dir = config_map.data_dir
@@ -138,34 +162,9 @@ def prep(fname, conf_info):
     if not os.path.exists(data_dir):
         os.makedirs(data_dir)
 
-    # zero out the noise
-    prep_data = np.where(data < amp_threshold, 0, data)
-
-    if not binsizes is None:
-        # do binning
-        print ('binning')
-        prep_data = ut.binning(prep_data, binsizes)
-
-    # square root data
-    prep_data = np.sqrt(prep_data)
-
-    if not pads is None:
-        # adjust the size, either zero pad or crop array
-        print ('adjusting dimensions')
-        prep_data = ut.adjust_dimensions(prep_data, pads)
-    else:
-        prep_data = ut.adjust_dimensions(prep_data, (0,0,0,0,0,0))
-
-    if not center_shift is None:
-        # get centered array
-        print ('shift center')
-        prep_data = ut.get_centered(prep_data, center_shift)
-    else:
-        prep_data = ut.get_centered(prep_data, [0,0,0])
-
     # save data
     data_file = os.path.join(data_dir, 'data.npy')
-    print ('saving data ready for reconstruction')
+    print ('saving data ready for reconstruction, data dims:', prep_data.shape)
     np.save(data_file, prep_data)
 
 

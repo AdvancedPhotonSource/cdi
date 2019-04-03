@@ -22,7 +22,11 @@ Pre-requisites
 - Python packages installation:
   - pip install tifffile
   - pip install pylibconfig2
+  - python3 -m pip install parsl
+  - pip install traits
   - pip install mayavi
+  - pip install xrayutilities (for parsing spec file if using 34Id prep)
+
 
 Author(s)
 -------

@@ -6,28 +6,31 @@ import reccdi.src_py.beamlines.aps_34id.prep as prep
 import shutil
 
 
-def prepare(working_dir, id, scan, data_dir, specfile, darkfile, whitefile):
+def prepare(working_dir, id, scan, data_dir, specfile, darkfile, whitefile, auto_correct=False, exclude_scans=[]):
     experiment_dir = os.path.join(working_dir, id)
     experiment_conf_dir = os.path.join(experiment_dir, 'conf')
     if not os.path.exists(experiment_conf_dir):
         os.makedirs(experiment_conf_dir)
 
-    prep.prepare(working_dir, id, scan, data_dir, specfile, darkfile, whitefile)
-    # copy experiment config into last config
+    prep.prepare(working_dir, id, scan, data_dir, specfile, darkfile, whitefile, auto_correct, exclude_scans)
+    # copy experiment config into last config, this is the last used
     main_conf = os.path.join(working_dir, id, 'conf', 'config')
-    last = os.path.join('conf', 'last', 'config')
+    last = os.path.join('conf', 'last')
+    if not os.path.exists(last):
+        os.makedirs(last)
     shutil.copy(main_conf, last)
 
     return experiment_dir
 
 
 def copy_conf(src, dest):
-    main_conf = os.path.join(src, 'config')
-    shutil.copy(main_conf, dest)
-    conf_data = os.path.join(src, 'config_data')
-    shutil.copy(conf_data, dest)
-    conf_rec = os.path.join(src, 'config_rec')
-    shutil.copy(conf_rec, dest)
+    if src != dest:
+        main_conf = os.path.join(src, 'config')
+        shutil.copy(main_conf, dest)
+        conf_data = os.path.join(src, 'config_data')
+        shutil.copy(conf_data, dest)
+        conf_rec = os.path.join(src, 'config_rec')
+        shutil.copy(conf_rec, dest)
 
 
 def parse_prepare(prefix, scan, conf_dir):
@@ -57,7 +60,18 @@ def parse_prepare(prefix, scan, conf_dir):
     with open(main_conf, 'r') as f:
         config_map = cfg.Config(f.read())
 
-    prep.prepare(config_map.working_dir, id, scan_num, config_map.data_dir, config_map.specfile, config_map.darkfile, config_map.whitefile)
+    try:
+        exclude_scans = config_map.exclude_scans
+        # convert it to list of int
+        exclude_scans = exclude_scans.split(',')
+        excluded = []
+        for i in range(len(exclude_scans)):
+            excluded.append(int(exclude_scans[i]))
+    except:
+        print ('enter numeric values for scan range')
+        sys.exit(0)
+
+    prep.prepare(config_map.working_dir, id, scan_num, config_map.data_dir, config_map.specfile, config_map.darkfile, config_map.whitefile, config_map.auto_correct, excluded)
     experiment_dir = os.path.join(config_map.working_dir, id)
     # copy config_data, config_rec, cofig_disp files from cofig directory into the experiment conf directory
     copy_conf(conf_dir, os.path.join(experiment_dir, 'conf'))

@@ -9,6 +9,7 @@ import os
 import traits.api as tr
 from tvtk.api import tvtk
 import numpy as np
+import scipy as sp
 import math as m
 import reccdi.src_py.utilities.utils as ut
 
@@ -62,22 +63,27 @@ class DispalyParams:
         except AttributeError:
             print ('dth not defined')
         try:
-            binning = config_map.binning
+            self.binning = config_map.binning
         except AttributeError:
-            binning = [1,1,1]
+            self.binning = [1,1,1]
         try:
             pixel = config_map.pixel
-            #self.dpx = pixel[0] * binning[1] / self.arm
-            #self.dpy = pixel[1] * binning[2] / self.arm
-            self.dpx = pixel[0] * binning[2] / self.arm
-            self.dpy = pixel[1] * binning[1] / self.arm
+            self.dpx = pixel[0] * self.binning[0] / self.arm
+            self.dpy = pixel[1] * self.binning[1] / self.arm
+            # self.dpx = pixel[0] / self.arm
+            # self.dpy = pixel[1] / self.arm
         except AttributeError:
             print ('pixel not defined')
         try:
             self.crop = config_map.crop
+            # for i in range(len(self.crop)):
+            #     self.crop[i] = self.crop[i] * binning[i]
         except AttributeError:
             self.crop = None
             print ('crop not defined')
+        # self.dx = 1.0 * binning[0] / shape[0]
+        # self.dy = 1.0 * binning[1] / shape[1]
+        # self.dz = 1.0 * binning[2] / shape[2]
 
 
 class CXDViz(tr.HasTraits):
@@ -244,17 +250,17 @@ class CXDViz(tr.HasTraits):
         return self.sg
 
 
-    def get_image_data(self, **args):
-        self.set_crop(self.cropx, self.cropy, self.cropz)
-        dims = list(self.arr[self.cropobj].shape)
-        if len(dims) == 2:
-            dims.append(1)
-        self.imd.dimensions = tuple(dims)
-        self.imd.extent = 0, dims[2] - 1, 0, dims[1] - 1, 0, dims[0] - 1
-        self.imd.point_data.scalars = self.arr[self.cropobj].ravel()
-        return self.imd
-
-
+    # def get_image_data(self, **args):
+    #     self.set_crop()
+    #     dims = list(self.arr[self.cropobj].shape)
+    #     if len(dims) == 2:
+    #         dims.append(1)
+    #     self.imd.dimensions = tuple(dims)
+    #     self.imd.extent = 0, dims[2] - 1, 0, dims[1] - 1, 0, dims[0] - 1
+    #     self.imd.point_data.scalars = self.arr[self.cropobj].ravel()
+    #     return self.imd
+    #
+    #
     def write_structured_grid(self, filename, **args):
         sgwriter = tvtk.StructuredGridWriter()
         sgwriter.file_type = 'binary'
@@ -267,22 +273,9 @@ class CXDViz(tr.HasTraits):
 
 
 def shift(arr, s0, s1, s2):
-    shifted = np.roll(arr, s0, 0)
-    shifted = np.roll(shifted, s1, 1)
-    return np.roll(shifted, s2, 2)
-
-
-def sub_pixel_shift(arr, shift_ind):
-    buf = np.fft.fftn(arr)
-    dims = buf.shape
-    x = np.fft.ifftshift(np.arange(-int(dims[0]/2), int(dims[0]/2)))
-    y = np.fft.ifftshift(np.arange(-int(dims[1]/2), int(dims[1]/2)))
-    z = np.fft.ifftshift(np.arange(-int(dims[2]/2), int(dims[2]/2)))
-    gx, gy, gz = np.meshgrid(x, y, z)
-
-    grid_shift = - gx * shift_ind[0] / dims[0] - gy * shift_ind[1] / dims[1] - gy * shift_ind[2] / dims[2]
-    g = buf * np.exp(1j * 2 * np.pi * grid_shift)
-    return np.fft.ifftn(g)
+    shifted = np.roll(arr, s0, axis=0)
+    shifted = np.roll(shifted, s1, axis=1)
+    return np.roll(shifted, s2, axis=2)
 
 
 def center_of_mass(arr):
@@ -300,12 +293,15 @@ def center_of_mass(arr):
     return list(com)
 
 
-def remove_ramp(arr):
+def remove_ramp(arr, ups=3):
+    new_shape = list(arr.shape)
     # pad zeros around arr, to the size of 3 times (ups = 3) of arr size
-    padded = ut.zero_pad(arr, arr.shape)
+    for i in range(len(new_shape)):
+        new_shape[i] = ups * new_shape[i]
+    padded = ut.get_zero_padded_centered(arr, new_shape)
     data = np.fft.fftshift(np.fft.fftn(np.fft.fftshift(padded)))
-    com = center_of_mass(np.power(np.absolute(data), 2)) - .5
-    sub_pixel_shifted = sub_pixel_shift(data, (com[1], com[0], com[2]))
+    com = sp.ndimage.center_of_mass(np.power(np.abs(data), 2))
+    sub_pixel_shifted = ut.sub_pixel_shift(data, (com[1]-.5), (com[0]-.5), (com[2]-.5))
     ramp_removed_padded = np.fft.fftshift(np.fft.ifftn(np.fft.fftshift(sub_pixel_shifted)))
     ramp_removed = ut.crop_center(ramp_removed_padded, arr.shape)
 
@@ -314,15 +310,16 @@ def remove_ramp(arr):
 
 def center(image, support):
     dims = image.shape
-    com = center_of_mass(np.absolute(image) * support)
     # place center of mass image*support in the center
-    image = shift(image, int(dims[0]/2) - com[0], int(dims[1]/2) - com[1], int(dims[2]/2) - com[2])
-    support = shift(support, int(dims[0]/2) - com[0], int(dims[1]/2) - com[1], int(dims[2]/2) - com[2])
+    for ax in range(len(dims)):
+        com = sp.ndimage.center_of_mass(np.absolute(image) * support)
+        image = shift(image, int(dims[0]/2 - com[0]), int(dims[1]/2 - com[1]), int(dims[2]/2 - com[2]))
+        support = shift(support, int(dims[0]/2 - com[0]), int(dims[1]/2 - com[1]), int(dims[2]/2 - com[2]))
 
-    # set com phase to zero, use as a reference
-    phi0 = m.atan2(image.imag[int(dims[0]/2), int(dims[1]/2), int(dims[2]/2)], image.real[int(dims[0]/2), int(dims[1]/2), int(dims[2]/2)])
-    print ('phi0', phi0)
-    image = image * np.exp(-1j * phi0)
+        # set com phase to zero, use as a reference
+        phi0 = m.atan2(image.imag[int(dims[0]/2), int(dims[1]/2), int(dims[2]/2)], image.real[int(dims[0]/2), int(dims[1]/2), int(dims[2]/2)])
+        image = image * np.exp(-1j * phi0)
+
     return image, support
 
 
@@ -338,10 +335,18 @@ def get_crop(params, shape):
     return crop
 
 
+def unbin(ar, bins):
+    array = ar
+    for ax in range(len(bins)):
+        if bins[ax] > 1:
+            array = np.repeat(array, bins[ax], axis=ax)
+    return array
+
+
 def save_CX(conf, image, support, coh, save_dir):
     image, support = center(image, support)
-    #    image = remove_ramp(image)
     params = DispalyParams(conf)
+    image = remove_ramp(image)
     viz = CXDViz()
     viz.set_array(image)
     viz.set_geometry(params, image.shape)

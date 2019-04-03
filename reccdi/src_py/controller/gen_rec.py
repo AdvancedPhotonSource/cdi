@@ -136,8 +136,8 @@ class Generation:
         reverse = False
         images = images_errs[0]
         errs = images_errs[1]
-        species = len(images)
-        for i in range (species):
+        samples = len(images)
+        for i in range (samples):
             image = images[i]
             if self.metric == 'chi':
                 rank_property.append(errs[i])
@@ -160,7 +160,7 @@ class Generation:
                 # metric is 'chi'
                 rank_property.append(errs[i][-1])
 
-        # ranks keeps indexes of species from best to worst
+        # ranks keeps indexes of samples from best to worst
         # for most of the metric types the minimum of the metric is best, but for
         # 'summed_phase' and 'area' it is oposite, so reversing the order
         ranks = np.argsort(rank_property)
@@ -169,7 +169,7 @@ class Generation:
 
         # order the initial array according to rank
         ordered = []
-        for i in range(species):
+        for i in range(samples):
             ordered.append(images_errs[ranks[i]])
         return ordered
 
@@ -202,17 +202,17 @@ class Generation:
             list of child coherence, set to None
         """
         img_errs = zip(images, errs)
-        species = len(img_errs)
+        samples = len(img_errs)
         ordered = self.order(img_errs)
         if self.worst_remove_no is not None:
-            species = species - self.worst_remove_no[gen]
-            ordered = ordered[0 : species]
+            samples = samples - self.worst_remove_no[gen]
+            ordered = ordered[0 : samples]
 
-        # if configured to cross breed, include two best species from previous generation and order again
+        # if configured to cross breed, include two best samples from previous generation and order again
         if self.is_cross_breed:
             if len(self.prev_two_best) > 0:
                 ordered.append(self.prev_two_best)
-                ordered = self.order(ordered, species + 2)
+                ordered = self.order(ordered, samples + 2)
             self.prev_two_best[0] = ordered[0]
             self.prev_two_best[1] = ordered[1]
 
@@ -394,23 +394,23 @@ def reconstruction(generations, proc, data, conf_info, config_map):
         support_sigma = 1.0
 
     try:
-        species = config_map.species
+        samples = config_map.samples
     except:
-        species = 1
+        samples = 1
 
     # init starting values
-    # if multiple species configured (typical for genetic algorithm), use "reconstruction_multi" module
-    if species > 1:
+    # if multiple samples configured (typical for genetic algorithm), use "reconstruction_multi" module
+    if samples > 1:
         images = []
         supports = []
         cohs = []
-        for _ in range(species):
+        for _ in range(samples):
             images.append(None)
             supports.append(None)
             cohs.append(None)
         rec = multi
         # load parls configuration
-        rec.load_config(species)
+        rec.load_config(samples)
     else:
         images = None
         supports = None

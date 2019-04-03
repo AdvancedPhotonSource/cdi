@@ -31,7 +31,7 @@ example:
 1. running all pieces
 source bin/everything.sh 'opencl' 'B' '290-290' 'conf/last'
 2. running one by one
-python bin/run_34id_prepare.py 'B' '290-290' 'conf/last'
+python bin/prepare_34id.py 'B' '290-290' 'conf/last'
 python bin/run_data.py '/net/s34data/export/34idc-data/2018/Chung1118/test/B_290-290'
 source bin/run_rec.sh 'opencl' '/net/s34data/export/34idc-data/2018/Chung1118/test/B_290-290'
 python bin/run_disp.py '/net/s34data/export/34idc-data/2018/Chung1118/test/B_290-290'
