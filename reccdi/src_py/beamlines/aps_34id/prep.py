@@ -142,12 +142,12 @@ def prep_data(scan, det_area1, det_area2, data_dir, prep_data_dir, darkfile, whi
         if os.path.isdir(subdir):
             try:
                 index = int(name[-4:])
-                if index >= scan[0] and index <= scan[1] and not index in exclude_scans:
+                if index > scan[1]:
+                    break
+                if index >= scan[0] and not index in exclude_scans:
                     dirs.append(subdir)
             except:
                 continue
-        if index >= scan[1]:
-            break
 
     # find the darkfield array
     dark_full = tif.imread(darkfile).astype(float)
