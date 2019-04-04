@@ -203,17 +203,17 @@ def get_arr_characteristic(arr):
 #     return arrs
 
 
-def test(a,b):
-    alpha = zero_phase(a, 0)
-    beta = zero_phase(b, 0)
-    alpha = check_get_conj_reflect(beta, alpha)
-    alpha_s = align_arrays(beta, alpha)
-    alpha_s = zero_phase(alpha_s, 0)
-    ph_alpha = np.angle(alpha_s)
-    beta = zero_phase_cc(beta, alpha_s)
-    ph_beta = np.angle(beta)
-    beta = np.sqrt(abs(alpha_s) * abs(beta)) * np.exp(0.5j * (ph_beta + ph_alpha))
-
-a = np.load('/home/phoebus/BFROSIK/temp/test/A_78-97/results/image.npy')
-b = np.load('/home/phoebus/BFROSIK/temp/test/B_78-97/results/image.npy')
-test(a, b)
+# def test(a,b):
+#     alpha = zero_phase(a, 0)
+#     beta = zero_phase(b, 0)
+#     alpha = check_get_conj_reflect(beta, alpha)
+#     alpha_s = align_arrays(beta, alpha)
+#     alpha_s = zero_phase(alpha_s, 0)
+#     ph_alpha = np.angle(alpha_s)
+#     beta = zero_phase_cc(beta, alpha_s)
+#     ph_beta = np.angle(beta)
+#     beta = np.sqrt(abs(alpha_s) * abs(beta)) * np.exp(0.5j * (ph_beta + ph_alpha))
+#
+# a = np.load('/home/phoebus/BFROSIK/temp/test/A_78-97/results/image.npy')
+# b = np.load('/home/phoebus/BFROSIK/temp/test/B_78-97/results/image.npy')
+# test(a, b)
