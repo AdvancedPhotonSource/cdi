@@ -73,11 +73,11 @@ def to_vtk(conf_info):
         save_dir = os.path.join(experiment_dir, 'results')
 
     save_vtk(save_dir, conf)
-    print ('saving results in dir', save_dir)
     for sub in os.listdir(save_dir):
         subdir = os.path.join(save_dir, sub)
         if os.path.isdir(subdir):
             save_vtk(subdir, conf)
+    print ('saved results in dir', save_dir)
 
 
 def main(arg):

@@ -337,7 +337,6 @@ def crop_center(arr, new_size):
         crop_front = int((size[i]-new_size[i])/2)
         crop_end = crop_front + new_size[i]
         splitted = np.split(cropped, [crop_front, crop_end], axis=i)
-        print (splitted[0].shape, splitted[1].shape, splitted[2].shape)
         cropped = splitted[1]
 
     return cropped

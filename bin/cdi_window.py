@@ -496,6 +496,7 @@ class cdi_conf_tab(QTabWidget):
         if prep_data is not None:
             tif_file = os.path.join(self.main_win.experiment_dir, 'prep', 'prep_data.tif')
             ut.save_tif(prep_data, tif_file)
+            print ('done with prep')
 
 
     def prepare_34id(self):

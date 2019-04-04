@@ -38,4 +38,3 @@ void Er::ModulusConstrain()
 {
     rec->ModulusConstrainEr();
 }
-

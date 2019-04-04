@@ -199,6 +199,7 @@ def prep_data(scan, det_area1, det_area2, data_dir, prep_data_dir, darkfile, whi
     data_file = 'prep_data.tif'
     data_file = os.path.join(prep_data_dir, data_file)
     tif.imsave(data_file, b.astype(np.int32))
+    print ('done with prep')
 
 
 def prepare(working_dir, id, scan, data_dir, specfile, darkfile, whitefile, auto_correct, exclude_scans):
