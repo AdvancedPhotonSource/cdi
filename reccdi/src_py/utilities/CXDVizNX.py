@@ -9,7 +9,7 @@ import os
 import traits.api as tr
 from tvtk.api import tvtk
 import numpy as np
-import scipy as sp
+import scipy.ndimage as ndi
 import math as m
 import reccdi.src_py.utilities.utils as ut
 
@@ -295,9 +295,11 @@ def remove_ramp(arr, ups=3):
     for i in range(len(new_shape)):
         new_shape[i] = ups * new_shape[i]
     padded = ut.get_zero_padded_centered(arr, new_shape)
-    data = np.fft.fftshift(np.fft.fftn(np.fft.fftshift(padded)))
-    com = sp.ndimage.center_of_mass(np.power(np.abs(data), 2))
-    sub_pixel_shifted = ut.sub_pixel_shift(data, (com[1]-.5), (com[0]-.5), (com[2]-.5))
+    max_coordinates = list(np.unravel_index(np.argmax(arr), arr.shape))
+    print ('max after pad', max_coordinates)
+    padded_f = np.fft.fftshift(np.fft.fftn(np.fft.fftshift(padded)))
+    com = ndi.center_of_mass(np.power(np.abs(padded_f), 2))
+    sub_pixel_shifted = ut.sub_pixel_shift(padded_f, (com[1]-.5), (com[0]-.5), (com[2]-.5))
     ramp_removed_padded = np.fft.fftshift(np.fft.ifftn(np.fft.fftshift(sub_pixel_shifted)))
     ramp_removed = ut.crop_center(ramp_removed_padded, arr.shape)
 
@@ -308,9 +310,11 @@ def center(image, support):
     dims = image.shape
     # place center of mass image*support in the center
     for ax in range(len(dims)):
-        com = sp.ndimage.center_of_mass(np.absolute(image) * support)
+        com = ndi.center_of_mass(np.absolute(image) * support)
         image = shift(image, int(dims[0]/2 - com[0]), int(dims[1]/2 - com[1]), int(dims[2]/2 - com[2]))
         support = shift(support, int(dims[0]/2 - com[0]), int(dims[1]/2 - com[1]), int(dims[2]/2 - com[2]))
+        image = ut.get_centered(image)
+        support = ut.get_centered(support)
 
         # set com phase to zero, use as a reference
         phi0 = m.atan2(image.imag[int(dims[0]/2), int(dims[1]/2), int(dims[2]/2)], image.real[int(dims[0]/2), int(dims[1]/2), int(dims[2]/2)])
@@ -340,9 +344,10 @@ def unbin(ar, bins):
 
 
 def save_CX(conf, image, support, coh, save_dir):
+    #TODO first center max
     image, support = center(image, support)
     params = DispalyParams(conf)
-    image = remove_ramp(image)
+    #image = remove_ramp(image)
     viz = CXDViz()
     viz.set_array(image)
     viz.set_geometry(params, image.shape)
@@ -361,3 +366,5 @@ def save_CX(conf, image, support, coh, save_dir):
         viz.set_array(coh)
         viz.write_structured_grid(coh_file)
 
+# a = np.load('/home/phoebus/BFROSIK/temp/test/A_78-97/results/image.npy')
+# remove_ramp(a, 3)

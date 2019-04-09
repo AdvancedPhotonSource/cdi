@@ -213,7 +213,7 @@ def binning(array, binsizes):
 # print ('c',c)
 
 
-def get_centered(arr, center_shift):
+def get_centered(arr, center_shift=None):
     """
     This function finds a greatest value in the array, and puts it in a center of a new array. If center_shift is
     not zeros, the array will be shifted accordingly. The shifted elements are rolled into the other end of array.
@@ -233,7 +233,8 @@ def get_centered(arr, center_shift):
         the centered array
     """
     max_coordinates = list(np.unravel_index(np.argmax(arr), arr.shape))
-    max_coordinates = np.add(max_coordinates, center_shift)
+    if center_shift is not None:
+        max_coordinates = np.add(max_coordinates, center_shift)
     shape = arr.shape
     centered = arr
     for i in range (len(max_coordinates)):
