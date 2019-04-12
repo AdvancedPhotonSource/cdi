@@ -242,6 +242,36 @@ def get_centered(arr, center_shift=None):
 
     return centered
 
+
+def get_centered_both(arr, support):
+    """
+    This function finds a greatest value in the array, and puts it in a center of a new array. If center_shift is
+    not zeros, the array will be shifted accordingly. The shifted elements are rolled into the other end of array.
+
+
+    Parameters
+    ----------
+    arr : array
+        the original array to be centered
+
+    center_shift : list
+        a list defining shift of the center
+
+    Returns
+    -------
+    array : array
+        the centered array
+    """
+    max_coordinates = list(np.unravel_index(np.argmax(arr), arr.shape))
+    shape = arr.shape
+    centered = arr
+    for i in range (len(max_coordinates)):
+        centered = np.roll(centered, int(shape[i]/2)-max_coordinates[i], i)
+        support = np.roll(support, int(shape[i]/2)-max_coordinates[i], i)
+
+    return centered, support
+
+
 def get_zero_padded_centered(arr, new_shape):
     """
     This function pads the array with zeros to the new shape with the array in the center.
@@ -460,3 +490,10 @@ def sub_pixel_shift(arr, row_shift, col_shift, z_shift):
     [Nc, Nr, Nz] = np.meshgrid(Nc, Nr, Nz)
     Greg = buf2ft * np.exp(1j * 2 * np.pi * (-row_shift * Nr / shape[0] - col_shift * Nc / shape[1] - z_shift * Nz / shape[2]))
     return np.fft.ifftn(Greg)
+
+
+def arr_property(arr):
+    arr1 = abs(arr)
+    print ('norm', np.sum(pow(abs(arr),2)))
+    max_coordinates = list(np.unravel_index(np.argmax(arr1), arr.shape))
+    print ('max coords, value', max_coordinates, arr[max_coordinates[0], max_coordinates[1],max_coordinates[2]])

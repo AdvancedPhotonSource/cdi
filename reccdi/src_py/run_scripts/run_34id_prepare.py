@@ -60,16 +60,19 @@ def parse_prepare(prefix, scan, conf_dir):
     with open(main_conf, 'r') as f:
         config_map = cfg.Config(f.read())
 
+    excluded = []
     try:
         exclude_scans = config_map.exclude_scans
-        # convert it to list of int
-        exclude_scans = exclude_scans.split(',')
-        excluded = []
-        for i in range(len(exclude_scans)):
-            excluded.append(int(exclude_scans[i]))
+        try:
+            # convert it to list of int
+            exclude_scans = exclude_scans.split(',')
+            for i in range(len(exclude_scans)):
+                excluded.append(int(exclude_scans[i]))
+        except:
+            print ('enter numeric values for scan range')
+            sys.exit(0)
     except:
-        print ('enter numeric values for scan range')
-        sys.exit(0)
+        pass
 
     prep.prepare(config_map.working_dir, id, scan_num, config_map.data_dir, config_map.specfile, config_map.darkfile, config_map.whitefile, config_map.auto_correct, excluded)
     experiment_dir = os.path.join(config_map.working_dir, id)

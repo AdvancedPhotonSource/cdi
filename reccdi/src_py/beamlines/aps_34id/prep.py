@@ -166,7 +166,11 @@ def prep_data(scan, det_area1, det_area2, data_dir, prep_data_dir, darkfile, whi
     #white = np.where(white==0, 1e20, white) #Some large value
     white = np.where(white<5000, 1e20, white) #Some large value
 
-    if len(scan) == 1:
+    if len(dirs) == 0:
+        print ('there are no data directories for given scans')
+        exit(0)
+
+    if len(scan) == 1 or scan[0]==scan[1]:
         arr = read_scan(dirs[0], dark, white, auto_correct)
     else:
         refpart = None
