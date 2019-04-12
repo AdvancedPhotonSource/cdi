@@ -9,7 +9,7 @@
 # distutils: include_dirs = ['reccdi/include', 'AF_DIR/include', 'LC_DIR/include',]
 # distutils: sources = ['reccdi/src_cpp/algorithm.cpp', 'reccdi/src_cpp/bridge.cpp', 'reccdi/src_cpp/manager.cpp', 'reccdi/src_cpp/parameters.cpp', 'reccdi/src_cpp/pcdi.cpp', 'reccdi/src_cpp/resolution.cpp', 'reccdi/src_cpp/state.cpp', 'reccdi/src_cpp/support.cpp', 'reccdi/src_cpp/util.cpp', 'reccdi/src_cpp/worker.cpp']
 # distutils: libraries = ['afcuda',  'config++',]
-# distutils: library_dirs = ['AF_DIR/lib', 'LC_DIR/lib',]
+# distutils: library_dirs = ['AF_DIR/lib64', 'LC_DIR/lib',]
 
 from libcpp.vector cimport vector
 from libcpp.string cimport string
