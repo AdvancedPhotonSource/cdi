@@ -24,8 +24,7 @@ def save_vtk(res_dir, conf):
         cohfile = os.path.join(res_dir, 'coherence.npy')
         coh = np.load(cohfile)
     except:
-        print ('support file ' + supportfile + ' is missing')
-        return
+        pass
 
     cx.save_CX(conf, image, support, coh, res_dir)
 
