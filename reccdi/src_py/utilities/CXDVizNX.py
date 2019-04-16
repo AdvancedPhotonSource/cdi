@@ -247,17 +247,6 @@ class CXDViz(tr.HasTraits):
         return self.sg
 
 
-    # def get_image_data(self, **args):
-    #     self.set_crop()
-    #     dims = list(self.arr[self.cropobj].shape)
-    #     if len(dims) == 2:
-    #         dims.append(1)
-    #     self.imd.dimensions = tuple(dims)
-    #     self.imd.extent = 0, dims[2] - 1, 0, dims[1] - 1, 0, dims[0] - 1
-    #     self.imd.point_data.scalars = self.arr[self.cropobj].ravel()
-    #     return self.imd
-    #
-    #
     def write_structured_grid(self, filename, **args):
         sgwriter = tvtk.StructuredGridWriter()
         sgwriter.file_type = 'binary'
@@ -267,6 +256,7 @@ class CXDViz(tr.HasTraits):
             sgwriter.file_name = filename + '.vtk'
         sgwriter.set_input_data(self.get_structured_grid())
         sgwriter.write()
+        print ('saved file', filename)
 
 
 def shift(arr, s0, s1, s2):
