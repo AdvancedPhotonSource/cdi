@@ -23,10 +23,9 @@ def save_vtk(res_dir, conf):
     try:
         cohfile = os.path.join(res_dir, 'coherence.npy')
         coh = np.load(cohfile)
+        cx.save_CX(conf, image, support, coh, res_dir)
     except:
-        pass
-
-    cx.save_CX(conf, image, support, coh, res_dir)
+        cx.save_CX(conf, image, support, None, res_dir)
 
 
 def to_vtk(conf_info):
@@ -76,7 +75,6 @@ def to_vtk(conf_info):
         subdir = os.path.join(save_dir, sub)
         if os.path.isdir(subdir):
             save_vtk(subdir, conf)
-    print ('saved results in dir', save_dir)
 
 
 def main(arg):
