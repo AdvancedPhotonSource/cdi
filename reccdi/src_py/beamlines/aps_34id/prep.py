@@ -1,44 +1,68 @@
-import os
+import pylibconfig2 as cfg
 import shutil
 import numpy as np
 import tifffile as tif
 import copy
 import scipy.fftpack as sf
-from xrayutilities.io import spec as spec
-
-def parse_spec(specfile, scan):
-    # Scan numbers start at one but the list is 0 indexed
-    ss = spec.SPECFile(specfile)[scan - 1]
-
-    # Stuff from the header
-    detector = ss.getheader_element('UIMDET')
-    det_area = ss.getheader_element('UIMR5').split()
-    det_area1 = int(det_area[0]), int(det_area[1])
-    det_area2 = int(det_area[2]), int(det_area[3])
-    command = ss.command.split()
-    scanmot = command[1]
-    scanmot_del = (float(command[3]) - float(command[2])) / int(command[4])
-
-    # Motor stuff from the header
-    delta = ss.init_motor_pos['INIT_MOPO_Delta']
-    gamma = ss.init_motor_pos['INIT_MOPO_Gamma']
-    arm = ss.init_motor_pos['INIT_MOPO_camdist']
-    energy = ss.init_motor_pos['INIT_MOPO_Energy']
-    lam = 12.398 / energy / 10  # in nanometers
-
-    # returning the scan motor name as well.  Sometimes we scan things
-    # other than theta.  So we need to expand the capability of the display
-    # code.
-    return scanmot_del, delta, gamma, arm, lam, detector, det_area1, det_area2, scanmot
+import os
+import glob
 
 
-def set_disp_conf(dth, delta, gamma, arm, lam, detector, disp_dir):
+#====================================== spec parsing==========================================
+class Detector(object):
+    def __init__(self, det_name):
+        self.det_name = det_name
+
+    def get_pixel(self):
+        pass
+
+
+class Det_34idcTIM2(Detector):
+    def __init__(self):
+        super(Det_34idcTIM2, self).__init__('34idcTIM2:')
+
+    def get_pixel(self):
+        return '(55.0e-6, 55.0e-6)'
+
+
+class Spec_params:
+    def __init__(self, specfile, scan):
+        from xrayutilities.io import spec as spec
+
+        # Scan numbers start at one but the list is 0 indexed
+        ss = spec.SPECFile(specfile)[scan - 1]
+
+        # Stuff from the header
+        detector_name = str(ss.getheader_element('UIMDET'))
+        if detector_name == '34idcTIM2:':
+            self.detector_obj = Det_34idcTIM2()
+        det_area = ss.getheader_element('UIMR5').split()
+        self.det_area1 = int(det_area[0]), int(det_area[1])
+        self.det_area2 = int(det_area[2]), int(det_area[3])
+        command = ss.command.split()
+        self.scanmot = command[1]
+        self.scanmot_del = (float(command[3]) - float(command[2])) / int(command[4])
+
+        # Motor stuff from the header
+        self.delta = ss.init_motor_pos['INIT_MOPO_Delta']
+        self.gamma = ss.init_motor_pos['INIT_MOPO_Gamma']
+        self.arm = ss.init_motor_pos['INIT_MOPO_camdist']
+        energy = ss.init_motor_pos['INIT_MOPO_Energy']
+        self.lam = 12.398 / energy / 10  # in nanometers
+
+        # returning the scan motor name as well.  Sometimes we scan things
+        # other than theta.  So we need to expand the capability of the display
+        # code.
+#====================================== spec parsing end==========================================
+
+#====================================== prepare display config====================================
+def set_disp_conf(spec_obj, experiment_dir):
     # pixel size by detector
-    pixel = {'34idcTIM2:':'[55.0e-6, 55.0e-6]'}
+    pixel = spec_obj.detector_obj.get_pixel()  #{'34idcTIM2:':'[55.0e-6, 55.0e-6]'}
 
     # create display configuration file from the parsed parameters
-    temp_file = os.path.join(disp_dir, 'temp')
-    disp_conf_file = os.path.join(disp_dir, 'config_disp')
+    temp_file = os.path.join(experiment_dir, 'conf', 'temp')
+    disp_conf_file = os.path.join(experiment_dir, 'conf', 'config_disp')
     with open(temp_file, 'a') as temp:
         try:
             with open(disp_conf_file, 'r') as f:
@@ -49,28 +73,100 @@ def set_disp_conf(dth, delta, gamma, arm, lam, detector, disp_dir):
         except:
             pass
 
-        temp.write('lamda = ' + str(lam) + '\n')
-        temp.write('delta = ' + str(delta) + '\n')
-        temp.write('gamma = ' + str(gamma) + '\n')
-        temp.write('arm = ' + str(arm) + '\n')
-        temp.write('dth = ' + str(dth) + '\n')
-        temp.write('pixel = ' + pixel[detector] + '\n')
+        temp.write('lamda = ' + str(spec_obj.lam) + '\n')
+        temp.write('delta = ' + str(spec_obj.delta) + '\n')
+        temp.write('gamma = ' + str(spec_obj.gamma) + '\n')
+        temp.write('arm = ' + str(spec_obj.arm) + '\n')
+        temp.write('dth = ' + str(spec_obj.scanmot_del) + '\n')
+        temp.write('pixel = ' + str(pixel) + '\n')
     temp.close()
     shutil.move(temp_file, disp_conf_file)
+
+#====================================== prepare display config end====================================
+
+
+#====================================== prepare data==================================================
+
+def get_dir_list(scans, map):
+    """
+    Returns list of sub-directories in data_dir with names matching range of scans
+    It will exclude scans within exclude_scans list if provided, and directories with fewer files than
+    min_files, if provided
+    :param scans:
+    :param map:
+    :return:
+    """
+    try:
+        min_files = map.min_files
+    except:
+        min_files = 0
+    try:
+        exclude_scans = map.exclude_scans
+    except:
+        exclude_scans = []
+    try:
+        data_dir = map.data_dir
+    except:
+        print ('please provide data_dir')
+
+    dirs = []
+    for name in os.listdir(data_dir):
+        subdir = os.path.join(data_dir, name)
+        if os.path.isdir(subdir):
+            # exclude directories with fewer tif files than min_files
+            if len(glob.glob1(subdir, "*.tif")) < min_files and len(glob.glob1(subdir, "*.tiff")) < min_files:
+                continue
+            try:
+                index = int(name[-4:])
+                if index > scans[1]:
+                    break
+                if index >= scans[0] and not index in exclude_scans:
+                    dirs.append(subdir)
+            except:
+                continue
+    return dirs
+
+
+def get_dark_white(darkfile, whitefile, det_area1, det_area2):
+    if darkfile is not None:
+        # find the darkfield array
+        dark_full = tif.imread(darkfile).astype(float)
+        # Ross' arrays are transposed from imread
+        dark_full = np.transpose(dark_full)
+        # crop the corresponding quad or use the whole array, depending on what info was parsed from spec file
+        dark = dark_full[slice(det_area1[0], det_area1[1]), slice(det_area2[0], det_area2[1])]
+    else:
+        dark = None
+
+    if whitefile is not None:
+        # find the whitefield array
+        white_full = tif.imread(whitefile).astype(float)
+        # Ross' arrays are transposed from imread
+        white_full = np.transpose(white_full)
+        # crop the corresponding quad or use the whole array, depending on what info was parsed from spec file
+        white = white_full[slice(det_area1[0], det_area1[1]), slice(det_area2[0], det_area2[1])]
+        # set the bad pixels to some large value
+        #white = np.where(white==0, 1e20, white) #Some large value
+        white = np.where(white<5000, 1e20, white) #Some large value
+    else:
+        white = None
+
+    return dark, white
 
 
 def get_normalized_slice(file, dark, white):
     slice = np.transpose(tif.TiffFile(file).asarray())
-    slice = np.where(dark > 5, 0, slice) #Ignore cosmic rays
+    if dark is not None:
+        slice = np.where(dark > 5, 0, slice) #Ignore cosmic rays
     # here would be code for correction for dead time
-    slice = slice/white
-    slice *= 1e5 #Some medium value
+    if white is not None:
+        slice = slice/white
+        slice *= 1e5 #Some medium value
     slice = np.where(np.isnan(slice), 0, slice)
     return slice
 
 
-def read_scan(dir, dark, white, auto_correct):
-    slices = 0
+def read_scan(dir, dark, white):
     files = []
     files_dir = {}
     for file in os.listdir(dir):
@@ -79,20 +175,17 @@ def read_scan(dir, dark, white, auto_correct):
             #it's assumed that the files end with four digits and 'tif' or 'tiff' extension
             key = temp[0][-4:]
             files_dir[key] = file
-    if auto_correct and len(files_dir) < 81:
-        return None
 
     ordered_keys = sorted(list(files_dir.keys()))
 
     for key in ordered_keys:
         file = files_dir[key]
-        slices += 1
         files.append(os.path.join(dir, file))
 
     # look at slice0 to find out shape
     n = 0
     slice0 = get_normalized_slice(files[n], dark, white)
-    shape = (slice0.shape[0], slice0.shape[1], slices)
+    shape = (slice0.shape[0], slice0.shape[1], len(files))
     arr = np.zeros(shape, dtype=slice0.dtype)
     arr[:,:,0] = slice0
 
@@ -132,63 +225,7 @@ def combine_part(part_f, slice_sum, refpart, part):
     return slice_sum + shift(part, pixelshift)
 
 
-def prep_data(scan, det_area1, det_area2, data_dir, prep_data_dir, darkfile, whitefile, auto_correct=False, exclude_scans=[]):
-    # build sub-directories map
-    if len(scan) == 1:
-        scan.append(scan[0])
-    dirs = []
-    for name in os.listdir(data_dir):
-        subdir = os.path.join(data_dir, name)
-        if os.path.isdir(subdir):
-            try:
-                index = int(name[-4:])
-                if index > scan[1]:
-                    break
-                if index >= scan[0] and not index in exclude_scans:
-                    dirs.append(subdir)
-            except:
-                continue
-
-    # find the darkfield array
-    dark_full = tif.imread(darkfile).astype(float)
-    # Ross' arrays are transposed from imread
-    dark_full = np.transpose(dark_full)
-    # crop the corresponding quad or use the whole array, depending on what info was parsed from spec file
-    dark = dark_full[slice(det_area1[0], det_area1[1]), slice(det_area2[0], det_area2[1])]
-
-    # find the whitefield array
-    white_full = tif.imread(whitefile).astype(float)
-    # Ross' arrays are transposed from imread
-    white_full = np.transpose(white_full)
-    # crop the corresponding quad or use the whole array, depending on what info was parsed from spec file
-    white = white_full[slice(det_area1[0], det_area1[1]), slice(det_area2[0], det_area2[1])]
-    # set the bad pixels to some large value
-    #white = np.where(white==0, 1e20, white) #Some large value
-    white = np.where(white<5000, 1e20, white) #Some large value
-
-    if len(dirs) == 0:
-        print ('there are no data directories for given scans')
-        exit(0)
-
-    if len(scan) == 1 or scan[0]==scan[1]:
-        arr = read_scan(dirs[0], dark, white, auto_correct)
-    else:
-        refpart = None
-        for dir in dirs:
-            #this will load scans from one directory into an array
-            part = read_scan(dir, dark, white, auto_correct)
-            if part is None:
-                continue
-            if refpart is None:
-                # make the first part a reference
-                slice_sum = np.abs(copy.deepcopy(part))
-                refpart = sf.fftn(part)
-            else:
-                # add the arrays together
-                part_f = sf.fftn(part)
-                slice_sum = combine_part(part_f, slice_sum, refpart, part)
-        arr = np.transpose(np.abs(slice_sum).astype(np.int32))
-
+def fit(arr, det_area1, det_area2):
     # if the full sensor was used for the image (i.e. the data size is 512x512)
     # the quadrants need to be shifted
     if det_area1[0] == 0 and det_area1[1] == 512 and det_area1[0] == 0 and det_area2[1] == 512:
@@ -199,158 +236,95 @@ def prep_data(scan, det_area1, det_area2, data_dir, prep_data_dir, darkfile, whi
         b[:,261:,260:] = arr[:,256:,256:] #Quad bot right
     else:
         b = arr
-
-    data_file = 'prep_data.tif'
-    data_file = os.path.join(prep_data_dir, data_file)
-    tif.imsave(data_file, b.astype(np.int32))
-    print ('done with prep')
+    return b
 
 
-def prepare(working_dir, id, scan, data_dir, specfile, darkfile, whitefile, auto_correct, exclude_scans):
-    # assuming all parameters were validated (i.e working directory exists, etc.)
-    # 34-idc experiment ids contain scan range. The id parameter does include the range string prepended
-    # with _
-    #create directory to save prepared data ,<working_dir>/<id>/'prep'
-    working_dir = os.path.join(working_dir, id)
-    if not os.path.exists(working_dir):
-        os.makedirs(working_dir)
+def prep_data(experiment_dir, scans, map, spec, *args):
+    if scans is None:
+        print ('scan info not provided')
+        return
 
-    prep_data_dir = os.path.join(working_dir, 'prep')
+    # build sub-directories map
+    if len(scans) == 1:
+        scans.append(scans[0])
+    dirs = get_dir_list(scans, map)
+
+    if spec is not None:
+        det_area1 = spec.det_area1
+        det_area2 = spec.det_area2
+    elif map is not None:
+        det_area1 = map.det_area1
+        det_area2 = map.det_area2
+    else:
+        print ('please provide det_area1 and det_area2 values')
+
+    try:
+        whitefile = map.whitefile
+    except:
+        whitefile = None
+
+    try:
+        darkfile = map.darkfile
+    except:
+        darkfile = None
+
+    dark, white = get_dark_white(darkfile, whitefile, det_area1, det_area2)
+
+    if len(dirs) == 0:
+        print ('there are no data directories for given scans')
+        return
+
+    if len(dirs) == 1:
+        arr = read_scan(dirs[0], dark, white)
+    else:
+        # make the first part a reference
+        part = read_scan(dirs[0], dark, white)
+        slice_sum = np.abs(copy.deepcopy(part))
+        refpart = sf.fftn(part)
+        for i in range (1, len(dirs)):
+            #this will load scans from each directory into an array part
+            part = read_scan(dirs[i], dark, white)
+            # add the arrays together
+            part_f = sf.fftn(part)
+            slice_sum = combine_part(part_f, slice_sum, refpart, part)
+        arr = np.transpose(np.abs(slice_sum).astype(np.int32))
+
+    arr = fit(arr, det_area1, det_area2)
+
+    #create directory to save prepared data ,<experiment_dir>/prep
+    prep_data_dir = os.path.join(experiment_dir, 'prep')
     if not os.path.exists(prep_data_dir):
         os.makedirs(prep_data_dir)
+    data_file = os.path.join(prep_data_dir, 'prep_data.tif')
 
-    conf_dir = os.path.join(working_dir, 'conf')
-    if not os.path.exists(conf_dir):
-        os.makedirs(conf_dir)
+    tif.imsave(data_file, arr.astype(np.int32))
+    print ('done with prep')
 
-    scan_end = scan[len(scan)-1]
-    dth, delta, gamma, arm, lam, detector, det_area1, det_area2, scanmot = parse_spec(specfile, scan_end)
+#====================================== prepare data end==================================================
 
-    # disp prep
-    set_disp_conf(dth, delta, gamma, arm, lam, detector, conf_dir)
+
+#====================================== entry script==================================================
+
+def prepare(experiment_dir, scans, conf_file, *args):
+    try:
+        with open(conf_file, 'r') as f:
+            config_map = cfg.Config(f.read())
+    except Exception as e:
+        print('Please check the configuration file ' + conf_file + '. Cannot parse ' + str(e))
+        return
+
+    scan_end = scans[len(scans)-1]
+    try:
+        specfile = config_map.specfile
+        # parse parameters from spec if spec file info
+        spec_obj = Spec_params(specfile, scan_end)
+        # generate display configuration from spec parameters
+        set_disp_conf(spec_obj, experiment_dir)
+    except:
+        print ('specfile not in conf file, not generating config for display')
+        spec_obj = None
 
     # data prep
-    prep_data(scan, det_area1, det_area2, data_dir, prep_data_dir, darkfile, whitefile, auto_correct, exclude_scans)
-
-#prepare('/local/bfrosik/cdi/test', 'A', 'DET1', [38,39], '/net/s34data/export/34idc-data/2018/Startup18-2/ADStartup18-2a', '/net/s34data/export/34idc-data/2018/Startup18-2/Startup18-2a.spec')
-
-def create_config(conf_dir, conf_file, conf_map):
-    valid = True
-    temp_file = os.path.join(conf_dir, 'temp')
-    with open(temp_file, 'a') as f:
-        for key in conf_map:
-            value = conf_map[key]
-            if len(value) == 0:
-                print('the ' + key + ' is not configured')
-                valid = False
-                break
-            f.write(key + ' = ' + conf_map[key] + '\n')
-    f.close()
-    if valid:
-        shutil.move(temp_file, conf_file)
-
-
-def config_data(working_dir, id):
-    conf_map = {}
-    conf_map['data_dir'] = '"' + working_dir + '/' + id + '/data"'
-    conf_map['aliens'] = '((0,0,0,0,0,0), (0,0,0,0,0,0))'
-    conf_map['amp_threshold'] = '2.0'
-    conf_map['binning'] = '(1,1,1)'
-    conf_map['center_shift'] = '(0,0,0)'
-    conf_map['adjust_dimensions'] = '(-4, -4, -65, -65, -65, -65)'
-
-    working_dir = os.path.join(working_dir, id)
-    if not os.path.exists(working_dir):
-        os.makedirs(working_dir)
-    conf_dir = os.path.join(working_dir, 'conf')
-    if not os.path.exists(conf_dir):
-        os.makedirs(conf_dir)
-    conf_file = os.path.join(conf_dir, 'config_data')
-    create_config(conf_dir, conf_file, conf_map)
-
-
-def config_rec(working_dir, id):
-    conf_map = {}
-    conf_map['data_dir'] = '"' + working_dir + '/' + id + '/data"'
-    conf_map['save_dir'] = '"' + working_dir + '/' + id + '/results"'
-    conf_map['samples'] = '1'
-    conf_map['device'] = '(0)'
-    conf_map['garbage_trigger'] = '(1000)'
-    conf_map['algorithm_sequence'] = '((5,("ER",20),("HIO",180)),(1,("ER",40),("HIO",160)),(4,("ER",20),("HIO",180)))'
-    conf_map['beta'] = ('.9')
-    conf_map['resolution_trigger'] = '(0, 1, 500)'
-    conf_map['iter_res_sigma_range'] = '(2.0)'
-    conf_map['iter_res_det_range'] = '(.7)'
-    conf_map['amp_support_trigger'] = '(1,1)'
-    conf_map['support_type'] = '"GAUSS"'
-    conf_map['support_threshold'] = '0.1'
-    conf_map['support_sigma'] = '1.0'
-    conf_map['support_area'] = '[.5,.5,.5]'
-    conf_map['phase_support_trigger'] = '(0,1,20)'
-    conf_map['phase_min'] = '-1.57'
-    conf_map['phase_max'] = '1.57'
-    conf_map['pcdi_trigger'] = '(50,50)'
-    conf_map['partial_coherence_type'] = '"LUCY"'
-    conf_map['partial_coherence_iteration_num'] = '20'
-    conf_map['partial_coherence_normalize'] = 'true'
-    conf_map['partial_coherence_roi'] = '[32,32,16]'
-    conf_map['twin_trigger'] = '(2)'
-    conf_map['avarage_trigger'] = '(-400,1)'
-
-    working_dir = os.path.join(working_dir, id)
-    if not os.path.exists(working_dir):
-        os.makedirs(working_dir)
-    conf_dir = os.path.join(working_dir, 'conf')
-    if not os.path.exists(conf_dir):
-        os.makedirs(conf_dir)
-    conf_file = os.path.join(conf_dir, 'config_rec')
-    create_config(conf_dir, conf_file, conf_map)
-
-
-def config_disp(working_dir, id):
-    working_dir = os.path.join(working_dir, id)
-    if not os.path.exists(working_dir):
-        os.makedirs(working_dir)
-    conf_dir = os.path.join(working_dir, 'conf')
-    if not os.path.exists(conf_dir):
-        os.makedirs(conf_dir)
-    disp_conf_file = os.path.join(conf_dir, 'config_disp')
-    temp_file = os.path.join(conf_dir, 'temp')
-    with open(temp_file, 'a') as temp:
-        try:
-            with open(disp_conf_file, 'r') as f:
-                for line in f:
-                    if not line.startswith('crop')and not line.startswith('save_dir'):
-                        temp.write(line)
-            f.close()
-        except:
-            pass
-
-        temp.write('crop = ' + '(.5,.5,.5)' + '\n')
-        temp.write('save_dir = "' + working_dir + '/results"' + '\n')
-    temp.close()
-    shutil.move(temp_file, disp_conf_file)
-
-
-def create_default_config(working_dir, id):
-    # create config_data
-    config_data(working_dir, id)
-
-    # create config_rec
-    config_rec(working_dir, id)
-
-    # add to config_disp
-    config_disp(working_dir, id)
-
-
-
-# prepare('/local/bfrosik/cdi/test',
-#         'A',
-#         [48,60],
-#         '/net/s34data/export/34idc-data/2018/Startup18-2/ADStartup18-2a',
-#         '/net/s34data/export/34idc-data/2018/Startup18-2/Startup18-2a.spec',
-#         '/net/s34data/export/34idc-work/2018/Startup18-2/dark.tif',
-#         '/net/s34data/export/34idc-work/2018/Startup18-2/CelaWhiteField.tif')
-# create_default_config('/local/bfrosik/cdi/test', 'A')
+    prep_data(experiment_dir, scans, config_map, spec_obj, args)
 
 

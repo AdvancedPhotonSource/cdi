@@ -74,7 +74,7 @@ class DispalyParams:
         except AttributeError:
             print ('pixel not defined')
         try:
-            self.crop = config_map.crop
+            self.crop = config_map.crop.reverse()
         except AttributeError:
             self.crop = None
             print ('crop not defined')

@@ -4,6 +4,7 @@ import sys
 import os
 import reccdi.src_py.utilities.utils as ut
 import numpy as np
+import shutil
 
 
 def save_vtk(res_dir, conf):
@@ -36,9 +37,13 @@ def to_vtk(conf_info):
         #assuming it's a file
         conf = conf_info
         experiment_dir = None
-    config_map = ut.read_config(conf)
-    if config_map is None:
-        print ("can't read configuration file")
+    try:
+        config_map = ut.read_config(conf)
+        if config_map is None:
+            print ("can't read configuration file")
+            return
+    except:
+        print ('Please check configuration file ' + conf + '. Cannot parse')
         return
 
     # remove the binning if found
@@ -75,6 +80,9 @@ def to_vtk(conf_info):
         subdir = os.path.join(save_dir, sub)
         if os.path.isdir(subdir):
             save_vtk(subdir, conf)
+
+    last = os.path.join('conf', 'last', 'config_data')
+    shutil.copy(conf, last)
 
 
 def main(arg):

@@ -29,21 +29,6 @@ def select_dir(start_dir):
         return None
 
 
-def write_conf(conf_map, dir, file):
-    # create "temp" file first and then overrite existing configuration file
-    if not os.path.exists(dir):
-        os.makedirs(dir)
-    conf_file = os.path.join(dir, file)
-    temp_file = os.path.join(dir, 'temp')
-    with open(temp_file, 'a') as f:
-        for key in conf_map:
-            value = conf_map[key]
-            if len(value) > 0:
-                f.write(key + ' = ' + conf_map[key] + '\n')
-    f.close()
-    shutil.move(temp_file, conf_file)
-
-
 class cdi_conf(QWidget):
     def __init__(self, parent=None):
         super(cdi_conf, self).__init__(parent)
@@ -125,6 +110,12 @@ class cdi_conf(QWidget):
 
     def set_scan(self):
         self.scan = str(self.scan_widget.text())
+        try:
+            numeric = self.scan.replace('-', '0')
+            numeric_test = int(numeric)
+        except:
+            self.msg_window('enter numeric values for scan range')
+            return
         self.set_experiment_dir()
 
 
@@ -153,8 +144,15 @@ class cdi_conf(QWidget):
             self.working_dir = os.getcwd()
         else:
             main_conf = os.path.join(dir, 'config')
-            conf_map = ut.read_config(main_conf)
-            self.working_dir = conf_map.working_dir
+            if not os.path.isfile(main_conf):
+                self.msg_window('missing configuration file ' + main_conf)
+                return
+            try:
+                conf_map = ut.read_config(main_conf)
+                self.working_dir = conf_map.working_dir
+            except Exception as e:
+                self.msg_window('please check configuration file ' + main_conf + '. Cannot parse, ' + str(e))
+                return
 
         self.set_work_dir_button.setStyleSheet("Text-align:left")
         self.set_work_dir_button.setText(self.working_dir)
@@ -180,15 +178,20 @@ class cdi_conf(QWidget):
             conf_rec = os.path.join(dir, 'config_disp')
             shutil.copy(conf_rec, dest)
 
-        conf_map = ut.read_config(main_conf)
+        try:
+            conf_map = ut.read_config(main_conf)
+        except Exception as e:
+            self.msg_window('please check configuration file ' + main_conf + '. Cannot parse, ' + str(e))
+            return
+
         self.t.data_dir = conf_map.data_dir
         self.t.specfile = conf_map.specfile
         self.t.darkfile = conf_map.darkfile
         self.t.whitefile = conf_map.whitefile
         try:
-            self.t.auto_correct_prep.setChecked(conf_map.auto_correct)
+            self.t.min_files.setText(str(conf_map.auto_correct).replace(" ", ""))
         except:
-            self.t.auto_correct_prep.setChecked(False)
+            pass
         try:
             self.t.exclude_scans.setText(str(conf_map.exclude_scans).replace(" ", ""))
         except:
@@ -205,7 +208,14 @@ class cdi_conf(QWidget):
 
         # initialize "Data" tab
         data_conf = os.path.join(dir, 'config_data')
-        conf_map = ut.read_config(data_conf)
+        if not os.path.isfile(data_conf):
+            self.msg_window('missing configuration file ' + data_conf)
+            return
+        try:
+            conf_map = ut.read_config(data_conf)
+        except Exception as e:
+            self.msg_window('please check configuration file ' + data_conf + '. Cannot parse, ' + str(e))
+            return
         try:
             self.t.aliens.setText(str(conf_map.aliens).replace(" ", ""))
         except AttributeError:
@@ -229,7 +239,14 @@ class cdi_conf(QWidget):
 
         # initialize "Reconstruction" tab
         rec_conf = os.path.join(dir, 'config_rec')
-        conf_map = ut.read_config(rec_conf)
+        if not os.path.isfile(rec_conf):
+            self.msg_window('missing configuration file ' + rec_conf)
+            return
+        try:
+            conf_map = ut.read_config(rec_conf)
+        except Exception as e:
+            self.msg_window('please check configuration file ' + rec_conf + '. Cannot parse, ' + str(e))
+            return
         try:
             self.t.device.setText(str(conf_map.device).replace(" ", ""))
         except AttributeError:
@@ -256,7 +273,14 @@ class cdi_conf(QWidget):
 
         # initialize "Display" tab
         disp_conf = os.path.join(dir, 'config_disp')
-        conf_map = ut.read_config(disp_conf)
+        if not os.path.isfile(disp_conf):
+            self.msg_window('missing configuration file ' + disp_conf)
+            return
+        try:
+            conf_map = ut.read_config(disp_conf)
+        except Exception as e:
+            self.msg_window('please check configuration file ' + disp_conf + '. Cannot parse, ' + str(e))
+            return
         try:
             self.t.crop.setText(str(conf_map.crop).replace(" ", ""))
         except AttributeError:
@@ -269,6 +293,37 @@ class cdi_conf(QWidget):
         msg.setText(text)
         msg.setWindowTitle("Info")
         msg.exec_()
+
+
+    def write_conf(self, conf_map, dir, file):
+        # create "temp" file first and then overrite existing configuration file
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+        conf_file = os.path.join(dir, file)
+        temp_file = os.path.join(dir, 'temp')
+        with open(temp_file, 'a') as f:
+            for key in conf_map:
+                value = conf_map[key]
+                if len(value) > 0:
+                    f.write(key + ' = ' + conf_map[key] + '\n')
+        f.close()
+        # verify that the temporary file can be parsed
+        try:
+            ut.read_config(temp_file)
+            shutil.move(temp_file, conf_file)
+            return True
+        except:
+            if file == 'config':
+                tab = 'Data Prep'
+            elif file == 'config_data':
+                tab = 'Data'
+            elif file == 'config_rec':
+                tab = 'Reconstruction'
+            elif file == 'config_disp':
+                tab = 'Display'
+            self.msg_window('please check the entries in the ' + tab + ' tab. Cannot save this format')
+            os.remove(temp_file)
+            return False
 
 
 class cdi_conf_tab(QTabWidget):
@@ -293,10 +348,25 @@ class cdi_conf_tab(QTabWidget):
     def tab1UI(self):
         self.data_dir = None
         self.specfile = None
+        self.script = None
+        self.imported_script = False
         layout = QFormLayout()
+        self.data_dir_button = QPushButton()
+        layout.addRow("data directory", self.data_dir_button)
+        self.spec_file_button = QPushButton()
+        layout.addRow("spec file", self.spec_file_button)
+        self.dark_file_button = QPushButton()
+        layout.addRow("darkfield file", self.dark_file_button)
+        self.white_file_button = QPushButton()
+        layout.addRow("whitefield file", self.white_file_button)
+        self.min_files = QLineEdit()
+        layout.addRow("min files in scan", self.min_files)
+        self.exclude_scans = QLineEdit()
+        layout.addRow("exclude scans", self.exclude_scans)
         self.prep = QComboBox()
         self.prep.addItem("34ID prep")
         self.prep.addItem("custom")
+        self.prep.addItem("copy from")
         layout.addRow("choose data preparation ", self.prep)
         # add sub-layout with rows that apply to the choice form above
         sub_layout = QFormLayout()
@@ -308,6 +378,10 @@ class cdi_conf_tab(QTabWidget):
 
         self.prep_button.clicked.connect(self.prepare)
         self.prep.currentIndexChanged.connect(lambda: self.load_prep(sub_layout))
+        self.data_dir_button.clicked.connect(self.set_data_dir)
+        self.spec_file_button.clicked.connect(self.set_spec_file)
+        self.dark_file_button.clicked.connect(self.set_dark_file)
+        self.white_file_button.clicked.connect(self.set_white_file)
 
 
     def load_prep(self, layout):
@@ -315,40 +389,19 @@ class cdi_conf_tab(QTabWidget):
             layout.itemAt(i).widget().deleteLater()
 
         if str(self.prep.currentText()) == "custom":
-            self.script_dir = QLineEdit()
-            layout.addRow("script directory", self.script_dir)
+            self.script_button = QPushButton()
+            layout.addRow("select script", self.script_button)
             self.prep_exec = QLineEdit()
-            layout.addRow("script name.function", self.prep_exec)
+            layout.addRow("prep function", self.prep_exec)
             self.args = QLineEdit()
             layout.addRow("arguments (str/num)", self.args)
+            self.script_button.clicked.connect(self.set_prep_script)
 
-        elif str(self.prep.currentText()) == "34ID prep":
-            self.data_dir_button = QPushButton()
-            layout.addRow("data directory", self.data_dir_button)
-            self.spec_file_button = QPushButton()
-            layout.addRow("spec file", self.spec_file_button)
-            self.dark_file_button = QPushButton()
-            layout.addRow("darkfield file", self.dark_file_button)
-            self.white_file_button = QPushButton()
-            layout.addRow("whitefield file", self.white_file_button)
-            self.auto_correct_prep = QCheckBox()
-            layout.addRow("drop incomlete scans", self.auto_correct_prep)
-            self.exclude_scans = QLineEdit()
-            layout.addRow("exclude scans", self.exclude_scans)
-
-            self.data_dir_button.clicked.connect(self.set_data_dir)
-            self.spec_file_button.clicked.connect(self.set_spec_file)
-            self.dark_file_button.clicked.connect(self.set_dark_file)
-            self.white_file_button.clicked.connect(self.set_white_file)
-            self.auto_correct_prep.stateChanged.connect(lambda: self.toggle_auto(layout))
-
-
-    def toggle_auto(self, layout):
-        cb_label = layout.labelForField(self.auto_correct_prep)
-        if self.auto_correct_prep.isChecked():
-            cb_label.setStyleSheet('color: black')
-        else:
-            cb_label.setStyleSheet('color: grey')
+        # elif str(self.prep.currentText()) == "34ID prep":
+        elif str(self.prep.currentText()) == "copy from":
+            self.ready_prep = QPushButton()
+            layout.addRow("select file", self.ready_prep)
+            self.ready_prep.clicked.connect(self.set_prep_file)
 
 
     def tab2UI(self):
@@ -457,23 +510,81 @@ class cdi_conf_tab(QTabWidget):
             self.data_dir_button.setText(self.data_dir)
 
 
+    def set_prep_file(self):
+        prep_file = select_file(self.main_win.working_dir)
+        selected = str(prep_file)
+        if not selected.endswith('tif') and not selected.endswith('tiff'):
+            self.msg_window("the file extension must be tif or tiff")
+            return
+        self.ready_prep.setStyleSheet("Text-align:left")
+        self.ready_prep.setText(prep_file)
+        # save the file as experiment prep file
+        prep_dir = os.path.join(self.main_win.experiment_dir, 'prep')
+        if not os.path.exists(prep_dir):
+            os.makedirs(prep_dir)
+        exp_prep_file = os.path.join(prep_dir, 'prep_data.tif')
+        shutil.copyfile(selected, exp_prep_file)
+
+
+    def set_prep_script(self):
+        self.script = select_file(self.main_win.working_dir)
+        self.script_button.setStyleSheet("Text-align:left")
+        self.script_button.setText(self.script)
+        # fill the arguments with experiment_dir, scans, config file
+        conf_file = os.path.join(self.main_win.experiment_dir, 'conf', 'config')
+        self.args.setText(str(self.main_win.experiment_dir) + ',' + str(self.main_win.scan) + ',' + conf_file)
+
+
     def prepare(self):
         if self.main_win.id is None or self.main_win.scan is None:
             self.msg_window('enter Reconstruction ID and scan')
         else:
-            #self.main_win.assure_experiment_dir()
+            prep_dir = os.path.join(self.main_win.experiment_dir, 'prep')
+            if not os.path.exists(prep_dir):
+                os.makedirs(prep_dir)
+            conf_map = {}
+            if len(self.main_win.working_dir) > 0:
+                conf_map['working_dir'] = '"' + str(self.main_win.working_dir) + '"'
+            else:
+                self.msg_window("working_dir not defined")
+                return
+            if len(self.min_files.text()) > 0:
+                min_files = str(self.min_files.text())
+                conf_map['min_files'] = min_files
+            if len(self.exclude_scans.text()) > 0:
+                conf_map['exclude_scans'] = str(self.exclude_scans.text()).replace('\n','')
+
             if str(self.prep.currentText()) == "custom":
-                self.prepare_custom()
+                self.prepare_custom(conf_map)
             elif str(self.prep.currentText()) == "34ID prep":
-                self.prepare_34id()
+                self.prepare_34id(conf_map)
 
 
-    def prepare_custom(self):
+    def prepare_custom(self, conf_map):
+        if len(self.data_dir) > 0:
+            conf_map['data_dir'] = '"' + str(self.data_dir) + '"'
+        if len(self.specfile) > 0:
+            conf_map['specfile'] = '"' + str(self.specfile) + '"'
+        if len(self.darkfile) > 0:
+            conf_map['darkfile'] = '"' + str(self.darkfile) + '"'
+        if len(self.whitefile) > 0:
+            conf_map['whitefile'] = '"' + str(self.whitefile) + '"'
+
+        # determine script directory and script name
+        if self.script is None:
+            self.msg_window("script not defined")
+            return
+        full_script = str(self.script)
+        script_info = full_script.split('/')
+        script = script_info[len(script_info)-1]
+        script_dir = full_script[0 : -(len(script)+1)]
+        script = script[0 : -3]
+        func = str(self.prep_exec.text())
+        if len(func) == 0:
+            self.msg_window("function not defined")
+            return
+
         current_dir = os.getcwd()
-        script_dir = str(self.script_dir.text())
-        if not os.path.isfile(os.path.join(script_dir, '__init__.py')):
-            open(os.path.join(script_dir, '__init__.py'), 'a').close()
-        [script, func] = str(self.prep_exec.text()).split('.')
         args = str(self.args.text())
         if len(args) == 0:
             args = []
@@ -487,19 +598,39 @@ class cdi_conf_tab(QTabWidget):
                         args[i] = float(args[i])
                 except:
                     pass
+                try:
+                    if args[i].find('-') > -1:
+                        l = args[i].split('-')
+                        nl = []
+                        for n in l:
+                            nl.append(int(n))
+                        args[i] = nl
+                except:
+                    pass
+
         os.chdir(script_dir)
         sys.path.append(script_dir)
-        m = importlib.import_module(script)
+        if not self.imported_script:
+            self.m = importlib.import_module(script)
+            self.imported_script = True
+        else:
+            self.m = importlib.reload(self.m)
         os.chdir(current_dir)
-        f = getattr(m, func)
-        prep_data = f(*args)
-        if prep_data is not None:
-            tif_file = os.path.join(self.main_win.experiment_dir, 'prep', 'prep_data.tif')
-            ut.save_tif(prep_data, tif_file)
-            print ('done with prep')
+        f = getattr(self.m, func)
+        conf_dir = os.path.join(self.main_win.experiment_dir, 'conf')
+        if self.main_win.write_conf(conf_map, conf_dir, 'config'):
+            try:
+                prep_data = f(*args)
+            except Exception as e:
+                self.msg_window('custom script failed ' + str(e))
+                return
+            if prep_data is not None:
+                tif_file = os.path.join(self.main_win.experiment_dir, 'prep', 'prep_data.tif')
+                ut.save_tif(prep_data, tif_file)
+                print ('done with prep')
 
 
-    def prepare_34id(self):
+    def prepare_34id(self, conf_map):
         mod = importlib.import_module('reccdi.src_py.run_scripts.run_34id_prepare')
         scan = str(self.main_win.scan_widget.text())
         try:
@@ -509,6 +640,7 @@ class cdi_conf_tab(QTabWidget):
                 scan_range[i] = int(scan_range[i])
         except:
             self.msg_window('enter numeric values for scan range')
+            return
 
         if  self.main_win.working_dir is None or \
             self.main_win.id is None or\
@@ -518,20 +650,6 @@ class cdi_conf_tab(QTabWidget):
             self.msg_window('enter all parameters: working_dir, id, scan, data_dir, specfile')
             return
 
-        try:
-            # after checking that scan is entered convert it to list of int
-            scan_range = scan.split('-')
-            for i in range(len(scan_range)):
-                scan_range[i] = int(scan_range[i])
-        except:
-            self.msg_window('enter numeric values for scan range')
-
-        conf_map = {}
-        if len(self.main_win.working_dir) > 0:
-            conf_map['working_dir'] = '"' + str(self.main_win.working_dir) + '"'
-        else:
-            self.msg_window("working_dir not defined")
-            return
         if len(self.data_dir) > 0:
             conf_map['data_dir'] = '"' + str(self.data_dir) + '"'
         if len(self.specfile) > 0:
@@ -549,29 +667,11 @@ class cdi_conf_tab(QTabWidget):
         else:
             self.msg_window("whitefile not defined")
             return
-        if self.auto_correct_prep.isChecked():
-            conf_map["auto_correct"] = '"True"'
-        else:
-            conf_map["auto_correct"] = '"False"'
-        exclude_scans = self.exclude_scans.text()
-        if len(exclude_scans) > 0:
-            exclude_scans = str(exclude_scans).replace('\n', '')
-            conf_map['exclude_scans'] = '"' + exclude_scans + '"'
-            exclude_scans = exclude_scans.split(',')
-            exc_scans = []
-            for scan in exclude_scans:
-                try:
-                    num_scan = int(scan)
-                    exc_scans.append(num_scan)
-                except:
-                    pass
-        else:
-            exc_scans = []
         conf_dir = os.path.join(self.main_win.experiment_dir, 'conf')
-        write_conf(conf_map, conf_dir, 'config')
-
-        f = getattr(mod, 'prepare')
-        f(self.main_win.working_dir, self.main_win.exp_id, scan_range, self.data_dir, self.specfile, self.darkfile, self.whitefile, self.auto_correct_prep.isChecked(), exc_scans)
+        conf_file = os.path.join(conf_dir, 'config')
+        if self.main_win.write_conf(conf_map, conf_dir, 'config'):
+            f = getattr(mod, 'prepare')
+            f(self.main_win.experiment_dir, scan_range, conf_file)
 
         #scripts.run_34id_prepare.prepare(self.main_win.working_dir, self.main_win.exp_id, scan_range, self.data_dir, self.specfile, self.darkfile, self.whitefile)
 
@@ -594,9 +694,8 @@ class cdi_conf_tab(QTabWidget):
                 conf_map['adjust_dimensions'] = str(self.adjust_dimensions.text()).replace('\n','')
 
             conf_dir = os.path.join(self.main_win.experiment_dir, 'conf')
-            write_conf(conf_map, conf_dir, 'config_data')
-
-            run_dt.data(self.main_win.experiment_dir)
+            if self.main_win.write_conf(conf_map, conf_dir, 'config_data'):
+                run_dt.data(self.main_win.experiment_dir)
         else:
             self.msg_window('Please, run data preparation in previous tab to activate this function')
 
@@ -625,34 +724,29 @@ class cdi_conf_tab(QTabWidget):
 
             #self.create_config('config_rec', conf_map)
             conf_dir = os.path.join(self.main_win.experiment_dir, 'conf')
-            write_conf(conf_map, conf_dir, 'config_rec')
-
-            run_rc.reconstruction(str(self.proc.currentText()), self.main_win.experiment_dir)
+            if self.main_win.write_conf(conf_map, conf_dir, 'config_rec'):
+                run_rc.reconstruction(str(self.proc.currentText()), self.main_win.experiment_dir)
         else:
             self.msg_window('Please, run model data in previous tab to activate this function')
 
 
     def display(self):
         if os.path.isfile(os.path.join(self.main_win.experiment_dir, 'results', 'image.npy')):
-            disp_conf_file = os.path.join(self.main_win.experiment_dir, 'conf', 'config_disp')
-            temp_file = os.path.join(self.main_win.experiment_dir, 'conf', 'temp')
-            with open(temp_file, 'a') as temp:
-                try:
-                    with open(disp_conf_file, 'r') as f:
-                        for line in f:
-                            if not line.startswith('crop') and not line.startswith('binning'):
-                                temp.write(line)
-                    f.close()
-                except:
-                    pass
-
+            conf_dir = os.path.join(self.main_win.experiment_dir, 'conf')
+            conf_disp = os.path.join(conf_dir, 'config_disp')
+            if not os.path.isfile(conf_disp):
+                self.msg_window('missing configuration file ' + conf_disp)
+                return
+            try:
+                conf_map = ut.read_config(conf_disp)
                 if len(self.crop.text()) != 0:
-                    temp.write('crop = ' + str(self.crop.text()).replace('\n','') + '\n')
+                    conf_map['binning'] = 'crop = ' + str(self.crop.text()).replace('\n','') + '\n'
+            except Exception as e:
+                self.msg_window('please check configuration file ' + conf_disp + '. Cannot parse, ' + str(e))
+                return
 
-            temp.close()
-            shutil.move(temp_file, disp_conf_file)
-
-            run_dp.to_vtk(self.main_win.experiment_dir)
+            if self.main_win.write_conf(conf_map, conf_dir, conf_disp):
+                run_dp.to_vtk(self.main_win.experiment_dir)
         else:
             self.msg_window('Please, run reconstruction in previous tab to activate this function')
 
@@ -848,7 +942,7 @@ class amplitude_support(Feature):
     def rec_default(self):
         self.support_triggers.setText('(1,1)')
         self.support_type.setText('"GAUSS"')
-        self.support_area.setText('[.5,.5,.5]')
+        self.support_area.setText('(.5,.5,.5)')
         self.sigma.setText('1.0')
         self.threshold.setText('0.1')
 
@@ -950,7 +1044,7 @@ class pcdi(Feature):
         self.pcdi_type.setText('"LUCY"')
         self.pcdi_iter.setText('20')
         self.pcdi_normalize.setText('true')
-        self.pcdi_roi.setText('[32,32,16]')
+        self.pcdi_roi.setText('(32,32,32)')
 
 
     def add_feat_conf(self, conf_map):

@@ -41,23 +41,31 @@ def reconstruction(proc, experiment_dir):
 
     print ('starting reconstruction')
     conf = os.path.join(experiment_dir, 'conf', 'config_rec')
-    print ('rec conf', conf)
-    config_map = ut.read_config(conf)
-    if config_map is None:
-        print ("can't read configuration file")
+    try:
+        config_map = ut.read_config(conf)
+        if config_map is None:
+            print ("can't read configuration file")
+            p.terminate()
+            return
+    except:
+        print ('Please check configuration file ' + conf + '. Cannot parse')
+        p.terminate()
         return
 
     try:
         data_dir = config_map.data_dir
     except AttributeError:
         data_dir = os.path.join(experiment_dir, 'data')
-    datafile = os.path.join(data_dir, 'data.npy')
+    datafile = os.path.join(data_dir, 'data.tif')
 
     try:
-        data = np.load(datafile)
-        print ('data shape', data.shape)
+        data = ut.get_array_from_tif(datafile)
+        shape = list(data.shape)
+        shape.reverse()
+        print ('data shape', shape)
     except:
         print ('data file ' + datafile + ' is missing')
+        p.terminate()
         return
 
     try:

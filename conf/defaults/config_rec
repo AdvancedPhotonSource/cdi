@@ -13,7 +13,7 @@ amp_support_trigger = (0,1)
 support_type = "GAUSS"
 support_threshold = 0.15
 support_sigma = 1.0
-support_area = [.5,.5,.5]
+support_area = (.5,.5,.5)
 
 //phase_support_trigger = (0,1,20)
 phase_min = -1.57
@@ -23,7 +23,7 @@ phase_max = 1.57
 partial_coherence_type = "LUCY"
 partial_coherence_iteration_num = 20
 partial_coherence_normalize = true
-partial_coherence_roi = [32,32,16]
+partial_coherence_roi = (32,32,16)
 
 resolution_trigger = (0, 1, 310)
 iter_res_det_range = (.7)
@@ -65,7 +65,7 @@ avarage_trigger = (-19,1)
 //threads = 3
                              // number of reconstructions to start with
 
-//device = [0,0]
+//device = (0,0)
                              // ID of the target devices for each thread. 
                              // If more threads or not defined, it will default to -1
 
@@ -91,7 +91,7 @@ garbage_trigger = (1,1)
                              //                to calculate sigmas for generations
                              // SIG_ASSIGNED - sigmas will be read from low_resolution_sigmas
 
-//low_resolution_sigmas = [1.0]
+//low_resolution_sigmas = (1.0)
                              // list of sigmas that will be used by subsequent generations if the 
                              // low_resolution_sigma_alg is set to SIG_ASSIGNED
                              // the length must be equal low_resolution_generations
@@ -119,10 +119,10 @@ garbage_trigger = (1,1)
 //is_cross_breed = True      // If True the genetic algorithm will use the best two from previous
                              // generation for breeding
 
-//breed_modes = ['sqrt_ab', 'none']
+//breed_modes = ('sqrt_ab', 'none')
                              // defines how to breed next generation
                              // default for generation 'none'
-//worst_remove_no = [0, 0]
+//worst_remove_no = (0, 0)
                              // numbers of species to remove from subsequent generation
                              // default for generation 0
 
@@ -153,7 +153,7 @@ garbage_trigger = (1,1)
 //support_type = "GAUSS";
 //support_threshold = 0.1;
 //support_sigma = 1.0;
-//support_area = [.5,.5,.5];
+//support_area = (.5,.5,.5);
                              // initial support area. If the values are fractional, the support area will be calculated
                              // by multiplying by the data array dimensions. The support will be set to 1s to this
                              // dimensions centered.
@@ -178,7 +178,7 @@ garbage_trigger = (1,1)
                              // partial coherence algorithm
 //partial_coherence_iteration_num = 20;
 //partial_coherence_normalize = true;
-//partial_coherence_roi = [32,32,32];
+//partial_coherence_roi = (32,32,32);
                              // coherence area. If the values are fractional, the coherence area will be calculated
                              // by multiplying by the data array dimensions.
 

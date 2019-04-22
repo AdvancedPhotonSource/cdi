@@ -67,17 +67,22 @@ def prep(fname, conf_info):
         #assuming it's a file
         conf = conf_info
         experiment_dir = None
-    config_map = ut.read_config(conf)
-    if config_map is None:
-        print ("can't read configuration file")
+    try:
+        config_map = ut.read_config(conf)
+        if config_map is None:
+            print ("can't read configuration file")
+            return
+    except:
+        print ('Please check the configuration file ' + conf + '. Cannot parse')
         return
 
     # saving file for Kenley project - AI aliens removing
     print ('saving for AI')
     d_f = os.path.join(experiment_dir, 'prep', 'prep_data.npy')
     np.save(d_f, data)
-
-    print ('data dimensions before prep', data.shape)
+    shape = list(data.shape)
+    shape.reverse()
+    print ('data dimensions before prep', shape)
     # zero out the aliens, aliens are the same for each data prep
     try:
         aliens = config_map.aliens
@@ -146,7 +151,7 @@ def prep(fname, conf_info):
         prep_data = ut.adjust_dimensions(prep_data, (0,0,0,0,0,0))
 
     try:
-        center_shift = tuple(config_map.center_shift)
+        center_shift = config_map.center_shift
         center_shift.reverse()
         print ('shift center')
         prep_data = ut.get_centered(prep_data, center_shift)
@@ -163,9 +168,12 @@ def prep(fname, conf_info):
         os.makedirs(data_dir)
 
     # save data
-    data_file = os.path.join(data_dir, 'data.npy')
-    print ('saving data ready for reconstruction, data dims:', prep_data.shape)
-    np.save(data_file, prep_data)
+    data_file = os.path.join(data_dir, 'data.tif')
+    shape = list(prep_data.shape)
+    shape.reverse()
+    print ('saving data ready for reconstruction, data dims:', shape)
+    # np.save(data_file, prep_data)
+    ut.save_tif(prep_data, data_file)
 
 
 #prep('/local/bfrosik/CDI/S149/Staff14-3_S0149.tif', 'config_data')

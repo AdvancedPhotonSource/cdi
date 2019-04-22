@@ -82,7 +82,7 @@ def read_config(config):
     if os.path.isfile(config):
         with open(config, 'r') as f:
             config_map = cfg.Config(f.read())
-            return config_map;
+            return config_map
     else:
         return None
 

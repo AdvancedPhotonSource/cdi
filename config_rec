@@ -30,11 +30,11 @@ continue_dir = "cont"
 samples = 1
                              // number of reconstructions to start with
 
-device = [0,0]
+device = (0,0)
                              // ID of the target devices for each thread. 
                              // If more threads or not defined, it will default to -1
 
-garbage_trigger = (10,5)
+garbage_trigger = (10,.5)
                              // ArrayFire memory management is not reliable, the way around is to call garbage
                              // collection per defined number of iterations. Decrease this value if out of memory
                              // error occurs
@@ -54,7 +54,7 @@ low_resolution_sigma_alg = "SIG_SPACE_LINEAR"
                              //                to calculate sigmas for generations
                              // SIG_ASSIGNED - sigmas will be read from low_resolution_sigmas
 
-low_resolution_sigmas = [1.0]
+low_resolution_sigmas = (1.0)
                              // list of sigmas that will be used by subsequent generations if the 
                              // low_resolution_sigma_alg is set to SIG_ASSIGNED
                              // the length must be equal low_resolution_generations
@@ -99,7 +99,7 @@ amp_support_trigger = (7, 5)
 support_type = "GAUSS";
 support_threshold = 0.1;
 support_sigma = 1.0;
-support_area = [.5,.5,.5];
+support_area = (.5,.5,.5)
                              // initial support area. If the values are fractional, the support area will be calculated
                              // by multiplying by the data array dimensions. The support will be set to 1s to this
                              // dimensions centered.
@@ -124,7 +124,7 @@ partial_coherence_type = "LUCY";
                              // partial coherence algorithm
 partial_coherence_iteration_num = 20;
 partial_coherence_normalize = true;
-partial_coherence_roi = [32,32,32];
+partial_coherence_roi = (32,32,32);
                              // coherence area. If the values are fractional, the coherence area will be calculated
                              // by multiplying by the data array dimensions.
 

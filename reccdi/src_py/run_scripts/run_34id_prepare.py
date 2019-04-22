@@ -6,15 +6,11 @@ import reccdi.src_py.beamlines.aps_34id.prep as prep
 import shutil
 
 
-def prepare(working_dir, id, scan, data_dir, specfile, darkfile, whitefile, auto_correct=False, exclude_scans=[]):
-    experiment_dir = os.path.join(working_dir, id)
-    experiment_conf_dir = os.path.join(experiment_dir, 'conf')
-    if not os.path.exists(experiment_conf_dir):
-        os.makedirs(experiment_conf_dir)
+def prepare(experiment_dir, scan_range, conf_file):
+    prep.prepare(experiment_dir, scan_range, conf_file)
 
-    prep.prepare(working_dir, id, scan, data_dir, specfile, darkfile, whitefile, auto_correct, exclude_scans)
     # copy experiment config into last config, this is the last used
-    main_conf = os.path.join(working_dir, id, 'conf', 'config')
+    main_conf = os.path.join(experiment_dir, 'conf', 'config')
     last = os.path.join('conf', 'last')
     if not os.path.exists(last):
         os.makedirs(last)
@@ -24,27 +20,29 @@ def prepare(working_dir, id, scan, data_dir, specfile, darkfile, whitefile, auto
 
 
 def copy_conf(src, dest):
-    if src != dest:
+    try:
         main_conf = os.path.join(src, 'config')
         shutil.copy(main_conf, dest)
         conf_data = os.path.join(src, 'config_data')
         shutil.copy(conf_data, dest)
         conf_rec = os.path.join(src, 'config_rec')
         shutil.copy(conf_rec, dest)
+    except:
+        pass
 
 
-def parse_prepare(prefix, scan, conf_dir):
+def parse_and_prepare(prefix, scan, conf_dir):
     id = prefix + '_' + scan
     print ('reading data file for experiment ' + id)
 
     if not os.path.isdir(conf_dir):
         print ('configured directory ' + conf_dir + ' does not exist')
-        sys.exit(0)
+        return
 
     main_conf = os.path.join(conf_dir, 'config')
     if not os.path.isfile(main_conf):
         print ('the configuration directory does not contain "config" file')
-        sys.exit(0)
+        return
 
     try:
         # convert it to list of int
@@ -54,31 +52,35 @@ def parse_prepare(prefix, scan, conf_dir):
             scan_num.append(int(scan_range[i]))
     except:
         print ('enter numeric values for scan range')
-        sys.exit(0)
+        return
 
     main_conf = os.path.join(conf_dir, 'config')
-    with open(main_conf, 'r') as f:
-        config_map = cfg.Config(f.read())
-
-    excluded = []
     try:
-        exclude_scans = config_map.exclude_scans
-        try:
-            # convert it to list of int
-            exclude_scans = exclude_scans.split(',')
-            for i in range(len(exclude_scans)):
-                excluded.append(int(exclude_scans[i]))
-        except:
-            print ('enter numeric values for scan range')
-            sys.exit(0)
-    except:
-        pass
+        with open(main_conf, 'r') as f:
+            config_map = cfg.Config(f.read())
+    except Exception as e:
+        print ('Please check the configuration file ' + main_conf + '. Cannot parse ' + str(e))
+        return
 
-    prep.prepare(config_map.working_dir, id, scan_num, config_map.data_dir, config_map.specfile, config_map.darkfile, config_map.whitefile, config_map.auto_correct, excluded)
-    experiment_dir = os.path.join(config_map.working_dir, id)
+    try:
+        working_dir = config_map.working_dir
+    except:
+        print ('config file does not have "working_dir" entry, defaulting to current directory')
+        working_dir = os.getcwd()
+
+    experiment_dir = os.path.join(working_dir, id)
+    if not os.path.exists(experiment_dir):
+        os.makedirs(experiment_dir)
     # copy config_data, config_rec, cofig_disp files from cofig directory into the experiment conf directory
-    copy_conf(conf_dir, os.path.join(experiment_dir, 'conf'))
+    experiment_conf_dir = os.path.join(experiment_dir, 'conf')
+    if not os.path.exists(experiment_conf_dir):
+        os.makedirs(experiment_conf_dir)
+    copy_conf(conf_dir, experiment_conf_dir)
+
+    prep.prepare(experiment_dir, scan_num, main_conf)
+
     return experiment_dir
+
 
 
 def main(arg):
@@ -91,7 +93,7 @@ def main(arg):
     id = args.id
     conf_dir = args.conf_dir
 
-    return parse_prepare(id, scan, conf_dir)
+    return parse_and_prepare(id, scan, conf_dir)
 
 
 if __name__ == "__main__":

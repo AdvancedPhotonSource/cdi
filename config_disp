@@ -15,9 +15,9 @@ arm=0.6350;
 dth=0.000174532925199;
 
 // detector pixel sixe
-pixel = [55.0e-6, 55.0e-6];
+pixel = (55.0e-6, 55.0e-6);
 
 // size to crop the image array
-//crop = [120,120,120]
-crop = [.75, .75, .75]
+//crop = (120,120,120)
+crop = (.75, .75, .75)
 
