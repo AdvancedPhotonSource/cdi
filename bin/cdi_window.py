@@ -709,7 +709,7 @@ class cdi_conf_tab(QTabWidget):
 
 
     def reconstruction(self):
-        if os.path.isfile(os.path.join(self.main_win.experiment_dir, 'data', 'data.npy')):
+        if os.path.isfile(os.path.join(self.main_win.experiment_dir, 'data', 'data.tif')):
             conf_map = {}
             conf_map['samples'] = str(self.samples.text())
             conf_map['device'] = str(self.device.text()).replace('\n','')
