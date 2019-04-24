@@ -737,16 +737,24 @@ class cdi_conf_tab(QTabWidget):
             if not os.path.isfile(conf_disp):
                 self.msg_window('missing configuration file ' + conf_disp)
                 return
-            try:
-                conf_map = ut.read_config(conf_disp)
-                if len(self.crop.text()) != 0:
-                    conf_map['binning'] = 'crop = ' + str(self.crop.text()).replace('\n','') + '\n'
-            except Exception as e:
-                self.msg_window('please check configuration file ' + conf_disp + '. Cannot parse, ' + str(e))
-                return
+            temp_file = os.path.join(self.main_win.experiment_dir, 'conf', 'temp')
+            with open(temp_file, 'a') as temp:
+                try:
+                    with open(conf_disp, 'r') as f:
+                        for line in f:
+                            if not line.startswith('crop') and not line.startswith('binning'):
+                                temp.write(line)
+                    f.close()
+                except:
+                    pass
 
-            if self.main_win.write_conf(conf_map, conf_dir, conf_disp):
-                run_dp.to_vtk(self.main_win.experiment_dir)
+                if len(self.crop.text()) != 0:
+                    temp.write('crop = ' + str(self.crop.text()).replace('\n', '') + '\n')
+
+            temp.close()
+            shutil.move(temp_file, conf_disp)
+
+            run_dp.to_vtk(self.main_win.experiment_dir)
         else:
             self.msg_window('Please, run reconstruction in previous tab to activate this function')
 
