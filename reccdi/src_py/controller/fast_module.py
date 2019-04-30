@@ -158,6 +158,9 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
     reciprocal_r = copy.deepcopy(np.asarray(fast_module.get_reciprocal_r()))
     reciprocal_i = copy.deepcopy(np.asarray(fast_module.get_reciprocal_i()))
     reciprocal = reciprocal_r + 1j*reciprocal_i
+    reciprocal = np.reshape(reciprocal, dims)
+    reciprocal = np.swapaxes(reciprocal, 2, 0)
+    reciprocal = np.swapaxes(reciprocal, 1, 0)
 
     fast_module.cleanup()
 
