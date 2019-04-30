@@ -22,6 +22,7 @@ import scipy.fftpack as sf
 import reccdi.src_py.cyth.bridge_cpu as bridge_cpu
 import reccdi.src_py.cyth.bridge_opencl as bridge_opencl
 import reccdi.src_py.cyth.bridge_cuda as bridge_cuda
+import copy
 
 
 __author__ = "Barbara Frosik"
@@ -127,17 +128,17 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
 
         fast_module.start_calc_with_guess_support_coh(device, data_l, image.real.tolist(), image.imag.tolist(), support.tolist(), dims1, coherence.tolist(), coh_dims1, conf)
 
-    er = fast_module.get_errors()
-    image_r = np.asarray(fast_module.get_image_r()).copy()
-    image_i = np.asarray(fast_module.get_image_i()).copy()
+    er = copy.deepcopy(fast_module.get_errors())
+    image_r = copy.deepcopy(np.asarray(fast_module.get_image_r()))
+    image_i = copy.deepcopy(np.asarray(fast_module.get_image_i()))
     image = image_r + 1j*image_i
     print ('image norm in fast module',  sum(abs(image)**2))
     # normalize image
     mx = max(np.absolute(image).ravel().tolist())
     image = image/mx
 
-    support = np.asarray(fast_module.get_support()).copy()
-    coherence = np.asarray(fast_module.get_coherence()).copy()
+    support = copy.deepcopy(np.asarray(fast_module.get_support()))
+    coherence = copy.deepcopy(np.asarray(fast_module.get_coherence()))
 
     image = np.reshape(image, dims)
     image = np.swapaxes(image, 2, 0)
@@ -154,6 +155,11 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
     else:
         coherence = None
 
-    return image, support, coherence, er
+    reciprocal_r = copy.deepcopy(np.asarray(fast_module.get_reciprocal_r()))
+    reciprocal_i = copy.deepcopy(np.asarray(fast_module.get_reciprocal_i()))
+    reciprocal = reciprocal_r + 1j*reciprocal_i
 
+    fast_module.cleanup()
+
+    return image, support, coherence, er, reciprocal
 

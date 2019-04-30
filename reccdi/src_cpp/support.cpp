@@ -41,6 +41,14 @@ Support::Support(const af::dim4 data_dim, Params *parameters, af::array support)
  */   
 }
 
+
+Support::~Support()
+{
+    distribution = af::array();
+    support_array = af::array();
+    init_support_array = af::array();
+}
+
 void Support::UpdateAmp(const af::array ds_image, d_type sig, int iter)
 {
     if (sig != last_sigma)

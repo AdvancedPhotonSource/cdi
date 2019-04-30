@@ -483,6 +483,8 @@ Params::~Params()
     alg_switches.clear();
     support_area.clear();
     pcdi_roi.clear();
+    used_flow_seq.clear();
+    flow_vec.clear();
 }
 
 void Params::BuildAlgorithmMap()

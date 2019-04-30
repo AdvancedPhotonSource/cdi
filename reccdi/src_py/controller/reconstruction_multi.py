@@ -129,9 +129,9 @@ def run_fast_module(proc, device, conf, data, coh_dims, prev_image, prev_support
 
     error : list containing errors for iterations
     """
-    image, support, coherence, errors = calc.fast_module_reconstruction(proc, device, conf, data, coh_dims,
+    image, support, coherence, errors, reciprocal = calc.fast_module_reconstruction(proc, device, conf, data, coh_dims,
                                                                        prev_image, prev_support, prev_coh)
-    return image, support, coherence, errors
+    return image, support, coherence, errors, reciprocal
 
 
 def read_results(read_dir):
@@ -166,36 +166,6 @@ def read_results(read_dir):
         cohs.append(coh)
 
     return images, supports, cohs
-
-
-def save_results(samples, images, supports, cohs, errs, save_dir):
-    """
-    This function saves results of multiple reconstructions to directory tree in save_dir.
-
-    Parameters
-    ----------
-    samples : int
-        number of reconstruction sets results
-
-    images : list
-        list of numpy arrays containing reconstructed images
-
-    supports : list
-        list of numpy arrays containing support of reconstructed images
-
-    cohs : list
-        list of numpy arrays containing coherence of reconstructed images
-
-    save_dir : str
-        a directory to save the results
-
-    Returns
-    -------
-    nothing
-    """
-    for i in range(samples):
-        subdir = os.path.join(save_dir, str(i))
-        ut.save_results(images[i], supports[i], cohs[i], np.asarray(errs[i]), subdir)
 
 
 def rec(proc, data, conf, config_map, images, supports, cohs=None):
@@ -256,6 +226,7 @@ def rec(proc, data, conf, config_map, images, supports, cohs=None):
 
     res = []
     errs = []
+    recips = []
     for i in range(samples):
         if cohs is None:
             coh = None
@@ -263,6 +234,7 @@ def rec(proc, data, conf, config_map, images, supports, cohs=None):
             coh = cohs[i]
         res.append(None)
         errs.append(None)
+        recips.append(None)
         res[i] = run_fast_module(proc, devices[i], conf, data, coh_dims, images[i], supports[i], coh)
 
     # Wait for all Parsl runs to complete..
@@ -272,8 +244,9 @@ def rec(proc, data, conf, config_map, images, supports, cohs=None):
         supports[i] = r[1]
         cohs[i] = r[2]
         errs[i] = r[3]
+        recips[i] = r[4]
     # return only error from last iteration for each reconstruction
-    return images, supports, cohs, errs
+    return images, supports, cohs, errs, recips
 
 
 def reconstruction(samples, proc, data, conf_info, config_map):
@@ -341,7 +314,7 @@ def reconstruction(samples, proc, data, conf_info, config_map):
         conf = conf_info
         experiment_dir = None
 
-    images, supports, cohs, errs = rec(proc, data, conf, config_map, images, supports, cohs)
+    images, supports, cohs, errs, recips = rec(proc, data, conf, config_map, images, supports, cohs)
     stop = time.time()
     t = stop - start
     print ('run in ' + str(t) + ' sec')
@@ -353,7 +326,7 @@ def reconstruction(samples, proc, data, conf_info, config_map):
         if experiment_dir is not None:
             save_dir = os.path.join(experiment_dir, save_dir)
 
-    save_results(samples, images, supports, cohs, errs, save_dir)
+    ut.save_mult_results(samples, images, supports, cohs, errs, recips, save_dir)
 
     print('done')
 

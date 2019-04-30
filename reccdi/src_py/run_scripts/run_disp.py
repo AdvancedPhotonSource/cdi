@@ -21,6 +21,18 @@ def save_vtk(res_dir, conf):
         print ('support file ' + supportfile + ' is missing')
         return
 
+    reciprocalfile = os.path.join(res_dir, 'reciprocal.npy')
+    reciprocal = np.load(reciprocalfile)
+    # reciprocal is saved as tif file, so no need to pass it to cx module
+    # saving amp, phase, and square of modulus in tif format
+    reciprocal_amp = np.absolute(reciprocal)
+    reciprocal_phase = np.angle(reciprocal)
+    reciprocal_sq_mod = np.power(reciprocal_amp, 2)
+
+    ut.save_tif(reciprocal_amp, os.path.join(res_dir, 'reciprocal_amp.tif'))
+    ut.save_tif(reciprocal_phase, os.path.join(res_dir, 'reciprocal_phase.tif'))
+    ut.save_tif(reciprocal_sq_mod, os.path.join(res_dir, 'reciprocal_sq_mod.tif'))
+
     try:
         cohfile = os.path.join(res_dir, 'coherence.npy')
         coh = np.load(cohfile)

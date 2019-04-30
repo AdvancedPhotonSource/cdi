@@ -83,10 +83,10 @@ def rec(proc, data, conf, config_map, image, support, coh):
     except:
         coh_dims = None
 
-    image, support, coh, er = calc.fast_module_reconstruction(proc, devices[0], conf, data, coh_dims, image, support, coh)
+    image, support, coh, er, reciprocal = calc.fast_module_reconstruction(proc, devices[0], conf, data, coh_dims, image, support, coh)
 
     # errs contain errors for each iteration
-    return image, support, coh, er
+    return image, support, coh, er, reciprocal
 
 
 def reconstruction(proc, data, conf_info, config_map):
@@ -151,7 +151,7 @@ def reconstruction(proc, data, conf_info, config_map):
             conf = conf_info
             experiment_dir = None
 
-        image, support, coh, errs = rec(proc, data, conf, config_map, image, support, coh)
+        image, support, coh, errs, recips = rec(proc, data, conf, config_map, image, support, coh)
 
         try:
             save_dir = config_map.save_dir
@@ -160,7 +160,7 @@ def reconstruction(proc, data, conf_info, config_map):
             if experiment_dir is not None:
                 save_dir = os.path.join(experiment_dir, save_dir)
 
-        ut.save_results(image, support, coh, np.asarray(errs), save_dir)
+        ut.save_results(image, support, coh, np.asarray(errs), recips, save_dir)
 
         print('done')
 

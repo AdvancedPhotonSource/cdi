@@ -62,6 +62,12 @@ public:
     // This method returns final coherence array.
     std::vector<d_type> GetCoherenceV();
 
+    // This method returns last amplitudes in reciprocal space. The returned buffer contains the real part.
+    std::vector<d_type> GetReciprocalR();
+
+    // This method returns last amplitudes in reciprocal space. The returned buffer contains the imaginary part.
+    std::vector<d_type> GetReciprocalI();
+
 };
 
 

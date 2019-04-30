@@ -18,7 +18,7 @@ def main(arg):
     scans = args.scans
     conf_dir = args.conf_dir
 
-    experiment_dir = prep.parse_prepare(prefix, scans, conf_dir)
+    experiment_dir = prep.parse_and_prepare(prefix, scans, conf_dir)
     run_dt.data(experiment_dir)
     run_rc.reconstruction(dev, experiment_dir)
     run_dp.to_vtk(experiment_dir)

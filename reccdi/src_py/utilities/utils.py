@@ -45,18 +45,16 @@ def get_logger(name, ldir=''):
 def get_array_from_tif(filename):
     """
     This method reads tif type file containing experiment data and returns the data as array.
-
     Parameters
     ----------
     filename : str
         a filename containing the experiment data
-
     Returns
     -------
     data : array
         an array containing the experiment data
     """
-    
+
     return tf.imread(filename)
 
 
@@ -67,12 +65,10 @@ def save_tif(ar, tif_file):
 def read_config(config):
     """
     This function gets configuration file. It checks if the file exists and parses it into a map.
-
     Parameters
     ----------
     config : str
         configuration file name, including path
-
     Returns
     -------
     config_map : dict
@@ -82,26 +78,24 @@ def read_config(config):
     if os.path.isfile(config):
         with open(config, 'r') as f:
             config_map = cfg.Config(f.read())
-            return config_map
+            return config_map;
     else:
         return None
 
 
 def get_good_dim(dim):
     """
-    This function calculates the dimension supported by opencl library (i.e. is multiplier of 2,3, or 5) and is closest to the 
+    This function calculates the dimension supported by opencl library (i.e. is multiplier of 2,3, or 5) and is closest to the
     given starting dimension, and spaced by the given step.
     If the dimension is not supported the function adds step value and verifies the new dimension. It iterates until it finds
     supported value.
-
     Parameters
     ----------
     dim : int
         a dimension that needs to be tranformed to one that is supported by the opencl library, if it is not already
-        
+
     step : int
         a delta to increase the dimension
-
     Returns
     -------
     dim : int
@@ -110,39 +104,37 @@ def get_good_dim(dim):
 
     def is_correct(x):
         sub = x
-        if sub%3 == 0:
-            sub = sub/3
-        if sub%3 == 0:
-            sub = sub/3
-        if sub%5 == 0:
-            sub = sub/5
-        while sub%2 == 0:
-            sub = sub/2
+        if sub % 3 == 0:
+            sub = sub / 3
+        if sub % 3 == 0:
+            sub = sub / 3
+        if sub % 5 == 0:
+            sub = sub / 5
+        while sub % 2 == 0:
+            sub = sub / 2
         return sub == 1
 
     new_dim = dim
-    if new_dim%2 == 1:
+    if new_dim % 2 == 1:
         new_dim += 1
     while not is_correct(new_dim):
         new_dim += 2
     return new_dim
-    
+
 
 def get_opencl_dim1(dim, step):
     """
-    This function calculates the dimension supported by opencl library (i.e. is multiplier of 2,3, or 5) and is closest to the 
+    This function calculates the dimension supported by opencl library (i.e. is multiplier of 2,3, or 5) and is closest to the
     given starting dimension, and spaced by the given step.
     If the dimension is not supported the function adds step value and verifies the new dimension. It iterates until it finds
     supported value.
-
     Parameters
     ----------
     dim : int
         a dimension that needs to be tranformed to one that is supported by the opencl library, if it is not already
-        
+
     step : int
         a delta to increase the dimension
-
     Returns
     -------
     dim : int
@@ -151,34 +143,32 @@ def get_opencl_dim1(dim, step):
 
     def is_correct(x):
         sub = x
-        while sub%2 == 0:
-            sub = sub/2
-        while sub%3 == 0:
-            sub = sub/3
-        while sub%5 == 0:
-            sub = sub/5
+        while sub % 2 == 0:
+            sub = sub / 2
+        while sub % 3 == 0:
+            sub = sub / 3
+        while sub % 5 == 0:
+            sub = sub / 5
         return sub == 1
 
     new_dim = dim
     while not is_correct(new_dim):
         new_dim += step
     return new_dim
-    
+
 
 def binning(array, binsizes):
     """
     This function does the binning of the array. The array is binned in each dimension by the corresponding binsizes elements.
     If binsizes list is shorter than the array dimensions, the remaining dimensions are not binned. The elements in
     a bucket are summed.
-
     Parameters
     ----------
     array : array
         the original array to be binned
-        
+
     binsizes : list
         a list defining binning buckets for corresponding dimensions
-
     Returns
     -------
     array : array
@@ -186,7 +176,7 @@ def binning(array, binsizes):
     """
 
     data_dims = array.shape
-    # trim array 
+    # trim array
     for ax in range(len(binsizes)):
         cut_slices = range(data_dims[ax] - data_dims[ax] % binsizes[ax], data_dims[ax])
         array = np.delete(array, cut_slices, ax)
@@ -199,7 +189,7 @@ def binning(array, binsizes):
             new_shape[ax] = binsizes[ax]
             new_shape.insert(ax, int(array.shape[ax] / binsizes[ax]))
             binned_array = np.reshape(binned_array, tuple(new_shape))
-            binned_array = np.sum(binned_array, axis=ax+1)
+            binned_array = np.sum(binned_array, axis=ax + 1)
             new_shape = list(binned_array.shape)
     return binned_array
 
@@ -213,32 +203,27 @@ def binning(array, binsizes):
 # print ('c',c)
 
 
-def get_centered(arr, center_shift=None):
+def get_centered(arr, center_shift):
     """
     This function finds a greatest value in the array, and puts it in a center of a new array. If center_shift is
     not zeros, the array will be shifted accordingly. The shifted elements are rolled into the other end of array.
-
-
     Parameters
     ----------
     arr : array
         the original array to be centered
-
     center_shift : list
         a list defining shift of the center
-
     Returns
     -------
     array : array
         the centered array
     """
     max_coordinates = list(np.unravel_index(np.argmax(arr), arr.shape))
-    if center_shift is not None:
-        max_coordinates = np.add(max_coordinates, center_shift)
+    max_coordinates = np.add(max_coordinates, center_shift)
     shape = arr.shape
     centered = arr
-    for i in range (len(max_coordinates)):
-        centered = np.roll(centered, int(shape[i]/2)-max_coordinates[i], i)
+    for i in range(len(max_coordinates)):
+        centered = np.roll(centered, int(shape[i] / 2) - max_coordinates[i], i)
 
     return centered
 
@@ -247,43 +232,37 @@ def get_centered_both(arr, support):
     """
     This function finds a greatest value in the array, and puts it in a center of a new array. If center_shift is
     not zeros, the array will be shifted accordingly. The shifted elements are rolled into the other end of array.
-
-
     Parameters
     ----------
     arr : array
         the original array to be centered
-
-    center_shift : list
-        a list defining shift of the center
-
+    support : array
+        the associated array shifted the same way centered array is
     Returns
     -------
-    array : array
+    centered : array
         the centered array
     """
     max_coordinates = list(np.unravel_index(np.argmax(arr), arr.shape))
     shape = arr.shape
     centered = arr
-    for i in range (len(max_coordinates)):
-        centered = np.roll(centered, int(shape[i]/2)-max_coordinates[i], i)
-        support = np.roll(support, int(shape[i]/2)-max_coordinates[i], i)
+    centered_supp = support
+    for i in range(len(max_coordinates)):
+        centered = np.roll(centered, int(shape[i] / 2) - max_coordinates[i], i)
+        centered_supp = np.roll(centered_supp, int(shape[i] / 2) - max_coordinates[i], i)
 
-    return centered, support
+    return centered, centered_supp
 
 
 def get_zero_padded_centered(arr, new_shape):
     """
     This function pads the array with zeros to the new shape with the array in the center.
-
     Parameters
     ----------
     arr : array
         the original array to be padded and centered
-
     new_shape : tuple
         a list of new dimensions
-
     Returns
     -------
     array : array
@@ -292,14 +271,14 @@ def get_zero_padded_centered(arr, new_shape):
     shape = arr.shape
     pad = []
     c_vals = []
-    for i in range (len(new_shape)):
+    for i in range(len(new_shape)):
         pad.append((0, new_shape[i] - shape[i]))
         c_vals.append((0.0, 0.0))
     arr = np.lib.pad(arr, (pad), 'constant', constant_values=c_vals)
 
     centered = arr
-    for i in range (len(new_shape)):
-        centered = np.roll(centered, int((new_shape[i] - shape[i] + 1)/2), i)
+    for i in range(len(new_shape)):
+        centered = np.roll(centered, int((new_shape[i] - shape[i] + 1) / 2), i)
 
     return centered
 
@@ -307,18 +286,14 @@ def get_zero_padded_centered(arr, new_shape):
 def adjust_dimensions(arr, pad):
     """
     This function adds to or subtracts from each dimension of the array elements defined by pad. If the pad is positive,
-    the array is padded in this dimension. If the pad is negative, the array is cropped. 
+    the array is padded in this dimension. If the pad is negative, the array is cropped.
     The dimensions of the new array are supported by the opencl library.
-
-
     Parameters
     ----------
     arr : array
         the array to pad/crop
-
     pad : list
         list of three pad values, for each dimension
-
     Returns
     -------
     array : array
@@ -328,22 +303,22 @@ def adjust_dimensions(arr, pad):
     old_dims = arr.shape
     cropped = arr
     for i in range(len(old_dims)):
-        crop_front = max(0, -pad[2*i])
-        crop_end = max(0, -pad[2*i+1])
-        splitted = np.split(cropped, [crop_front, old_dims[i]-crop_end], axis=i)
+        crop_front = max(0, -pad[2 * i])
+        crop_end = max(0, -pad[2 * i + 1])
+        splitted = np.split(cropped, [crop_front, old_dims[i] - crop_end], axis=i)
         cropped = splitted[1]
     # logger.info('cutting from to ' + str(crop[0]) + ', ' + str(old_dims[0]-crop[1]) + ', ' + str(crop[2]) + ', ' \
     #             + str(old_dims[1]-crop[3]) + ', ' + str(crop[4]) + ', ' + str(old_dims[2]-crop[5]))
     dims = cropped.shape
     c_vals = []
     new_pad = []
-    for i in range (len(dims)):
+    for i in range(len(dims)):
         # find a good dimension and find padding
-        temp_dim = old_dims[i] + pad[2*i] + pad[2*i+1]
+        temp_dim = old_dims[i] + pad[2 * i] + pad[2 * i + 1]
         new_dim = get_good_dim(temp_dim)
         added = new_dim - temp_dim
         # if the pad is positive
-        pad_front = max(0, pad[2*i]) + int(added/2)
+        pad_front = max(0, pad[2 * i]) + int(added / 2)
         pad_end = new_dim - dims[i] - pad_front
         new_pad.append((pad_front, pad_end))
         c_vals.append((0.0, 0.0))
@@ -356,6 +331,7 @@ def adjust_dimensions(arr, pad):
 
     return adjusted
 
+
 # ar = np.zeros((81,256,256))
 # pads = (5,-7,-20,-30,4,-20)
 # arr = adjust_dimensions(ar,pads)
@@ -365,12 +341,13 @@ def crop_center(arr, new_size):
     size = arr.shape
     cropped = arr
     for i in range(len(size)):
-        crop_front = int((size[i]-new_size[i])/2)
+        crop_front = int((size[i] - new_size[i]) / 2)
         crop_end = crop_front + new_size[i]
         splitted = np.split(cropped, [crop_front, crop_end], axis=i)
         cropped = splitted[1]
 
     return cropped
+
 
 # ar = np.zeros((81,256,256))
 # new_size = (40, 200,100)
@@ -378,16 +355,15 @@ def crop_center(arr, new_size):
 # print (arr.shape)
 
 def get_norm(arr):
-    return sum(sum(sum(abs(arr)**2)))
+    return sum(sum(sum(abs(arr) ** 2)))
 
 
 def flip(m, axis):
     """
     Copied from numpy 1.12.0.
-
     """
     if not hasattr(m, 'ndim'):
-       m = np.asarray(m)
+        m = np.asarray(m)
     indexer = [slice(None)] * m.ndim
     try:
         indexer[axis] = slice(None, None, -1)
@@ -404,18 +380,18 @@ def gaussian(shape, sigmas, alpha=1):
         tile_shape = list(shape)
         tile_shape.pop(i)
         tile_shape.append(1)
-        trans_shape = list(range(len(shape)-1))
-        trans_shape.insert(i, len(shape)-1)
+        trans_shape = list(range(len(shape) - 1))
+        trans_shape.insert(i, len(shape) - 1)
 
         multiplier = - 0.5 * alpha / pow(sigmas[i], 2)
-        line = np.linspace(-(shape[i]-1)/2.0, (shape[i]-1)/2.0, shape[i])
+        line = np.linspace(-(shape[i] - 1) / 2.0, (shape[i] - 1) / 2.0, shape[i])
         gi = np.tile(line, tile_shape)
         gi = np.transpose(gi, tuple(trans_shape))
         exponent = np.power(gi, 2) * multiplier
         gi = np.exp(exponent)
         grid = grid * gi
 
-    grid_total = np.sum (grid)
+    grid_total = np.sum(grid)
     return grid / grid_total
 
 
@@ -424,7 +400,7 @@ def gauss_conv_fft(arr, sigmas):
     arr_f = np.fft.ifftshift(np.fft.fftn(np.fft.ifftshift(arr)))
     shape = list(arr.shape)
     for i in range(len(sigmas)):
-        sigmas[i] = shape[i]/2.0/np.pi/sigmas[i]
+        sigmas[i] = shape[i] / 2.0 / np.pi / sigmas[i]
     convag = arr_f * gaussian(shape, sigmas)
     convag = np.fft.ifftshift(np.fft.ifftn(np.fft.ifftshift(convag)))
     convag = convag.real
@@ -435,7 +411,7 @@ def gauss_conv_fft(arr, sigmas):
 
 
 def shrink_wrap(arr, threshold, sigma, type='gauss'):
-    sigmas = [sigma]*len(arr.shape)
+    sigmas = [sigma] * len(arr.shape)
     if type == 'gauss':
         convag = gauss_conv_fft(abs(arr), sigmas)
         max_convag = np.amax(convag)
@@ -455,7 +431,7 @@ def read_results(read_dir):
         support = np.load(supportfile)
 
         try:
-            cohfile =  os.path.join(read_dir, 'coherence.npy')
+            cohfile = os.path.join(read_dir, 'coherence.npy')
             coh = np.load(cohfile)
         except:
             coh = None
@@ -465,7 +441,7 @@ def read_results(read_dir):
     return image, support, coh
 
 
-def save_results(image, support, coh, errs, save_dir):
+def save_results(image, support, coh, errs, reciprocal, save_dir):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
@@ -478,15 +454,41 @@ def save_results(image, support, coh, errs, save_dir):
     if not coh is None:
         coh_file = os.path.join(save_dir, 'coherence')
         np.save(coh_file, coh)
+    reciprocal_file = os.path.join(save_dir, 'reciprocal')
+    np.save(reciprocal_file, reciprocal)
+
+
+def save_multiple_results(samples, images, supports, cohs, errs, reciprocals, save_dir):
+    """
+    This function saves results of multiple reconstructions to directory tree in save_dir.
+    Parameters
+    ----------
+    samples : int
+        number of reconstruction sets results
+    images : list
+        list of numpy arrays containing reconstructed images
+    supports : list
+        list of numpy arrays containing support of reconstructed images
+    cohs : list
+        list of numpy arrays containing coherence of reconstructed images
+    save_dir : str
+        a directory to save the results
+    Returns
+    -------
+    nothing
+    """
+    for i in range(samples):
+        subdir = os.path.join(save_dir, str(i))
+        save_results(images[i], supports[i], cohs[i], np.asarray(errs[i]), reciprocals[i], subdir)
 
 
 def sub_pixel_shift(arr, row_shift, col_shift, z_shift):
     # arr is 3D
     buf2ft = np.fft.fftn(arr)
     shape = arr.shape
-    Nr = np.fft.ifftshift(np.array(list(range(-int(np.floor(shape[0]/2)), shape[0]-int(np.floor(shape[0]/2))))))
-    Nc = np.fft.ifftshift(np.array(list(range(-int(np.floor(shape[1]/2)), shape[1]-int(np.floor(shape[1]/2))))))
-    Nz = np.fft.ifftshift(np.array(list(range(-int(np.floor(shape[2]/2)), shape[2]-int(np.floor(shape[2]/2))))))
+    Nr = np.fft.ifftshift(np.array(list(range(-int(np.floor(shape[0] / 2)), shape[0] - int(np.floor(shape[0] / 2))))))
+    Nc = np.fft.ifftshift(np.array(list(range(-int(np.floor(shape[1] / 2)), shape[1] - int(np.floor(shape[1] / 2))))))
+    Nz = np.fft.ifftshift(np.array(list(range(-int(np.floor(shape[2] / 2)), shape[2] - int(np.floor(shape[2] / 2))))))
     [Nc, Nr, Nz] = np.meshgrid(Nc, Nr, Nz)
     Greg = buf2ft * np.exp(1j * 2 * np.pi * (-row_shift * Nr / shape[0] - col_shift * Nc / shape[1] - z_shift * Nz / shape[2]))
     return np.fft.ifftn(Greg)

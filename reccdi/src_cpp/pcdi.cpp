@@ -31,7 +31,10 @@ PartialCoherence::PartialCoherence(Params *parameters, af::array coherence_array
 }
 
 PartialCoherence::~PartialCoherence()
-{ 
+{
+    kernel_array = af::array();
+    roi_amplitudes_prev = af::array();
+    roi_data_abs = af::array();
     roi.clear();
 }
 

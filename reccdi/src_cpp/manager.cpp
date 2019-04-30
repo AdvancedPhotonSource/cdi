@@ -191,4 +191,27 @@ std::vector<d_type> Manager::GetCoherenceV()
     return rec->GetCoherenceVector();
 }
 
+std::vector<d_type> Manager::GetReciprocalR()
+{
+    af::array rs_amplitudes = rec->GetReciprocal();
+
+    d_type *rs_amplitudes_r = real(rs_amplitudes).copy().host<d_type>();
+    std::vector<d_type> v(rs_amplitudes_r, rs_amplitudes_r + rs_amplitudes.elements());
+
+    delete [] rs_amplitudes_r;
+    return v;
+}
+
+std::vector<d_type> Manager::GetReciprocalI()
+{
+    af::array rs_amplitudes = rec->GetReciprocal();
+
+    d_type *rs_amplitudes_i = imag(rs_amplitudes).copy().host<d_type>();
+    std::vector<d_type> v(rs_amplitudes_i, rs_amplitudes_i + rs_amplitudes.elements());
+
+    delete [] rs_amplitudes_i;
+    return v;
+}
+
+
 

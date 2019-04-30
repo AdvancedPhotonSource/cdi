@@ -339,18 +339,6 @@ class Generation:
         return child_images, child_supports
 
 
-def save_results(image, support, coherence, save_dir):
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-
-    image_file = os.path.join(save_dir, 'image')
-    support_file = os.path.join(save_dir, 'support')
-    coh_file = os.path.join(save_dir, 'coherence')
-    np.save(image_file, image)
-    np.save(support_file, support)
-    np.save(coh_file, coherence)
-
-
 def reconstruction(generations, proc, data, conf_info, config_map):
     """
     This function controls reconstruction utilizing genetic algorithm.
@@ -421,20 +409,34 @@ def reconstruction(generations, proc, data, conf_info, config_map):
     if os.path.isdir(conf_info):
         experiment_dir = conf_info
         conf = os.path.join(experiment_dir, 'conf', 'config_rec')
+        save_dir = os.path.join(experiment_dir, 'results')
     else:
         # assuming it's a file
         conf = conf_info
+        dirs = conf_info.split('/')
+        try:
+            save_dir = config_map.save_dir
+        except:
+            if dirs[len(dirs)-2] == 'conf':    # it is the experiment structure
+                offset = len(dirs[len(dirs)-2]) + len(dirs[len(dirs)-1]) + 1
+                save_dir = os.path.join(conf_info[0:-offset], 'results')
+            else:
+                save_dir = os.path.join(os.getcwd(), 'results')    # save in current dir
 
     if low_resolution_generations > 0:
         for g in range(low_resolution_generations):
             gen_data = gen_obj.get_data(g, data)
-            images, supports, cohs, errs = rec.rec(proc, gen_data, conf, config_map, images, supports)
-            # here can save the generation results
+            images, supports, cohs, errs, recips = rec.rec(proc, gen_data, conf, config_map, images, supports)
+            # save the generation results
+            save_dir = os.path.join(save_dir, 'g_' + str(g))
+            ut.save_mult_results(len(images), images, supports, cohs, errs, recips, save_dir)
             if len(images) > 1 and gen_obj.breed_modes[g] is not 'none':
                 images, supports = gen_obj.breed(images, errs, g, support_threshold, support_sigma)
     for g in range(low_resolution_generations, generations):
-        images, supports, cohs, errs = rec.rec(proc, data, conf, config_map, images, supports)
-        # here can save the generation results
+        images, supports, cohs, errs, recips = rec.rec(proc, data, conf, config_map, images, supports)
+        # save the generation results
+        save_dir = os.path.join(save_dir, 'g_' + str(g))
+        ut.save_mult_results(len(images), images, supports, cohs, errs, recips, save_dir)
         if g < (generations-1) and len(images) > 1 and gen_obj.breed_modes[g] is not 'none':
             images, supports= gen_obj.breed(images, errs, g, support_threshold, support_sigma)
         else:

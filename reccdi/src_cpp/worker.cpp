@@ -58,13 +58,26 @@ Reconstruction::~Reconstruction()
 {
     delete params;
     delete state;
+    delete support;
     if (partialCoherence != NULL)
     {
         delete partialCoherence;
     }
+    if (resolution != NULL)
+    {
+        delete resolution;
+    }
+    data = af::array();
+    iter_data = af::array();
+    ds_image = af::array();
+    ds_image_raw = af::array();
+    rs_amplitudes = af::array();
+
     aver_v.clear();
     support_vector.clear();
     coherence_vector.clear();
+    iter_flow.clear();
+
 }
 
 void Reconstruction::Init()
@@ -365,3 +378,7 @@ std::vector<d_type> Reconstruction::GetCoherenceVectorI()
     return coherence_vector;
 }
 
+af::array Reconstruction::GetReciprocal()
+{
+    return rs_amplitudes;
+}

@@ -73,6 +73,16 @@ std::vector<d_type> Bridge::GetCoherenceV()
     return mgr->GetCoherenceV();
 }
 
+std::vector<d_type> Bridge::GetReciprocalR()
+{
+    return mgr->GetReciprocalR();
+}
+
+std::vector<d_type> Bridge::GetReciprocalI()
+{
+    return mgr->GetReciprocalI();
+}
+
 void Bridge::Cleanup()
 {
    delete mgr;

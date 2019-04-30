@@ -31,6 +31,7 @@ private:
 
 public:
     Support(const af::dim4 data_dim, Params *params, af::array support_array);
+    ~Support();
     void UpdateAmp(const af::array ds_image, d_type sig, int iter);
     void UpdatePhase(const af::array ds_image, int iter);
     int GetTriggerAlgorithm();

@@ -130,5 +130,6 @@ public:
     std::vector<d_type> GetCoherenceVectorR();
     std::vector<d_type> GetCoherenceVectorI();
 
+    af::array GetReciprocal();
 };
 #endif /* worker_hpp */
