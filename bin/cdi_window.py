@@ -1112,7 +1112,7 @@ class average(Feature):
 
 
     def add_feat_conf(self, conf_map):
-        conf_map['avarage_trigger'] = str(self.average_triggers.text()).replace('\n','')
+        conf_map['average_trigger'] = str(self.average_triggers.text()).replace('\n','')
 
 
 
