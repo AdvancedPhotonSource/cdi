@@ -89,7 +89,7 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
         fast_module = bridge_cuda.PyBridge()
 
     # shift data
-    data=sf.fftshift(data)
+    data = sf.fftshift(data)
     data = np.swapaxes(data,1,2)
 
     dims = data.shape
@@ -161,6 +161,7 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
     reciprocal = np.reshape(reciprocal, dims)
     reciprocal = np.swapaxes(reciprocal, 2, 0)
     reciprocal = np.swapaxes(reciprocal, 1, 0)
+    reciprocal = sf.ifftshift(reciprocal)
 
     fast_module.cleanup()
 
