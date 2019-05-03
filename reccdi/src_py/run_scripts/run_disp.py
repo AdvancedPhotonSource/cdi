@@ -93,7 +93,7 @@ def to_vtk(conf_info):
         if os.path.isdir(subdir):
             save_vtk(subdir, conf)
 
-    last = os.path.join('conf', 'last', 'config_data')
+    last = os.path.join('conf', 'last', 'config_disp')
     shutil.copy(conf, last)
 
 
