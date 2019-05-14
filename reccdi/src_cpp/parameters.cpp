@@ -28,12 +28,14 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
     support_alg = -1;
     phase_min = -atan(1)*2.0;
     phase_max = atan(1)*2.0;
+    is_pcdi = false;
     pcdi_alg = 0;
     pcdi_roi.clear();
     pcdi_normalize = false;
     pcdi_iter = 20;
     number_iterations = 0;
     plot_errors = false;
+    is_resolution = false;
     low_res_iterations = 0;
     iter_res_det_first = 1;
 
@@ -92,7 +94,6 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
     // process triggers
     // find which triggers are configured, add the index of the flow_seq item to used_flow_seq vwctor if this item
     // is used
-    bool is_pcdi = false;
     for (int i = 0; i < flow_seq_len; i++)
     {
         char *flow_item = flow_def[i].item_name;
@@ -144,10 +145,6 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
             }
         }
     }
-//    printf("used triggers \n");
-//    for (int i = 0; i< used_flow_seq.size(); i++)
-//    { printf(" %i", used_flow_seq[i]);}
-//    printf("is pcdi %i\n",is_pcdi);
 
     // parse triggers and flow items into flow array; 0 if not executed, 1 if executed
     int used_flow_seq_len = used_flow_seq.size();
@@ -407,6 +404,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
 
     if ((first) && root.exists("resolution_trigger"))
     {
+        is_resolution = true;
         const Setting &tmp = root["resolution_trigger"];
         try
         {
@@ -537,6 +535,11 @@ d_type Params::GetPhaseMax()
     return phase_max;
 }
 
+bool Params::IsPcdi()
+{
+    return is_pcdi;
+}
+
 int Params::GetPcdiAlgorithm()
 {
     return pcdi_alg;
@@ -565,6 +568,11 @@ std::vector<alg_switch> Params::GetAlgSwitches()
 bool Params::IsPlotErrors()
 {
     return plot_errors;
+}
+
+bool Params::IsResolution()
+{
+    return is_resolution;
 }
 
 int Params::GetLowResolutionIter()

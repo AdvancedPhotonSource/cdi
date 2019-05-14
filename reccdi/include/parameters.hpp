@@ -35,6 +35,7 @@ private:
 
     //partial coherence
     //PartialCoherence *partial_coherence = NULL;
+    bool is_pcdi;
     int pcdi_alg;
     std::vector<int>  pcdi_roi;
     bool pcdi_normalize;
@@ -44,7 +45,9 @@ private:
     int number_iterations;
 
     bool plot_errors;
-    
+
+    bool is_resolution;
+
     int low_res_iterations;
     
     float iter_res_sigma_first;
@@ -80,11 +83,13 @@ public:
     d_type GetPhaseMin();
     d_type GetPhaseMax();
 
+    bool IsPcdi();
     int GetPcdiAlgorithm();
     std::vector<int> GetPcdiRoi();
     bool GetPcdiNormalize();
     int GetPcdiIterations();
 
+    bool IsResolution();
     int GetLowResolutionIter();
     float GetIterResSigmaFirst();
     float GetIterResSigmaLast();

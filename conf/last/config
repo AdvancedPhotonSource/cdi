@@ -1,6 +1,4 @@
 working_dir = "/local/bfrosik/cdi/test"
-min_files = 81
-exclude_scans = (82,83,85)
 data_dir = "/net/s34data/export/34idc-data/2019/Staff19-1/ADStaff19-1a"
 specfile = "/net/s34data/export/34idc-data/2019/Staff19-1/Staff19-1a.spec"
 darkfile = "/net/s34data/export/34idc-work/2019/dark.tif"

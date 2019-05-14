@@ -23,7 +23,6 @@ import reccdi.src_py.utilities.utils as ut
 import reccdi.src_py.controller.fast_module as calc
 from parsl.app.app import python_app
 import time
-import numpy as np
 
 
 __author__ = "Barbara Frosik"
@@ -36,13 +35,13 @@ __all__ = ['read_config',
 def load_config(samples):
     import parsl
     from parsl.config import Config
-    from parsl.executors.ipp import IPyParallelExecutor
-    from libsubmit.providers import LocalProvider
-    from libsubmit.channels import LocalChannel
+    from parsl.executors import HighThroughputExecutor
+    from parsl.providers import LocalProvider
+    from parsl.channels import LocalChannel
     local_config = Config(
         executors=[
-            IPyParallelExecutor(
-                label="local_ipp",
+            HighThroughputExecutor(
+                label="local_htex",
                 provider=LocalProvider(
                     channel=LocalChannel(),
                     init_blocks=1,
@@ -326,7 +325,7 @@ def reconstruction(samples, proc, data, conf_info, config_map):
         if experiment_dir is not None:
             save_dir = os.path.join(experiment_dir, save_dir)
 
-    ut.save_mult_results(samples, images, supports, cohs, errs, recips, save_dir)
+    ut.save_multiple_results(samples, images, supports, cohs, errs, recips, save_dir)
 
     print('done')
 

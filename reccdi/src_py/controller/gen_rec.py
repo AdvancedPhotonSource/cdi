@@ -31,67 +31,95 @@ class Generation:
     This class holds fields relevant to generations according to configuration.
     """
     def __init__(self, config_map):
+        self.current_gen = 0
         try:
             self.generations = config_map.generations
         except AttributeError:
             self.generations = 1
         try:
-            self.low_resolution_generations = config_map.low_resolution_generations
+            self.low_resolution_generations = config_map.ga_low_resolution_generations
         except AttributeError:
             self.low_resolution_generations = 0
 
         try:
-            self.metric = config_map.metric
+            self.metrics = tuple(config_map.ga_metrics)
+            print ('type', type(self.metrics))
+            if len(self.metrics) < self.generations:
+                self.metrics = self.metrics + ('chi',) * (self.generations - len(self.metrics))
         except AttributeError:
-            self.metric = 'chi'
+            self.metrics = ('chi',) * self.generations
 
         try:
-            self.is_cross_breed = config_map.is_cross_breed
-        except AttributeError:
-            self.is_cross_breed = True
-
-        if self.is_cross_breed:
-            self.prev_two_best = [None, None]  # keep two best images from previous generation
-
-        try:
-            self.worst_remove_no = config_map.worst_remove_no
+            self.worst_remove_no = tuple(config_map.ga_removes)
+            if len(self.worst_remove_no) < self.generations:
+                self.worst_remove_no = self.worst_remove_no + (0,) * (self.generations - len(self.worst_remove_no))
         except AttributeError:
             self.worst_remove_no = None
 
         try:
-            self.breed_modes = config_map.breed_modes
+            self.ga_support_thresholds = tuple(config_map.ga_support_thresholds)
+            if len(self.ga_support_thresholds) < self.generations:
+                try:
+                    support_threshold = config_map.support_threshold
+                except:
+                    support_threshold = .1
+                self.ga_support_thresholds = self.ga_support_thresholds + (support_threshold,) * (self.generations - len(self.ga_support_thresholds))
         except AttributeError:
-            self.breed_modes = []
-        for i in range(len(self.breed_modes), self.generations):
-            self.breed_modes.append('none')
+            try:
+                support_threshold = config_map.support_threshold
+            except:
+                support_threshold = .1
+            self.ga_support_thresholds = (support_threshold,) * (self.generations)
+
+        try:
+            self.ga_support_sigmas = tuple(config_map.ga_support_sigmas)
+            if len(self.ga_support_sigmas) < self.generations:
+                try:
+                    support_sigma = config_map.support_sigma
+                except:
+                    support_sigma = 1.0
+                self.ga_support_sigmas = self.ga_support_sigmas + (support_sigma,) * (self.generations - len(self.ga_support_sigmas))
+        except AttributeError:
+            try:
+                support_sigma = config_map.support_sigma
+            except:
+                support_sigma = 1.0
+            self.ga_support_sigmas = (support_sigma,) * (self.generations)
+
+        try:
+            self.breed_modes = tuple(config_map.ga_breed_modes)
+            if len(self.breed_modes) < self.generations:
+                self.breed_modes = self.breed_modes + ('none',) * (self.generations - len(self.breed_modes))
+        except AttributeError:
+            self.breed_modes = ('none',) * self.generations
 
         if self.low_resolution_generations > 0:
             try:
-                low_resolution_sigma_alg = config_map.low_resolution_sigma_alg
+                low_resolution_sigma_alg = config_map.ga_low_resolution_sigma_alg
             except AttributeError:
                 low_resolution_sigma_alg = 'SIG_SPACE_LINEAR'
 
             if low_resolution_sigma_alg == 'SIG_ASSIGNED':
                 try:
-                    self.sigmas = config_map.low_resolution_sigmas
+                    self.sigmas = config_map.ga_low_resolution_sigmas
                 except:
                     print ('low resolution sigmas config parameter is missing, turning off low resolution.')
                     self.low_resolution_generations = 0
             elif low_resolution_sigma_alg == 'SIG_SCALE_POWER':
                 try:
-                    low_resolution_sigma_min = config_map.low_resolution_sigma_min
+                    low_resolution_sigma_min = config_map.ga_low_resolution_sigma_min
                 except:
                     low_resolution_sigma_min = .1
                 try:
-                    low_resolution_sigma_max = config_map.low_resolution_sigma_max
+                    low_resolution_sigma_max = config_map.ga_low_resolution_sigma_max
                 except:
                     low_resolution_sigma_max = 2.0
                 try:
-                    low_resolution_scale_power = config_map.low_resolution_scale_power
+                    low_resolution_scale_power = config_map.ga_low_resolution_scale_power
                 except:
                     low_resolution_scale_power = 1
                 try:
-                    support_sigma = config_map.support_sigma
+                    support_sigma = config_map.ga_support_sigma
                 except:
                     support_sigma = 1.0
 
@@ -117,40 +145,43 @@ class Generation:
             except AttributeError:
                 self.low_resolution_alg = 'GAUSS'
 
+    def next_gen(self):
+        self.current_gen += 1
 
-    def get_data(self, generation, data):
-        gmask = self.get_gmask(generation, data.shape)
-        return data * gmask
+    def get_data(self, data):
+        if self.current_gen >= self.low_resolution_generations:
+            return data
+        else:
+            gmask = self.get_gmask(data.shape)
+            return data * gmask
 
 
-    def get_gmask(self, generation, shape):
+    def get_gmask(self, shape):
         if self.low_resolution_alg == 'GAUSS':
-            if self.sigmas[generation] < 1.0:
-                ut.gaussian(shape, self.sigmas[generation])
+            if self.sigmas[self.current_gen] < 1.0:
+                ut.gaussian(shape, self.sigmas[self.current_gen])
             else:
                 return np.ones(shape)
 
 
-    def order(self, images_errs):
+    def rank(self, images, errs):
         rank_property = []
-        reverse = False
-        images = images_errs[0]
-        errs = images_errs[1]
+
         samples = len(images)
+        metric = self.metrics[self.current_gen]
+
         for i in range (samples):
             image = images[i]
-            if self.metric == 'chi':
-                rank_property.append(errs[i])
-            elif self.metric == 'sharpness':
+            if metric == 'chi':
+                rank_property.append(errs[i][-1])
+            elif metric == 'sharpness':
                 rank_property.append(sum(abs(image)^4))
-            elif self.metric == 'summed_phase':
+            elif metric == 'summed_phase':
                 rank_property.append(sum(gut.sum_phase_tight_support(image)))
-                reverse = True
-            elif self.metric == 'area':
+            elif metric == 'area':
                 support = gut.shrink_wrap(image, .2, .5)
                 rank_property.append(sum(support))
-                reverse = True
-            elif self.metric == 'TV':
+            elif metric == 'TV':
                 gradients = np.gradient(image)
                 TV = np.zeros(image.shape)
                 for gr in gradients:
@@ -164,17 +195,29 @@ class Generation:
         # for most of the metric types the minimum of the metric is best, but for
         # 'summed_phase' and 'area' it is oposite, so reversing the order
         ranks = np.argsort(rank_property)
-        if reverse:
+        if metric == 'summed_phase' or metric == 'area':
             ranks = ranks.reverse()
-
-        # order the initial array according to rank
-        ordered = []
-        for i in range(samples):
-            ordered.append(images_errs[ranks[i]])
-        return ordered
+        return ranks
 
 
-    def breed(self, images, errs, gen, threshold, sigma):
+    def order(self, images, supports, cohs, errs, recips):
+        ranks = self.rank(images, errs)
+        ordered_images = []
+        ordered_supports = []
+        ordered_cohs = []
+        ordered_errs = []
+        ordered_recips = []
+        for i in range(len(ranks)):
+            ordered_images.append(images[ranks[i]])
+            ordered_supports.append(supports[ranks[i]])
+            ordered_cohs.append(cohs[ranks[i]])
+            ordered_errs.append(errs[ranks[i]])
+            ordered_recips.append(recips[ranks[i]])
+
+        return ordered_images, ordered_supports, ordered_cohs, ordered_errs, ordered_recips
+
+
+    def breed(self, images):
         """
         This function ranks the multiple reconstruction. It breeds next generation by combining the reconstructed
         images, centered
@@ -184,13 +227,10 @@ class Generation:
         Parameters
         ----------
         images : list
-            list of images arrays
+            ordered (best to worst) list of images arrays
 
         supports : list
             list of supports arrays
-
-        errs : list
-            list of errors (now each element is another list by iterations, but should we take the last error?)
 
         Returns
         -------
@@ -201,25 +241,17 @@ class Generation:
         child_cohs : list
             list of child coherence, set to None
         """
-        img_errs = zip(images, errs)
-        samples = len(img_errs)
-        ordered = self.order(img_errs)
-        if self.worst_remove_no is not None:
-            samples = samples - self.worst_remove_no[gen]
-            ordered = ordered[0 : samples]
+        sigma = self.ga_support_sigmas[self.current_gen]
+        threshold = self.ga_support_thresholds[self.current_gen]
+        breed_mode = self.breed_modes[self.current_gen]
+        if breed_mode == 'none':
+            return images, None
+        samples = len(images)
+        if self.worst_remove_no[self.current_gen] is not None:
+            samples = samples - self.worst_remove_no[self.current_gen]
 
-        # if configured to cross breed, include two best samples from previous generation and order again
-        if self.is_cross_breed:
-            if len(self.prev_two_best) > 0:
-                ordered.append(self.prev_two_best)
-                ordered = self.order(ordered, samples + 2)
-            self.prev_two_best[0] = ordered[0]
-            self.prev_two_best[1] = ordered[1]
-
-        [ims, ers] = list(*ordered)
+        ims = images[0 : samples]
         dims = len(ims[0].shape)
-
-        breed_mode = self.breed_modes[gen]
         ims_arr = np.stack(ims)
 
         alpha = ims[0]
@@ -334,7 +366,7 @@ class Generation:
                     beta = amp^3 * np.exp(1j *ph_beta)
 
             child_images.append(beta)
-            child_supports.append(gut.shrink_wrap(beta, threshold, sigma))
+            child_supports.append(ut.shrink_wrap(beta, threshold, sigma))
 
         return child_images, child_supports
 
@@ -365,49 +397,18 @@ def reconstruction(generations, proc, data, conf_info, config_map):
     -------
     nothing
     """
-
-    try:
-        low_resolution_generations = config_map.low_resolution_generations
-    except:
-        low_resolution_generations = 0
-
-    try:
-        support_threshold = config_map.support_threshold
-    except:
-        support_threshold = .1
-
-    try:
-        support_sigma = config_map.support_sigma
-    except:
-        support_sigma = 1.0
-
     try:
         samples = config_map.samples
     except:
         samples = 1
 
-    # init starting values
-    # if multiple samples configured (typical for genetic algorithm), use "reconstruction_multi" module
-    if samples > 1:
-        images = []
-        supports = []
-        cohs = []
-        for _ in range(samples):
-            images.append(None)
-            supports.append(None)
-            cohs.append(None)
-        rec = multi
-        # load parls configuration
-        rec.load_config(samples)
-    else:
-        images = None
-        supports = None
-        rec = single
-
     gen_obj = Generation(config_map)
 
     if os.path.isdir(conf_info):
-        experiment_dir = conf_info
+        if conf_info.endswith('conf'):
+            experiment_dir = conf_info[0:len(conf_info)-5]
+        else:
+            experiment_dir = conf_info
         conf = os.path.join(experiment_dir, 'conf', 'config_rec')
         save_dir = os.path.join(experiment_dir, 'results')
     else:
@@ -423,24 +424,47 @@ def reconstruction(generations, proc, data, conf_info, config_map):
             else:
                 save_dir = os.path.join(os.getcwd(), 'results')    # save in current dir
 
-    if low_resolution_generations > 0:
-        for g in range(low_resolution_generations):
-            gen_data = gen_obj.get_data(g, data)
-            images, supports, cohs, errs, recips = rec.rec(proc, gen_data, conf, config_map, images, supports)
+    # init starting values
+    # if multiple samples configured (typical for genetic algorithm), use "reconstruction_multi" module
+    if samples > 1:
+        images = []
+        supports = []
+        cohs = []
+        for _ in range(samples):
+            images.append(None)
+            supports.append(None)
+            cohs.append(None)
+        rec = multi
+        # load parls configuration
+        rec.load_config(samples)
+        for g in range(generations):
+            gen_data = gen_obj.get_data(data)
+            images, supports, cohs, errs, recips = rec.rec(proc, gen_data, conf, config_map, images, supports, cohs)
+            images, supports, cohs, errs, recips = gen_obj.order(images, supports, cohs, errs, recips)
             # save the generation results
-            save_dir = os.path.join(save_dir, 'g_' + str(g))
-            ut.save_mult_results(len(images), images, supports, cohs, errs, recips, save_dir)
-            if len(images) > 1 and gen_obj.breed_modes[g] is not 'none':
-                images, supports = gen_obj.breed(images, errs, g, support_threshold, support_sigma)
-    for g in range(low_resolution_generations, generations):
-        images, supports, cohs, errs, recips = rec.rec(proc, data, conf, config_map, images, supports)
-        # save the generation results
-        save_dir = os.path.join(save_dir, 'g_' + str(g))
-        ut.save_mult_results(len(images), images, supports, cohs, errs, recips, save_dir)
-        if g < (generations-1) and len(images) > 1 and gen_obj.breed_modes[g] is not 'none':
-            images, supports= gen_obj.breed(images, errs, g, support_threshold, support_sigma)
-        else:
-            img_errs = zip(images, errs)
-            ordered = gen_obj.order(img_errs)
-            [ims, ers] = list(*ordered)
+            gen_save_dir = os.path.join(save_dir, 'g_' + str(g))
+            ut.save_multiple_results(len(images), images, supports, cohs, errs, recips, gen_save_dir)
+
+            if g < generations - 1 and len(images) > 1:
+                images, shrink_supports = gen_obj.breed(images)
+                if shrink_supports is not None:
+                    supports = shrink_supports
+            gen_obj.next_gen()
+    else:
+        image = None
+        support = None
+        coh = None
+        rec = single
+
+        for g in range(generations):
+            gen_data = gen_obj.get_data(data)
+            image, support, coh, err, recip = rec.rec(proc, gen_data, conf, config_map, image, support, coh)
+            print ('gen rec, got results')
+            # save the generation results
+            gen_save_dir = os.path.join(save_dir, 'g_' + str(g))
+            ut.save_results(image, support, coh, err, recip, gen_save_dir)
+            gen_obj.next_gen()
+
     print ('done gen')
+
+

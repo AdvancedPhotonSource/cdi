@@ -92,6 +92,10 @@ def to_vtk(conf_info):
         subdir = os.path.join(save_dir, sub)
         if os.path.isdir(subdir):
             save_vtk(subdir, conf)
+            for sub_sub in os.listdir(subdir):
+                sub_sub = os.path.join(subdir, sub_sub)
+                if os.path.isdir(sub_sub):
+                    save_vtk(sub_sub, conf)
 
     last = os.path.join('conf', 'last', 'config_disp')
     shutil.copy(conf, last)

@@ -731,7 +731,10 @@ class cdi_conf_tab(QTabWidget):
 
 
     def display(self):
-        if os.path.isfile(os.path.join(self.main_win.experiment_dir, 'results', 'image.npy')):
+        res_dir = os.path.join(self.main_win.experiment_dir, 'results')
+        if os.path.isfile(os.path.join(res_dir, 'image.npy')) or \
+        os.path.isfile(os.path.join(res_dir, '0', 'image.npy')) or \
+        os.path.isfile(os.path.join(res_dir, 'g_0', '0', 'image.npy')):
             conf_dir = os.path.join(self.main_win.experiment_dir, 'conf')
             conf_disp = os.path.join(conf_dir, 'config_disp')
             if not os.path.isfile(conf_disp):
@@ -790,6 +793,8 @@ class Feature(object):
     def toggle(self, layout, item, feats):
         if self.active.isChecked():
             self.fill_active(layout)
+            # experiment_dir = self.
+            # self.init_config(conf_map)
 
             self.default_button = QPushButton('set to defaults', feats)
             layout.addWidget(self.default_button)
@@ -829,7 +834,62 @@ class GA(Feature):
     # override setting the active to set it False
     def stackUI(self, item, feats):
         super(GA, self).stackUI(item, feats)
-        self.active.setChecked(False)
+        # self.active.setChecked(False)
+
+
+    def init_config(self, conf_map):
+        try:
+            self.generations.setText(str(conf_map.generations).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.lr_generations.setText(str(conf_map.ga_low_resolution_generations).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.metrics.setText(str(conf_map.ga_metrics).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.breed_modes.setText(str(conf_map.ga_breed_modes).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.removes.setText(str(conf_map.ga_removes).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.ga_support_thresholds.setText(str(conf_map.ga_support_thresholds).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.ga_support_sigmas.setText(str(conf_map.ga_support_sigmas).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.lr_sigma_alg.setText(str(conf_map.ga_low_resolution_sigma_alg).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.lr_sigmas.setText(str(conf_map.ga_low_resolution_sigmas).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.lr_sigma_min.setText(str(conf_map.ga_low_resolution_sigma_min).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.lr_sigma_max.setText(str(conf_map.ga_low_resolution_sigma_max).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.lr_scale_power.setText(str(conf_map.ga_low_resolution_scale_power).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.lr_algorithm.setText(str(conf_map.ga_low_resolution_alg).replace(" ", ""))
+        except AttributeError:
+            pass
 
 
     def fill_active(self, layout):
@@ -837,6 +897,16 @@ class GA(Feature):
         layout.addRow("generations", self.generations)
         self.lr_generations = QLineEdit()
         layout.addRow("low resolution generations", self.lr_generations)
+        self.metrics = QLineEdit()
+        layout.addRow("metrics", self.metrics)
+        self.breed_modes = QLineEdit()
+        layout.addRow("breed modes", self.breed_modes)
+        self.removes = QLineEdit()
+        layout.addRow("worst removes", self.removes)
+        self.ga_support_thresholds = QLineEdit()
+        layout.addRow("support thresholds", self.ga_support_thresholds)
+        self.ga_support_sigmas = QLineEdit()
+        layout.addRow("support sigmas", self.ga_support_sigmas)
         self.lr_sigma_alg = QLineEdit()
         layout.addRow("low resolution sigma algorithm", self.lr_sigma_alg)
         self.lr_sigmas = QLineEdit()
@@ -853,13 +923,18 @@ class GA(Feature):
 
     def add_feat_conf(self, conf_map):
         conf_map['generations'] = str(self.generations.text())
-        conf_map['low_resolution_generations'] = str(self.lr_generations.text())
-        conf_map['low_resolution_sigma_alg'] = str(self.lr_sigma_alg.text())
-        conf_map['low_resolution_sigmas'] = str(self.lr_sigmas.text())
-        conf_map['low_resolution_sigma_min'] = str(self.lr_sigma_min.text())
-        conf_map['low_resolution_sigma_max'] = str(self.lr_sigma_max.text())
-        conf_map['low_resolution_scale_power'] = str(self.lr_scale_power.text())
-        conf_map['low_resolution_alg'] = str(self.lr_algorithm.text())
+        conf_map['ga_low_resolution_generations'] = str(self.lr_generations.text())
+        conf_map['ga_metrics'] = str(self.metrics.text()).replace('\n','')
+        conf_map['ga_breed_modes'] = str(self.breed_modes.text()).replace('\n','')
+        conf_map['ga_removes'] = str(self.removes.text()).replace('\n','')
+        conf_map['ga_support_thresholds'] = str(self.ga_support_thresholds.text()).replace('\n','')
+        conf_map['ga_support_sigmas'] = str(self.ga_support_sigmas.text()).replace('\n','')
+        conf_map['ga_low_resolution_sigma_alg'] = '"' + str(self.lr_sigma_alg.text()) + '"'
+        conf_map['ga_low_resolution_sigmas'] = str(self.lr_sigmas.text())
+        conf_map['ga_low_resolution_sigma_min'] = str(self.lr_sigma_min.text())
+        conf_map['ga_low_resolution_sigma_max'] = str(self.lr_sigma_max.text())
+        conf_map['ga_low_resolution_scale_power'] = str(self.lr_scale_power.text())
+        conf_map['ga_low_resolution_alg'] = '"' + str(self.lr_algorithm.text()) + '"'
 
 
 class low_resolution(Feature):

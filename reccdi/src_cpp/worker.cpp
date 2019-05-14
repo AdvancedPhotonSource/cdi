@@ -40,7 +40,7 @@ Reconstruction::Reconstruction(af::array image_data, af::array guess, Params* pa
     state = new State(params);
     support = new Support(data.dims(), params, support_array);
     
-    if (params->GetPcdiAlgorithm() > 0)
+    if (params->IsPcdi())
     {
         partialCoherence = new PartialCoherence(params, coherence_array);
     }
@@ -48,15 +48,18 @@ Reconstruction::Reconstruction(af::array image_data, af::array guess, Params* pa
     {
         partialCoherence = NULL;
     }
-    if (params->GetLowResolutionIter() >0)
+    if (params->IsResolution())
     {
         resolution = new Resolution(params);
+    }
+    else
+    {
+        resolution = NULL;
     }
 }
 
 Reconstruction::~Reconstruction()
 {
-    delete params;
     delete state;
     delete support;
     if (partialCoherence != NULL)
@@ -67,8 +70,17 @@ Reconstruction::~Reconstruction()
     {
         delete resolution;
     }
-    data = af::array();
-    iter_data = af::array();
+    delete params;
+
+    if (&data == &iter_data)
+    {
+        data = af::array();
+    }
+    else
+    {
+        data = af::array();
+        iter_data = af::array();
+    }
     ds_image = af::array();
     ds_image_raw = af::array();
     rs_amplitudes = af::array();
@@ -77,13 +89,10 @@ Reconstruction::~Reconstruction()
     support_vector.clear();
     coherence_vector.clear();
     iter_flow.clear();
-
 }
 
 void Reconstruction::Init()
 {
-printf("in init\n");
-
     std::map<char*, fp> flow_ptr_map;
     flow_ptr_map["NextIter"] = &Reconstruction::NextIter;
     flow_ptr_map["ResolutionTrigger"] =  &Reconstruction::ResolutionTrigger;
