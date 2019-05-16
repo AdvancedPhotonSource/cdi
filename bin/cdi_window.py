@@ -898,7 +898,7 @@ class GA(Feature):
         self.removes.setText('(2,2,1)')
         self.ga_support_thresholds.setText('(.1,.1,.1,.1,.1)')
         self.ga_support_sigmas.setText('(1.0,1.0,1.0,1.0)')
-        self.lr_sigmas.setText('(2,1.5)')
+        self.lr_sigmas.setText('(2.0,1.5)')
         self.lr_algorithm.setText('GAUSS')
 
 
@@ -909,7 +909,7 @@ class GA(Feature):
         conf_map['ga_removes'] = str(self.removes.text()).replace('\n','')
         conf_map['ga_support_thresholds'] = str(self.ga_support_thresholds.text()).replace('\n','')
         conf_map['ga_support_sigmas'] = str(self.ga_support_sigmas.text()).replace('\n','')
-        conf_map['ga_low_resolution_sigmas'] = str(self.lr_sigmas.text())
+        conf_map['ga_low_resolution_sigmas'] = str(self.lr_sigmas.text()).replace('\n','')
         conf_map['ga_low_resolution_alg'] = '"' + str(self.lr_algorithm.text()) + '"'
 
 
