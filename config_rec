@@ -42,9 +42,6 @@ garbage_trigger = (10,.5)
 // GENERATIONS
 generations = 1              // number of generations
 
-ga_low_resolution_generations = 0
-                             // number of generations low resolution is applied to, starting from first gen
-
 ga_metrics = ("chi")
                              // defines which metric should be used to rank the reconstruction results (samples)
                              // supported: 'chi', 'sharpness', 'summed_phase', 'area', 'TV'
@@ -57,7 +54,7 @@ ga_breed_modes = ("sqrt_ab")
                              // 'max_ab', 'max_ab_pa', 'min_ab_pa', 'avg_ab', 'avg_ab_pa',= 'sqrt_abg',
                              // 'sqrt_abg_pa', 'max_abg','max_abg_pa', 'avg_abg', 'avg_abg_pa', 'avg_sqrt'
 
-ga_removes = (0)
+ga_cullings = (0)
                              // defines how many worst samples to remove in breeding phase for each generation
                              // defaults to 0 if no entry for generation.
 
@@ -69,29 +66,10 @@ ga_support_sigmas = (1.0)
                              // the support is recalculated with this sigma after breeding phase
                              // defaults to support sigma if no entry for generation.
 
-
-ga_low_resolution_sigma_alg = "SIG_SPACE_LINEAR"
-                             // defines how to calculate sigmas based on generation. Supported:
-                             // SIG_SPACE_LINEAR - sigmas are starting from low_resolution_sigma_max,
-                             // linearly decreasing for each generation, reaching low_resolution_sigma
-                             // at the end
-                             // SIG_SCALE_POWER - use low_resolution_scale_power and ScaleFactor
-                             //                to calculate sigmas for generations
-                             // SIG_ASSIGNED - sigmas will be read from low_resolution_sigmas
-
 ga_low_resolution_sigmas = (1.0)
-                             // list of sigmas that will be used by subsequent generations if the 
-                             // low_resolution_sigma_alg is set to SIG_ASSIGNED
-                             // the length must be equal low_resolution_generations
-
-ga_low_resolution_sigma_min = 0.1
-                             // initial sigma
-
-ga_low_resolution_sigma_max = 2.0
-                             // max support sigma value
-
-ga_low_resolution_scale_power = 1
-                             // how the sigma scales with generation (1 - linear, 2 - quad etc)
+                             // list of sigmas that will be used in subsequent generations to calculate
+                             // Gauss (*assuming algorithm is GAUSS) and apply it to the data
+                             // This determines low resolution number of generations
 
 ga_low_resolution_alg = "GAUSS"
                              // algorithm to use to apply resolution. Supported algorithms:

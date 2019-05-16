@@ -851,7 +851,7 @@ class GA(Feature):
         except AttributeError:
             pass
         try:
-            self.removes.setText(str(conf_map.ga_removes).replace(" ", ""))
+            self.removes.setText(str(conf_map.ga_cullings).replace(" ", ""))
         except AttributeError:
             pass
         try:
@@ -906,7 +906,7 @@ class GA(Feature):
         conf_map['generations'] = str(self.generations.text())
         conf_map['ga_metrics'] = str(self.metrics.text()).replace('\n','')
         conf_map['ga_breed_modes'] = str(self.breed_modes.text()).replace('\n','')
-        conf_map['ga_removes'] = str(self.removes.text()).replace('\n','')
+        conf_map['ga_cullings'] = str(self.removes.text()).replace('\n','')
         conf_map['ga_support_thresholds'] = str(self.ga_support_thresholds.text()).replace('\n','')
         conf_map['ga_support_sigmas'] = str(self.ga_support_sigmas.text()).replace('\n','')
         conf_map['ga_low_resolution_sigmas'] = str(self.lr_sigmas.text()).replace('\n','')
