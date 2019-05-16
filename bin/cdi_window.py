@@ -843,10 +843,6 @@ class GA(Feature):
         except AttributeError:
             pass
         try:
-            self.lr_generations.setText(str(conf_map.ga_low_resolution_generations).replace(" ", ""))
-        except AttributeError:
-            pass
-        try:
             self.metrics.setText(str(conf_map.ga_metrics).replace(" ", ""))
         except AttributeError:
             pass
@@ -867,23 +863,7 @@ class GA(Feature):
         except AttributeError:
             pass
         try:
-            self.lr_sigma_alg.setText(str(conf_map.ga_low_resolution_sigma_alg).replace(" ", ""))
-        except AttributeError:
-            pass
-        try:
             self.lr_sigmas.setText(str(conf_map.ga_low_resolution_sigmas).replace(" ", ""))
-        except AttributeError:
-            pass
-        try:
-            self.lr_sigma_min.setText(str(conf_map.ga_low_resolution_sigma_min).replace(" ", ""))
-        except AttributeError:
-            pass
-        try:
-            self.lr_sigma_max.setText(str(conf_map.ga_low_resolution_sigma_max).replace(" ", ""))
-        except AttributeError:
-            pass
-        try:
-            self.lr_scale_power.setText(str(conf_map.ga_low_resolution_scale_power).replace(" ", ""))
         except AttributeError:
             pass
         try:
@@ -895,45 +875,41 @@ class GA(Feature):
     def fill_active(self, layout):
         self.generations = QLineEdit()
         layout.addRow("generations", self.generations)
-        self.lr_generations = QLineEdit()
-        layout.addRow("low resolution generations", self.lr_generations)
         self.metrics = QLineEdit()
-        layout.addRow("metrics", self.metrics)
+        layout.addRow("fitness metrics", self.metrics)
         self.breed_modes = QLineEdit()
         layout.addRow("breed modes", self.breed_modes)
         self.removes = QLineEdit()
-        layout.addRow("worst removes", self.removes)
+        layout.addRow("cullings", self.removes)
         self.ga_support_thresholds = QLineEdit()
-        layout.addRow("support thresholds", self.ga_support_thresholds)
+        layout.addRow("after breed support thresholds", self.ga_support_thresholds)
         self.ga_support_sigmas = QLineEdit()
-        layout.addRow("support sigmas", self.ga_support_sigmas)
-        self.lr_sigma_alg = QLineEdit()
-        layout.addRow("low resolution sigma algorithm", self.lr_sigma_alg)
+        layout.addRow("after breed support sigmas", self.ga_support_sigmas)
         self.lr_sigmas = QLineEdit()
         layout.addRow("low resolution sigmas", self.lr_sigmas)
-        self.lr_sigma_min = QLineEdit()
-        layout.addRow("low resolution sigma min", self.lr_sigma_min)
-        self.lr_sigma_max = QLineEdit()
-        layout.addRow("low resolution sigma max", self.lr_sigma_max)
-        self.lr_scale_power = QLineEdit()
-        layout.addRow("low resolution scale power", self.lr_scale_power)
         self.lr_algorithm = QLineEdit()
         layout.addRow("low resolution algorithm", self.lr_algorithm)
 
 
+    def rec_default(self):
+        self.generations.setText('5')
+        self.metrics.setText('("chi","chi","area","chi","sharpness")')
+        self.breed_modes.setText('("sqrt_ab","sqrt_ab","max_all","Dhalf","sqrt_ab")')
+        self.removes.setText('(2,2,1)')
+        self.ga_support_thresholds.setText('(.1,.1,.1,.1,.1)')
+        self.ga_support_sigmas.setText('(1.0,1.0,1.0,1.0)')
+        self.lr_sigmas.setText('(2,1.5)')
+        self.lr_algorithm.setText('GAUSS')
+
+
     def add_feat_conf(self, conf_map):
         conf_map['generations'] = str(self.generations.text())
-        conf_map['ga_low_resolution_generations'] = str(self.lr_generations.text())
         conf_map['ga_metrics'] = str(self.metrics.text()).replace('\n','')
         conf_map['ga_breed_modes'] = str(self.breed_modes.text()).replace('\n','')
         conf_map['ga_removes'] = str(self.removes.text()).replace('\n','')
         conf_map['ga_support_thresholds'] = str(self.ga_support_thresholds.text()).replace('\n','')
         conf_map['ga_support_sigmas'] = str(self.ga_support_sigmas.text()).replace('\n','')
-        conf_map['ga_low_resolution_sigma_alg'] = '"' + str(self.lr_sigma_alg.text()) + '"'
         conf_map['ga_low_resolution_sigmas'] = str(self.lr_sigmas.text())
-        conf_map['ga_low_resolution_sigma_min'] = str(self.lr_sigma_min.text())
-        conf_map['ga_low_resolution_sigma_max'] = str(self.lr_sigma_max.text())
-        conf_map['ga_low_resolution_scale_power'] = str(self.lr_scale_power.text())
         conf_map['ga_low_resolution_alg'] = '"' + str(self.lr_algorithm.text()) + '"'
 
 

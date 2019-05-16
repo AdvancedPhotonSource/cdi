@@ -35,12 +35,14 @@ __all__ = ['read_config',
 def load_config(samples):
     import parsl
     from parsl.config import Config
-    from parsl.executors import HighThroughputExecutor
+    from parsl.executors.ipp import IPyParallelExecutor
+    #from parsl.executors import HighThroughputExecutor
     from parsl.providers import LocalProvider
     from parsl.channels import LocalChannel
     local_config = Config(
         executors=[
-            HighThroughputExecutor(
+            IPyParallelExecutor(
+            #HighThroughputExecutor(
                 label="local_htex",
                 provider=LocalProvider(
                     channel=LocalChannel(),
@@ -327,5 +329,4 @@ def reconstruction(samples, proc, data, conf_info, config_map):
 
     ut.save_multiple_results(samples, images, supports, cohs, errs, recips, save_dir)
 
-    print('done')
 

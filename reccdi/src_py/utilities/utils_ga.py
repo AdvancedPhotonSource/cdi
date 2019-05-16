@@ -175,7 +175,7 @@ def align_arrays(ref_arr, arr):
 
 def sum_phase_tight_support(arr):
     arr = zero_phase(arr)
-    ph = np.atan2(arr.imag, arr.real)
+    ph = np.arctan2(arr.imag, arr.real)
     support = ut.shrink_wrap(abs(arr), .2, .5)
     return sum( abs(ph * support))
 
