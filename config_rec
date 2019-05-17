@@ -1,14 +1,16 @@
+// This file contains all configurable parameters that are applied during reconstruction.
+// There are general parameters that apply to the main thread of reconstruction and features parameters.
+// Reconstruction will use the global definitions and may use any of the supported features:
+// twin, amp_support, phase_support, pcdi, resolution, average, garbage collection.
+// The iterations during which the feature is active is defined by a trigger. In addition each feature may have other
+// configurable parameters.
 // Trigger can be defined as a single iteration, or multiple iterations.
 // examples:
 // (3) trigger at iteration 3
 // (20, 5) trigger starts at iteration 20, repeats every 5 iteration for the rest of run
 // (20, 5, 40) trigger starts at iteration 20, repeats every 5 iteration until iteration 40
 // Triggers can also be a combination of any of the above, ex: ((4), (3, 7, 24), (6,20))
-// Below is a list of the supported triggers:
-// garbage_trigger, twin_trigger, amp_support_trigger, phase_support_trigger, pcdi_trigger, resolution_trigger,
-// average_trigger.
-// The features that are related to the triggers are described below where the trigger is defined.
-// If a trigger is not defined, the feature is turned off. Comment out trigger that you don't want to apply.
+// If a trigger is not defined, the feature is turned off.
 // Adding a new feature/ trigger is described in common.h header file.
 
 // GENERAL
@@ -16,12 +18,12 @@ data_dir = "data"
                              // directory from which data is read
 
 save_dir = "results"
-                             // directory where results of reconstruction as npy files are saved
-                             // if threads > 1, result from each thread will be stored in subdirectory 1,2,3 etc.
+                             // directory where results of reconstruction are saved as npy files
+                             // if samples > 1, result from each thread will be stored in subdirectory 1,2,3 etc.
 
 cont = false
                              // only applied if generations equals 1, or not defined
-                             // true if the reconstruction start with previous results stored in continue_dir
+                             // if true, the reconstruction start with previous results stored in continue_dir
 
 continue_dir = "cont"
                              // directory from which results are read for reconstruction continuation
@@ -29,24 +31,33 @@ continue_dir = "cont"
 
 samples = 1
                              // number of reconstructions to start with
+                             // typically used when running genetic algorithm
 
 device = (0,0)
-                             // ID of the target devices for each thread. 
-                             // If more threads or not defined, it will default to -1
+                             // IDs of the target devices for each thread (sample).
+                             // If not defined, it will default to -1 for the OS to select device
 
 garbage_trigger = (10,.5)
                              // ArrayFire memory management is not reliable, the way around is to call garbage
                              // collection per defined number of iterations. Decrease this value if out of memory
                              // error occurs
 
-// GENERATIONS
+algorithm_sequence = ((2, ("ER",19), ("HIO", 10)), (1,("ER",20)))
+                             // defines algorithm applied in each iteration during modulus projection by a sequence of tuples.
+                             // The first number in a tuple is a repeat, followed by tuples of pairs, each
+                             // pair defining algorithm and number of iterations to run the algorithm.
+
+beta = .9;
+                             // used in hio algorithm
+
+// GENERATIc ALGORITHM
 generations = 1              // number of generations
 
-ga_metrics = ("chi")
+ga_metrics = ("chi", "sharpness")
                              // defines which metric should be used to rank the reconstruction results (samples)
-                             // supported: 'chi', 'sharpness', 'summed_phase', 'area', 'TV'
+                             // supported: 'chi', 'sharpness', 'summed_phase', 'area', ('TV')
 
-ga_breed_modes = ("sqrt_ab")
+ga_breed_modes = ("sqrt_ab", "Dhalf")
                              // defines which breeding mode to use to populate new generation. If "none"
                              // there is no breeding
                              // supported: 'sqrt_ab', 'max_all', 'Dhalf', 'Dhalf-best', 'dsqrt', 'pixel_switch',
@@ -54,48 +65,40 @@ ga_breed_modes = ("sqrt_ab")
                              // 'max_ab', 'max_ab_pa', 'min_ab_pa', 'avg_ab', 'avg_ab_pa',= 'sqrt_abg',
                              // 'sqrt_abg_pa', 'max_abg','max_abg_pa', 'avg_abg', 'avg_abg_pa', 'avg_sqrt'
 
-ga_cullings = (0)
+ga_cullings = (2,1)
                              // defines how many worst samples to remove in breeding phase for each generation
-                             // defaults to 0 if no entry for generation.
+                             // defaults to 0
 
-ga_support_thresholds = (.1)
+ga_support_thresholds = (.15, .1)
                              // the support is recalculated with this threshold after breeding phase
-                             // defaults to support threshold if no entry for generation.
+                             // defaults to support threshold
 
-ga_support_sigmas = (1.0)
+ga_support_sigmas = (1.1, 1.0)
                              // the support is recalculated with this sigma after breeding phase
-                             // defaults to support sigma if no entry for generation.
+                             // defaults to support sigma
 
-ga_low_resolution_sigmas = (1.0)
+ga_low_resolution_sigmas = (2.0, 1.5)
                              // list of sigmas that will be used in subsequent generations to calculate
-                             // Gauss (*assuming algorithm is GAUSS) and apply it to the data
-                             // This determines low resolution number of generations
+                             // Gauss (assuming algorithm is GAUSS) and apply it to the data
+                             // This determines low resolution generations number
 
 ga_low_resolution_alg = "GAUSS"
                              // algorithm to use to apply resolution. Supported algorithms:
                              // GAUSS
 
 
-// RECONSTRUCTION PARAMETERS USED BY FAST MODULE
-// modulus projection algorithm sequence
-algorithm_sequence = ((2, ("ER",19), ("HIO", 10)), (1,("ER",20)))
-                             // defines algorithm applied in each iteration by a sequence of tuples.
-                             // The first number in a tuple is a repeat, followed by tuples of pairs, each
-                             // pair defining algorithm and number of iterations to run the algorithm.
-
-beta = .9;
-                             // used in hio algorithm
-
-// twin
+// TWIN
 // twin feature trims the image array at the current state by zeroing half of the array in each dimension.
+
 twin_trigger = (2)
-                             // applied only in initial reconstruction
                              // twin defines at which iteration to cut half of the array(i.e. multiply by 0s),
                              // Comment out, if don't want to apply twin.
+                             // when running GA applied only in first generation
 
-// support
+// SUPPORT
 // Support area is an array that defines region in which the image is meaningful. This area is recalculated at the
 // trigger iteration. The calculation employ an algorithm defined here as support_type.
+
 amp_support_trigger = (7, 5)
                              // defines when to update support array using the parameters below.
                              // Comment out, if support feature not used.
@@ -107,19 +110,21 @@ support_area = (.5,.5,.5)
                              // by multiplying by the data array dimensions. The support will be set to 1s to this
                              // dimensions centered.
 
-// phase constrain
+// PHASE CONSTRAIN
 // At the begginning iterations the support area is modified in respect to the phase. Support area will exclude points
-// outside of the defined bounds
+// that phase is outside of the defined bounds
+
 phase_support_trigger = (0, 1, 45)
-                             // applied only in initial reconstruction
                              // defines when to update support array using the parameters below by applaying phase constrain.
                              // Comment out, if phase constrain feature not used.
+                             // when running GA applied only in first generation
 phase_min = -1.57;
 phase_max = 1.57;
 
-// partial coherence
-// Partial coherence trigger triggers recalculation of coherence array for the amplitudes in reciprocal space.
+// PARTIAL COHERENCE
+// Partial coherence triggers recalculation of coherence array for the amplitudes in reciprocal space.
 // After first coherence array is determined, it is used for convolution in subsequent iteration.
+
 pcdi_trigger = (16, 14)
                              // defines when to update coherence using the parameters below.
                              // Comment out, if pcdi feature not used.
@@ -131,16 +136,18 @@ partial_coherence_roi = (32,32,32);
                              // coherence area. If the values are fractional, the coherence area will be calculated
                              // by multiplying by the data array dimensions.
 
-// iteration based low resolution
-// At the begginning iterations the data and sigma are modified gradually. The sigma for each iteration where the low
-// resolution is applied is a linespace result of iter_res_sigma_range. The last sigma should be set to support_sigma,
-// or you can use default to achieve this. The sigma is used by when recalculation the support area, i.e when support
-// trigger is on. The data is multiplied by gaussian distribution with sigma gradually growing to the last value, which
-// typically is 1.
+// LOW RESOLUTION
+// At the beginning iterations the data resolution and sigma used in recalculation of the support area are modified gradually.
+// The sigma for each iteration where the low resolution is applied is a linespaced result of iter_res_sigma_range.
+// The last sigma is typically set to support_sigma. If the last sigma is not specified, it defaults to support_sigma.
+// The sigma is used by in recalculation of the support area, i.e when support trigger is on.
+// The iter_res_det_range is similiary linespaced for the duration of low resolution iterations. The values are used
+// as sigmas to calculate Gaussian distribution and applied (multiplied) to data.
+
 resolution_trigger = (0, 1, 40)
-                             // applied only in initial reconstruction
                              // defines when to apply low resolution using the parameters below.
                              // Comment out, if low resolution feature not used.
+                             // when running GA applied only in first generation
 
 iter_res_sigma_range = (2.0, 1.0)
                              // used when applying low resolution to replace support sigma.
@@ -153,9 +160,10 @@ iter_res_det_range = (.7, 1.0)
                              // The mask is gauss with sigma of linespaced det. If only one number given,
                              // the last det will default to 1.
 
-// averaging
-// The amplitudes of the last several iterations are avaraged. This trigger defines at which iteration the averaging
+// AVERAGING
+// The amplitudes of the last several iterations are averaged. This trigger defines at which iteration the averaging
 // starts.
-average_trigger = (65, 1)
-                             // defines when to apply averaging.
+
+average_trigger = (-65, 1)
+                             // defines when to apply averaging. Negative start means it is offset from the last iteration
                              // Comment out, if averaging not used.
