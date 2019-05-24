@@ -269,8 +269,13 @@ void Reconstruction::RunAlg()
 void Reconstruction::Twin()
 {
     dim4 dims = data.dims();
+    std::vector<int> twin_halves = params->GetTwinHalves();
     af::array temp = constant(0, dims, u32);
-    temp( af::seq(0, dims[0]/2-1), af::seq(0, dims[1]/2-1), span, span) = 1;
+    int x_start = (twin_halves[0] == 0) ? 0 : dims[0]/2;
+    int x_end = (twin_halves[0] == 0) ? dims[0]/2 -1 : dims[0]-1;
+    int y_start = (twin_halves[1] == 0) ? 0 : dims[1]/2;
+    int y_end = (twin_halves[1] == 0) ? dims[1]/2 -1 : dims[1]-1;
+    temp( af::seq(x_start, x_end), af::seq(y_start, y_end), span, span) = 1;
     ds_image = ds_image * temp;
     printf("Twin\n");
 }

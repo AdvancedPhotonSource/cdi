@@ -95,6 +95,10 @@ twin_trigger = (2)
                              // Comment out, if don't want to apply twin.
                              // when running GA applied only in first generation
 
+twin_halves = (0, 0)
+                             // defines which half of the array is zeroed out in x and y dimensions.
+                             // If 0, the first half in that dimension is zeroed out, otherwise, the second half.
+
 // SUPPORT
 // Support area is an array that defines region in which the image is meaningful. This area is recalculated at the
 // trigger iteration. The calculation employ an algorithm defined here as support_type.

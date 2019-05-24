@@ -1125,19 +1125,27 @@ class twin(Feature):
             self.twin_triggers.setText(str(conf_map.twin_trigger).replace(" ", ""))
         except AttributeError:
             pass
+        try:
+            self.twin_halves.setText(str(conf_map.twin_halves).replace(" ", ""))
+        except AttributeError:
+            pass
 
 
     def fill_active(self, layout):
         self.twin_triggers = QLineEdit()
         layout.addRow("twin triggers", self.twin_triggers)
+        self.twin_halves = QLineEdit()
+        layout.addRow("twin halves", self.twin_halves)
 
 
     def rec_default(self):
         self.twin_triggers.setText('(2)')
+        self.twin_halves.setText('(0,0)')
 
 
     def add_feat_conf(self, conf_map):
         conf_map['twin_trigger'] = str(self.twin_triggers.text()).replace('\n','')
+        conf_map['twin_halves'] = str(self.twin_halves.text()).replace('\n','')
 
 
 class average(Feature):

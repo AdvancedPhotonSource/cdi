@@ -119,6 +119,18 @@ class Generation:
                 return np.ones(shape)
 
 
+    def get_metrics(self, images, errs):
+        metrics = []
+        for i in range(len(images)):
+            pop_metric = {}
+            pop_metric['chi'] = errs[i][-1]
+            pop_metric['sharpness'] = sum(sum(sum(pow(abs(images[i]), 4))))
+            pop_metric['summed_phase'] = sum(sum(gut.sum_phase_tight_support(images[i])))
+            pop_metric['area'] = sum(sum(sum(ut.shrink_wrap(images[i], .2, .5))))
+            metrics.append(pop_metric)
+        return metrics
+
+
     def rank(self, images, errs):
         rank_property = []
 
@@ -136,12 +148,12 @@ class Generation:
             elif metric == 'area':
                 support = ut.shrink_wrap(image, .2, .5)
                 rank_property.append(sum(sum(sum(support))))
-            elif metric == 'TV':
-                gradients = np.gradient(image)
-                TV = np.zeros(image.shape)
-                for gr in gradients:
-                    TV += abs(gr)
-                rank_property.append(TV)
+            # elif metric == 'TV':
+            #     gradients = np.gradient(image)
+            #     TV = np.zeros(image.shape)
+            #     for gr in gradients:
+            #         TV += abs(gr)
+            #     rank_property.append(TV)
             else:
                 # metric is 'chi'
                 rank_property.append(errs[i][-1])
@@ -398,9 +410,10 @@ def reconstruction(generations, proc, data, conf_info, config_map):
             gen_data = gen_obj.get_data(data)
             images, supports, cohs, errs, recips = rec.rec(proc, gen_data, conf, config_map, images, supports, cohs)
             images, supports, cohs, errs, recips = gen_obj.order(images, supports, cohs, errs, recips)
+            metrics = gen_obj.get_metrics(images, errs)
             # save the generation results
             gen_save_dir = os.path.join(save_dir, 'g_' + str(g))
-            ut.save_multiple_results(len(images), images, supports, cohs, errs, recips, gen_save_dir)
+            ut.save_multiple_results(len(images), images, supports, cohs, errs, recips, gen_save_dir, metrics)
 
             if g < generations - 1 and len(images) > 1:
                 images, shrink_supports = gen_obj.breed(images)

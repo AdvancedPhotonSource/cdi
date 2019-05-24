@@ -34,12 +34,14 @@ private:
     d_type phase_max;
 
     //partial coherence
-    //PartialCoherence *partial_coherence = NULL;
     bool is_pcdi;
     int pcdi_alg;
     std::vector<int>  pcdi_roi;
     bool pcdi_normalize;
     int pcdi_iter;
+
+    // twin
+    std::vector<int>  twin_halves;
 
     // calculated number of iterations
     int number_iterations;
@@ -88,6 +90,8 @@ public:
     std::vector<int> GetPcdiRoi();
     bool GetPcdiNormalize();
     int GetPcdiIterations();
+
+    std::vector<int> GetTwinHalves();
 
     bool IsResolution();
     int GetLowResolutionIter();

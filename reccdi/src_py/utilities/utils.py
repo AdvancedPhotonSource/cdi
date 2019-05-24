@@ -17,6 +17,8 @@ import pylibconfig2 as cfg
 import numpy as np
 import os
 import logging
+import shutil
+import stat
 
 __author__ = "Barbara Frosik"
 __copyright__ = "Copyright (c) 2016, UChicago Argonne, LLC."
@@ -441,7 +443,23 @@ def read_results(read_dir):
     return image, support, coh
 
 
-def save_results(image, support, coh, errs, reciprocal, save_dir):
+def save_metrics(errs, dir, metrics=None):
+    metric_file = os.path.join(dir, 'summary')
+    if os.path.isfile(metric_file):
+        os.remove(metric_file)
+    with open(metric_file, 'a') as f:
+        if metrics is not None:
+            f.write('metric     result\n')
+            for key in metrics:
+                value = metrics[key]
+                f.write(key + ' = ' + str(value) + '\n')
+        f.write('\nerrors by iteration\n')
+        for er in errs:
+            f.write(str(er) + ' ')
+    f.close()
+
+
+def save_results(image, support, coh, errs, reciprocal, save_dir, metrics=None):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
@@ -456,9 +474,18 @@ def save_results(image, support, coh, errs, reciprocal, save_dir):
         np.save(coh_file, coh)
     reciprocal_file = os.path.join(save_dir, 'reciprocal')
     np.save(reciprocal_file, reciprocal)
+    plot_file = 'reccdi/src_py/utilities/plot_errors.py'
+    plot_exp_file = os.path.join(save_dir, 'plot_errors.py')
+    shutil.copyfile(plot_file, plot_exp_file)
+    st = os.stat(plot_exp_file)
+    os.chmod(plot_exp_file, st.st_mode | stat.S_IEXEC)
+    if metrics is not None:
+        save_metrics(errs, save_dir, metrics)
+    else:
+        save_metrics(errs, save_dir)
 
 
-def save_multiple_results(samples, images, supports, cohs, errs, reciprocals, save_dir):
+def save_multiple_results(samples, images, supports, cohs, errs, reciprocals, save_dir, metrics=None):
     """
     This function saves results of multiple reconstructions to directory tree in save_dir.
     Parameters
@@ -479,7 +506,10 @@ def save_multiple_results(samples, images, supports, cohs, errs, reciprocals, sa
     """
     for i in range(samples):
         subdir = os.path.join(save_dir, str(i))
-        save_results(images[i], supports[i], cohs[i], np.asarray(errs[i]), reciprocals[i], subdir)
+        if metrics is None:
+            save_results(images[i], supports[i], cohs[i], np.asarray(errs[i]), reciprocals[i], subdir)
+        else:
+            save_results(images[i], supports[i], cohs[i], np.asarray(errs[i]), reciprocals[i], subdir, metrics[i])
 
 
 def sub_pixel_shift(arr, row_shift, col_shift, z_shift):

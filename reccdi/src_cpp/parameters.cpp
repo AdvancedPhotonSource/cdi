@@ -33,6 +33,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
     pcdi_roi.clear();
     pcdi_normalize = false;
     pcdi_iter = 20;
+    twin_halves.clear();
     number_iterations = 0;
     plot_errors = false;
     is_resolution = false;
@@ -402,6 +403,18 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
         }
     }
 
+    try {
+        const Setting &tmp = root["twin_halves"];
+        for (int i = 0; i < tmp.getLength(); ++i)
+        {
+            twin_halves.push_back(tmp[i]);
+        }
+    }
+    catch ( const SettingNotFoundException &nfex)
+    {
+        printf((std::string("No 'partial_coherence_iteration_num' parameter in configuration file. Setting to 20.\n")).c_str());
+    }
+
     if ((first) && root.exists("resolution_trigger"))
     {
         is_resolution = true;
@@ -558,6 +571,11 @@ bool Params::GetPcdiNormalize()
 int Params::GetPcdiIterations()
 {
     return pcdi_iter;
+}
+
+std::vector<int>  Params::GetTwinHalves()
+{
+    return twin_halves;
 }
 
 std::vector<alg_switch> Params::GetAlgSwitches()
