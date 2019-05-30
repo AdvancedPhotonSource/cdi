@@ -1,91 +1,22 @@
 import pylibconfig2 as cfg
-import shutil
 import numpy as np
 import tifffile as tif
 import copy
 import scipy.fftpack as sf
 import os
 import glob
+from xrayutilities.io import spec as spec
 
 
-#====================================== spec parsing==========================================
-class Detector(object):
-    def __init__(self, det_name):
-        self.det_name = det_name
+def get_det_from_spec(specfile, scan):
+    # Scan numbers start at one but the list is 0 indexed
+    ss = spec.SPECFile(specfile)[scan - 1]
+    # Stuff from the header
+    det_area = ss.getheader_element('UIMR5').split()
+    det_area1 = int(det_area[0]), int(det_area[1])
+    det_area2 = int(det_area[2]), int(det_area[3])
+    return det_area1, det_area2
 
-    def get_pixel(self):
-        pass
-
-
-class Det_34idcTIM2(Detector):
-    def __init__(self):
-        super(Det_34idcTIM2, self).__init__('34idcTIM2:')
-
-    def get_pixel(self):
-        return '(55.0e-6, 55.0e-6)'
-
-
-class Spec_params:
-    def __init__(self, specfile, scan):
-        from xrayutilities.io import spec as spec
-
-        # Scan numbers start at one but the list is 0 indexed
-        ss = spec.SPECFile(specfile)[scan - 1]
-
-        # Stuff from the header
-        detector_name = str(ss.getheader_element('UIMDET'))
-        if detector_name == '34idcTIM2:':
-            self.detector_obj = Det_34idcTIM2()
-        det_area = ss.getheader_element('UIMR5').split()
-        self.det_area1 = int(det_area[0]), int(det_area[1])
-        self.det_area2 = int(det_area[2]), int(det_area[3])
-        command = ss.command.split()
-        self.scanmot = command[1]
-        self.scanmot_del = (float(command[3]) - float(command[2])) / int(command[4])
-
-        # Motor stuff from the header
-        self.delta = ss.init_motor_pos['INIT_MOPO_Delta']
-        self.gamma = ss.init_motor_pos['INIT_MOPO_Gamma']
-        self.arm = ss.init_motor_pos['INIT_MOPO_camdist']
-        energy = ss.init_motor_pos['INIT_MOPO_Energy']
-        self.lam = 12.398 / energy / 10  # in nanometers
-
-        # returning the scan motor name as well.  Sometimes we scan things
-        # other than theta.  So we need to expand the capability of the display
-        # code.
-#====================================== spec parsing end==========================================
-
-#====================================== prepare display config====================================
-def set_disp_conf(spec_obj, experiment_dir):
-    # pixel size by detector
-    pixel = spec_obj.detector_obj.get_pixel()  #{'34idcTIM2:':'[55.0e-6, 55.0e-6]'}
-
-    # create display configuration file from the parsed parameters
-    temp_file = os.path.join(experiment_dir, 'conf', 'temp')
-    disp_conf_file = os.path.join(experiment_dir, 'conf', 'config_disp')
-    with open(temp_file, 'a') as temp:
-        try:
-            with open(disp_conf_file, 'r') as f:
-                for line in f:
-                    if line.startswith('crop'):
-                        temp.write(line + '\n')
-            f.close()
-        except:
-            pass
-
-        temp.write('lamda = ' + str(spec_obj.lam) + '\n')
-        temp.write('delta = ' + str(spec_obj.delta) + '\n')
-        temp.write('gamma = ' + str(spec_obj.gamma) + '\n')
-        temp.write('arm = ' + str(spec_obj.arm) + '\n')
-        temp.write('dth = ' + str(spec_obj.scanmot_del) + '\n')
-        temp.write('pixel = ' + str(pixel) + '\n')
-    temp.close()
-    shutil.move(temp_file, disp_conf_file)
-
-#====================================== prepare display config end====================================
-
-
-#====================================== prepare data==================================================
 
 def get_dir_list(scans, map):
     """
@@ -239,7 +170,7 @@ def fit(arr, det_area1, det_area2):
     return b
 
 
-def prep_data(experiment_dir, scans, map, spec, *args):
+def prep_data(experiment_dir, scans, map, det_area1, det_area2, *args):
     if scans is None:
         print ('scan info not provided')
         return
@@ -248,15 +179,6 @@ def prep_data(experiment_dir, scans, map, spec, *args):
     if len(scans) == 1:
         scans.append(scans[0])
     dirs = get_dir_list(scans, map)
-
-    if spec is not None:
-        det_area1 = spec.det_area1
-        det_area2 = spec.det_area2
-    elif map is not None:
-        det_area1 = map.det_area1
-        det_area2 = map.det_area2
-    else:
-        print ('please provide det_area1 and det_area2 values')
 
     try:
         whitefile = map.whitefile
@@ -300,10 +222,6 @@ def prep_data(experiment_dir, scans, map, spec, *args):
     tif.imsave(data_file, arr.astype(np.int32))
     print ('done with prep')
 
-#====================================== prepare data end==================================================
-
-
-#====================================== entry script==================================================
 
 def prepare(experiment_dir, scans, conf_file, *args):
     try:
@@ -316,15 +234,34 @@ def prepare(experiment_dir, scans, conf_file, *args):
     scan_end = scans[len(scans)-1]
     try:
         specfile = config_map.specfile
-        # parse parameters from spec if spec file info
-        spec_obj = Spec_params(specfile, scan_end)
-        # generate display configuration from spec parameters
-        set_disp_conf(spec_obj, experiment_dir)
+        # parse det1 and det2 parameters from spec
+        det_area1, det_area2 = get_det_from_spec(specfile, scan_end)
     except:
-        print ('specfile not in conf file, not generating config for display')
-        spec_obj = None
+        try:
+            det_quad = config_map.det_quad
+            if det_quad == 0:
+                det_area1 = (0, 512)
+                det_area2 = (0, 512)
+            elif det_quad == 1:
+                det_area1 = (0, 256)
+                det_area2 = (0, 256)
+            elif det_quad == 2:
+                det_area1 = (0, 256)
+                det_area2 = (256, 512)
+            elif det_quad == 3:
+                det_area1 = (256, 512)
+                det_area2 = (0, 256)
+            elif det_quad == 4:
+                det_area1 = (256, 512)
+                det_area2 = (256, 512)
+            else:
+                print('the detector quad can be configured as digt from 0 to 4')
+                return
+        except Exception as e:
+            print('neither spec file or detector quad is configured')
+            return
 
     # data prep
-    prep_data(experiment_dir, scans, config_map, spec_obj, args)
+    prep_data(experiment_dir, scans, config_map, det_area1, det_area2, args)
 
 

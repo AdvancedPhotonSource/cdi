@@ -7,7 +7,7 @@ import numpy as np
 import shutil
 
 
-def save_vtk(res_dir, conf):
+def save_vtk(res_dir, conf, last_scan):
     try:
         imagefile = os.path.join(res_dir, 'image.npy')
         image = np.load(imagefile)
@@ -33,26 +33,45 @@ def save_vtk(res_dir, conf):
     ut.save_tif(reciprocal_phase, os.path.join(res_dir, 'reciprocal_phase.tif'))
     ut.save_tif(reciprocal_sq_mod, os.path.join(res_dir, 'reciprocal_sq_mod.tif'))
 
-    try:
-        cohfile = os.path.join(res_dir, 'coherence.npy')
+    cohfile = os.path.join(res_dir, 'coherence.npy')
+    if os.path.isfile(cohfile):
         coh = np.load(cohfile)
-        cx.save_CX(conf, image, support, coh, res_dir)
-    except:
-        cx.save_CX(conf, image, support, None, res_dir)
-
-
-def to_vtk(conf_info):
-    if os.path.isdir(conf_info):
-        experiment_dir = conf_info
-        conf = os.path.join(experiment_dir, 'conf', 'config_disp')
+        cx.save_CX(conf, image, support, coh, res_dir, last_scan)
     else:
-        #assuming it's a file
-        conf = conf_info
-        experiment_dir = None
+        cx.save_CX(conf, image, support, None, res_dir, last_scan)
+
+
+def to_vtk(experiment_dir):
+    if os.path.isdir(experiment_dir):
+        scan = experiment_dir.split("-")
+        last_scan = int(scan[-1])
+        print ('scan, last scan', scan, last_scan)
+        conf = os.path.join(experiment_dir, 'conf', 'config_disp')
+        if not os.path.isfile(conf):
+            # try to get spec file from experiment's prep phase
+            main_conf = os.path.join(experiment_dir, 'conf', 'config')
+            if os.path.isfile(main_conf):
+                main_config_map = ut.read_config(main_conf)
+                try:
+                    specfile = main_config_map.specfile
+                    # create config_disp with specfile definition
+                    f = open(conf, 'r+')
+                    f.write('specfile = "' + specfile + '"')
+                    f.close()
+                except:
+                    print ("Missing config_disp file and can't find spec file in experiment config")
+                    return
+            else:
+                print ("Missing config_disp file and can't find spec file in experiment config")
+                return
+    else:
+        print("Please provide an experiment directory argument")
+        return
+
     try:
         config_map = ut.read_config(conf)
         if config_map is None:
-            print ("can't read configuration file")
+            print ("can't read " + conf + " configuration file")
             return
     except:
         print ('Please check configuration file ' + conf + '. Cannot parse')
@@ -87,7 +106,7 @@ def to_vtk(conf_info):
     except AttributeError:
         save_dir = os.path.join(experiment_dir, 'results')
 
-    save_vtk(save_dir, conf)
+    save_vtk(save_dir, conf, last_scan)
     for sub in os.listdir(save_dir):
         subdir = os.path.join(save_dir, sub)
         if os.path.isdir(subdir):
@@ -104,11 +123,11 @@ def to_vtk(conf_info):
 def main(arg):
     print ('preparing display')
     parser = argparse.ArgumentParser()
-    parser.add_argument("conf_info", help="experiment directory or display configuration file")
+    parser.add_argument("experiment_dir", help="experiment directory")
     args = parser.parse_args()
-    conf_info = args.conf_info
+    experiment_dir = args.experiment_dir
 
-    to_vtk(conf_info)
+    to_vtk(experiment_dir)
     print ('done with display')
 
 if __name__ == "__main__":

@@ -189,11 +189,15 @@ class cdi_conf(QWidget):
         self.t.darkfile = conf_map.darkfile
         self.t.whitefile = conf_map.whitefile
         try:
-            self.t.min_files.setText(str(conf_map.auto_correct).replace(" ", ""))
+            self.t.min_files.setText(str(conf_map.min_files).replace(" ", ""))
         except:
             pass
         try:
             self.t.exclude_scans.setText(str(conf_map.exclude_scans).replace(" ", ""))
+        except:
+            pass
+        try:
+            self.t.det_quad.setText(str(conf_map.det_quad).replace(" ", ""))
         except:
             pass
         # set the text in the window
@@ -285,6 +289,36 @@ class cdi_conf(QWidget):
             self.t.crop.setText(str(conf_map.crop).replace(" ", ""))
         except AttributeError:
             pass
+        try:
+            self.t.lamda.setText(str(conf_map.lamda).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.t.delta.setText(str(conf_map.delta).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.t.gamma.setText(str(conf_map.gamma).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.t.arm.setText(str(conf_map.arm).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.t.dth.setText(str(conf_map.dth).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.t.pixel.setText(str(conf_map.pixel).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.t.specfile = conf_map.specfile
+            self.t.spec_file_button1.setStyleSheet("Text-align:left")
+            self.t.spec_file_button1.setText(self.t.specfile)
+        except AttributeError:
+            pass
 
 
     def msg_window(self, text):
@@ -335,6 +369,7 @@ class cdi_conf_tab(QTabWidget):
         self.tab3 = QWidget()
         self.tab4 = QWidget()
 
+        self.specfile = None
         self.addTab(self.tab1, "Data prep")
         self.addTab(self.tab2, "Data")
         self.addTab(self.tab3, "Reconstruction")
@@ -347,7 +382,7 @@ class cdi_conf_tab(QTabWidget):
 
     def tab1UI(self):
         self.data_dir = None
-        self.specfile = None
+        # self.specfile = None
         self.script = None
         self.imported_script = False
         layout = QFormLayout()
@@ -355,6 +390,8 @@ class cdi_conf_tab(QTabWidget):
         layout.addRow("data directory", self.data_dir_button)
         self.spec_file_button = QPushButton()
         layout.addRow("spec file", self.spec_file_button)
+        self.det_quad = QLineEdit()
+        layout.addRow("detector quad", self.det_quad)
         self.dark_file_button = QPushButton()
         layout.addRow("darkfield file", self.dark_file_button)
         self.white_file_button = QPushButton()
@@ -478,17 +515,34 @@ class cdi_conf_tab(QTabWidget):
         layout = QFormLayout()
         self.crop = QLineEdit()
         layout.addRow("crop", self.crop)
-        self.config_disp_button = QPushButton('process display', self)
-        layout.addWidget(self.config_disp_button)
+        self.spec_file_button1 = QPushButton()
+        layout.addRow("spec file", self.spec_file_button1)
+        self.lamda = QLineEdit()
+        layout.addRow("lamda", self.lamda)
+        self.delta = QLineEdit()
+        layout.addRow("delta", self.delta)
+        self.gamma = QLineEdit()
+        layout.addRow("gamma", self.gamma)
+        self.arm = QLineEdit()
+        layout.addRow("arm", self.arm)
+        self.dth = QLineEdit()
+        layout.addRow("dth", self.dth)
+        self.pixel = QLineEdit()
+        layout.addRow("pixel", self.pixel)
+        self.config_disp = QPushButton('process display', self)
+        layout.addWidget(self.config_disp)
         self.tab4.setLayout(layout)
 
-        self.config_disp_button.clicked.connect(self.display)
+        self.spec_file_button1.clicked.connect(self.set_spec_file)
+        self.config_disp.clicked.connect(self.display)
 
 
     def set_spec_file(self):
         self.specfile = select_file(self.specfile)
         self.spec_file_button.setStyleSheet("Text-align:left")
         self.spec_file_button.setText(self.specfile)
+        self.spec_file_button1.setStyleSheet("Text-align:left")
+        self.spec_file_button1.setText(self.specfile)
 
 
     def set_dark_file(self):
@@ -536,7 +590,7 @@ class cdi_conf_tab(QTabWidget):
 
 
     def prepare(self):
-        if self.main_win.id is None or self.main_win.scan is None:
+        if self.main_win.id is None:
             self.msg_window('enter Reconstruction ID and scan')
         else:
             prep_dir = os.path.join(self.main_win.experiment_dir, 'prep')
@@ -553,6 +607,9 @@ class cdi_conf_tab(QTabWidget):
                 conf_map['min_files'] = min_files
             if len(self.exclude_scans.text()) > 0:
                 conf_map['exclude_scans'] = str(self.exclude_scans.text()).replace('\n','')
+            if len(self.det_quad.text()) > 0:
+                det_quad = str(self.det_quad.text())
+                conf_map['det_quad'] = det_quad
 
             if str(self.prep.currentText()) == "custom":
                 self.prepare_custom(conf_map)
@@ -646,23 +703,20 @@ class cdi_conf_tab(QTabWidget):
             self.main_win.id is None or\
             scan is None or \
             self.data_dir is None or \
-            self.specfile is None:
-            self.msg_window('enter all parameters: working_dir, id, scan, data_dir, specfile')
+            self.specfile is None and len(self.det_quad.text()) == 0 :
+            self.msg_window('enter all parameters: working_dir, id, scan, data_dir, specfile or detector quad')
             return
 
-        if len(self.data_dir) > 0:
+        if type(self.data_dir) is not None:
             conf_map['data_dir'] = '"' + str(self.data_dir) + '"'
-        if len(self.specfile) > 0:
+        if type(self.specfile) is not None:
             conf_map['specfile'] = '"' + str(self.specfile) + '"'
-        else:
-            self.msg_window("specfile not defined")
-            return
-        if len(self.darkfile) > 0:
+        if type(self.darkfile) is not None:
             conf_map['darkfile'] = '"' + str(self.darkfile) + '"'
         else:
             self.msg_window("darkfile not defined")
             return
-        if len(self.whitefile) > 0:
+        if type(self.whitefile) is not None:
             conf_map['whitefile'] = '"' + str(self.whitefile) + '"'
         else:
             self.msg_window("whitefile not defined")
@@ -731,33 +785,41 @@ class cdi_conf_tab(QTabWidget):
 
 
     def display(self):
+        if (self.specfile is None or not os.path.isfile(self.specfile)) and \
+           (len(self.lamda.text()) == 0 or \
+            len(self.delta.text()) == 0 or \
+            len(self.gamma.text()) == 0 or \
+            len(self.arm.text()) == 0 or \
+            len(self.dth.text()) == 0 or \
+            len(self.pixel.text()) == 0):
+                self.msg_window('Please, enter spec file or all detector parameters')
+                return
+
         res_dir = os.path.join(self.main_win.experiment_dir, 'results')
         if os.path.isfile(os.path.join(res_dir, 'image.npy')) or \
         os.path.isfile(os.path.join(res_dir, '0', 'image.npy')) or \
         os.path.isfile(os.path.join(res_dir, 'g_0', '0', 'image.npy')):
+            conf_map = {}
+            if type(self.specfile) is not None:
+                conf_map['specfile'] = '"' + str(self.specfile) + '"'
+            if len(self.lamda.text()) > 0:
+                conf_map['lamda'] = str(self.lamda.text())
+            if len(self.delta.text()) > 0:
+                conf_map['delta'] = str(self.delta.text())
+            if len(self.gamma.text()) > 0:
+                conf_map['gamma'] = str(self.gamma.text())
+            if len(self.arm.text()) > 0:
+                conf_map['arm'] = str(self.arm.text())
+            if len(self.dth.text()) > 0:
+                conf_map['dth'] = str(self.dth.text())
+            if len(self.pixel.text()) > 0:
+                conf_map['pixel'] = str(self.pixel.text()).replace('\n','')
+            if len(self.crop.text()) > 0:
+                conf_map['crop'] = str(self.crop.text()).replace('\n','')
+
             conf_dir = os.path.join(self.main_win.experiment_dir, 'conf')
-            conf_disp = os.path.join(conf_dir, 'config_disp')
-            if not os.path.isfile(conf_disp):
-                self.msg_window('missing configuration file ' + conf_disp)
-                return
-            temp_file = os.path.join(self.main_win.experiment_dir, 'conf', 'temp')
-            with open(temp_file, 'a') as temp:
-                try:
-                    with open(conf_disp, 'r') as f:
-                        for line in f:
-                            if not line.startswith('crop') and not line.startswith('binning'):
-                                temp.write(line)
-                    f.close()
-                except:
-                    pass
-
-                if len(self.crop.text()) != 0:
-                    temp.write('crop = ' + str(self.crop.text()).replace('\n', '') + '\n')
-
-            temp.close()
-            shutil.move(temp_file, conf_disp)
-
-            run_dp.to_vtk(self.main_win.experiment_dir)
+            if self.main_win.write_conf(conf_map, conf_dir, 'config_disp'):
+                run_dp.to_vtk(self.main_win.experiment_dir)
         else:
             self.msg_window('Please, run reconstruction in previous tab to activate this function')
 
@@ -866,10 +928,6 @@ class GA(Feature):
             self.lr_sigmas.setText(str(conf_map.ga_low_resolution_sigmas).replace(" ", ""))
         except AttributeError:
             pass
-        try:
-            self.lr_algorithm.setText(str(conf_map.ga_low_resolution_alg).replace(" ", ""))
-        except AttributeError:
-            pass
 
 
     def fill_active(self, layout):
@@ -887,8 +945,6 @@ class GA(Feature):
         layout.addRow("after breed support sigmas", self.ga_support_sigmas)
         self.lr_sigmas = QLineEdit()
         layout.addRow("low resolution sigmas", self.lr_sigmas)
-        self.lr_algorithm = QLineEdit()
-        layout.addRow("low resolution algorithm", self.lr_algorithm)
 
 
     def rec_default(self):
@@ -899,7 +955,6 @@ class GA(Feature):
         self.ga_support_thresholds.setText('(.1,.1,.1,.1,.1)')
         self.ga_support_sigmas.setText('(1.0,1.0,1.0,1.0)')
         self.lr_sigmas.setText('(2.0,1.5)')
-        self.lr_algorithm.setText('GAUSS')
 
 
     def add_feat_conf(self, conf_map):
@@ -910,7 +965,6 @@ class GA(Feature):
         conf_map['ga_support_thresholds'] = str(self.ga_support_thresholds.text()).replace('\n','')
         conf_map['ga_support_sigmas'] = str(self.ga_support_sigmas.text()).replace('\n','')
         conf_map['ga_low_resolution_sigmas'] = str(self.lr_sigmas.text()).replace('\n','')
-        conf_map['ga_low_resolution_alg'] = '"' + str(self.lr_algorithm.text()) + '"'
 
 
 class low_resolution(Feature):

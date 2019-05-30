@@ -27,13 +27,15 @@ def copy_conf(src, dest):
         shutil.copy(conf_data, dest)
         conf_rec = os.path.join(src, 'config_rec')
         shutil.copy(conf_rec, dest)
+        conf_disp = os.path.join(src, 'config_disp')
+        shutil.copy(conf_disp, dest)
     except:
         pass
 
 
 def parse_and_prepare(prefix, scan, conf_dir):
     id = prefix + '_' + scan
-    print ('reading data file for experiment ' + id)
+    print ('reading data files for experiment ' + id)
 
     if not os.path.isdir(conf_dir):
         print ('configured directory ' + conf_dir + ' does not exist')
@@ -54,7 +56,6 @@ def parse_and_prepare(prefix, scan, conf_dir):
         print ('enter numeric values for scan range')
         return
 
-    main_conf = os.path.join(conf_dir, 'config')
     try:
         with open(main_conf, 'r') as f:
             config_map = cfg.Config(f.read())

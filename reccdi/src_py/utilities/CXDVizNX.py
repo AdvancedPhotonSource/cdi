@@ -19,13 +19,59 @@ __copyright__ = "Copyright (c) 2016, UChicago Argonne, LLC."
 __docformat__ = 'restructuredtext en'
 
 
+class Detector(object):
+    def __init__(self, det_name):
+        self.det_name = det_name
+
+    def get_pixel(self):
+        pass
+
+
+class Det_34idcTIM2(Detector):
+    def __init__(self):
+        super(Det_34idcTIM2, self).__init__('34idcTIM2:')
+
+    def get_pixel(self):
+        return '(55.0e-6, 55.0e-6)'
+
+
+def parse_spec(specfile, scan):
+    from xrayutilities.io import spec as spec
+
+    # Scan numbers start at one but the list is 0 indexed
+    ss = spec.SPECFile(specfile)[scan - 1]
+
+    # Stuff from the header
+    detector_name = str(ss.getheader_element('UIMDET'))
+    if detector_name == '34idcTIM2:':
+        detector_obj = Det_34idcTIM2()
+    else:
+        # default to this detector for now
+        detector_obj = Det_34idcTIM2()
+    pixel = detector_obj.get_pixel()
+    command = ss.command.split()
+    scanmot = command[1]
+    scanmot_del = (float(command[3]) - float(command[2])) / int(command[4])
+
+    # Motor stuff from the header
+    delta = ss.init_motor_pos['INIT_MOPO_Delta']
+    gamma = ss.init_motor_pos['INIT_MOPO_Gamma']
+    arm = ss.init_motor_pos['INIT_MOPO_camdist']
+    energy = ss.init_motor_pos['INIT_MOPO_Energy']
+    lam = 12.398 / energy / 10  # in nanometers
+
+    # returning the scan motor name as well.  Sometimes we scan things
+    # other than theta.  So we need to expand the capability of the display
+    # code.
+    return lam, delta, gamma, scanmot_del, arm, pixel
+
 class DispalyParams:
     """
     This class encapsulates parameters defining image display. The parameters are read from config file on
     construction
     """
 
-    def __init__(self, config):
+    def __init__(self, config, last_scan):
         """
         The constructor gets config file and fills out the class members.
 
@@ -44,40 +90,52 @@ class DispalyParams:
 
         deg2rad = np.pi / 180.0
         try:
-            self.lamda = config_map.lamda
-        except AttributeError:
-            print ('lamda not defined')
-        try:
-            self.delta = config_map.delta * deg2rad
-        except AttributeError:
-            print ('delta not defined')
-        try:
-            self.gamma = config_map.gamma * deg2rad
-        except AttributeError:
-            print ('gamma not defined')
-        try:
-            self.arm = config_map.arm / 1000
-        except AttributeError:
-            print ('arm not defined')
-        try:
-            self.dth = config_map.dth * deg2rad
-        except AttributeError:
-            print ('dth not defined')
+            specfile = config_map.specfile
+            self.lamda, delta, gamma, dth, arm, pixel = parse_spec(specfile, last_scan)
+            self.delta = delta * deg2rad
+            self.gamma = gamma * deg2rad
+            self.dth = dth * deg2rad
+            self.arm = arm / 1000
+            pixel = pixel[1:-1]
+            pixel = pixel.split(',')
+            pixel[0], pixel[1] = float(pixel[0]), float(pixel[1])
+
+        except:
+            try:
+                self.lamda = config_map.lamda
+            except AttributeError:
+                print ('lamda not defined')
+            try:
+                self.delta = config_map.delta * deg2rad
+            except AttributeError:
+                print ('delta not defined')
+            try:
+                self.gamma = config_map.gamma * deg2rad
+            except AttributeError:
+                print ('gamma not defined')
+            try:
+                self.dth = config_map.dth * deg2rad
+            except AttributeError:
+                print ('dth not defined')
+            try:
+                self.arm = config_map.arm / 1000
+            except AttributeError:
+                print ('arm not defined')
+            try:
+                pixel = config_map.pixel
+            except AttributeError:
+                print ('pixel not defined')
+
         try:
             self.binning = config_map.binning
         except AttributeError:
             self.binning = [1,1,1]
-        try:
-            pixel = config_map.pixel
-            self.dpx = pixel[0] * self.binning[0] / self.arm
-            self.dpy = pixel[1] * self.binning[1] / self.arm
-        except AttributeError:
-            print ('pixel not defined')
+        self.dpx = pixel[0] * self.binning[0] / self.arm
+        self.dpy = pixel[1] * self.binning[1] / self.arm
         try:
             self.crop = config_map.crop.reverse()
         except AttributeError:
             self.crop = None
-            print ('crop not defined')
 
 
 class CXDViz(tr.HasTraits):
@@ -332,9 +390,9 @@ def unbin(ar, bins):
     return array
 
 
-def save_CX(conf, image, support, coh, save_dir):
+def save_CX(conf, image, support, coh, save_dir, last_scan):
     image, support = center(image, support)
-    params = DispalyParams(conf)
+    params = DispalyParams(conf, last_scan)
     image = remove_ramp(image)
     viz = CXDViz()
     viz.set_array(image)

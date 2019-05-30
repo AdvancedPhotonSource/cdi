@@ -1,0 +1,8 @@
+working_dir = "/local/bfrosik/cdi/test"
+data_dir = "/net/s34data/export/34idc-data/2019/Staff19-1/ADStaff19-1a"
+specfile = "/net/s34data/export/34idc-data/2019/Staff19-1/Staff19-1a.spec"
+darkfile = "/net/s34data/export/34idc-work/2019/dark.tif"
+whitefile = "/net/s34data/export/34idc-work/2019/CelaWhiteField.tif"
+exclude_scans = (78,81)
+min_files = 80
+det_quad = 1

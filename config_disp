@@ -1,7 +1,3 @@
-// GENERAL
-save_dir = "results"
-                             // directory where results of reconstructions are saved and the vtk files, default "results"
-
 // PARAMETERS FOR VISUALISATION
 // wavelength
 lamda = .13933;
