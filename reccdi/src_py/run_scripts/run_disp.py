@@ -45,7 +45,6 @@ def to_vtk(experiment_dir):
     if os.path.isdir(experiment_dir):
         scan = experiment_dir.split("-")
         last_scan = int(scan[-1])
-        print ('scan, last scan', scan, last_scan)
         conf = os.path.join(experiment_dir, 'conf', 'config_disp')
         if not os.path.isfile(conf):
             # try to get spec file from experiment's prep phase

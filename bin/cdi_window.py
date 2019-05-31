@@ -205,6 +205,9 @@ class cdi_conf(QWidget):
         self.t.data_dir_button.setText(self.t.data_dir)
         self.t.spec_file_button.setStyleSheet("Text-align:left")
         self.t.spec_file_button.setText(self.t.specfile)
+        # set also in display tab
+        self.t.spec_file_button1.setStyleSheet("Text-align:left")
+        self.t.spec_file_button1.setText(self.t.specfile)
         self.t.dark_file_button.setStyleSheet("Text-align:left")
         self.t.dark_file_button.setText(self.t.darkfile)
         self.t.white_file_button.setStyleSheet("Text-align:left")
@@ -314,7 +317,8 @@ class cdi_conf(QWidget):
         except AttributeError:
             pass
         try:
-            self.t.specfile = conf_map.specfile
+            specfile = conf_map.specfile
+            self.t.specfile = specfile
             self.t.spec_file_button1.setStyleSheet("Text-align:left")
             self.t.spec_file_button1.setText(self.t.specfile)
         except AttributeError:

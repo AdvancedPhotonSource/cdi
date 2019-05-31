@@ -99,8 +99,8 @@ class DispalyParams:
             pixel = pixel[1:-1]
             pixel = pixel.split(',')
             pixel[0], pixel[1] = float(pixel[0]), float(pixel[1])
-
-        except:
+        except Exception as e:
+            print (str(e))
             try:
                 self.lamda = config_map.lamda
             except AttributeError:

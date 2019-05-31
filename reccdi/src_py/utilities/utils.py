@@ -458,6 +458,25 @@ def save_metrics(errs, dir, metrics=None):
             f.write(str(er) + ' ')
     f.close()
 
+def write_plot_errors(save_dir):
+    print ('in plot err')
+    plot_file = os.path.join(save_dir, 'plot_errors.py')
+    f = open(plot_file, 'w+')
+    f.write("#! /usr/bin/env python\n")
+    f.write("import matplotlib.pyplot as plt\n")
+    f.write("import numpy as np\n")
+    f.write("import sys\n")
+    f.write("import os\n")
+    f.write("current_dir = sys.path[0]\n")
+    f.write("errs = np.load(os.path.join(current_dir, 'errors.npy')).tolist()\n")
+    f.write("errs.pop(0)\n")
+    f.write("plt.plot(errs)\n")
+    f.write("plt.ylabel('errors')\n")
+    f.write("plt.show()")
+    f.close()
+    st = os.stat(plot_file)
+    os.chmod(plot_file, st.st_mode | stat.S_IEXEC)
+
 
 def save_results(image, support, coh, errs, reciprocal, save_dir, metrics=None):
     if not os.path.exists(save_dir):
@@ -474,11 +493,7 @@ def save_results(image, support, coh, errs, reciprocal, save_dir, metrics=None):
         np.save(coh_file, coh)
     reciprocal_file = os.path.join(save_dir, 'reciprocal')
     np.save(reciprocal_file, reciprocal)
-    plot_file = 'reccdi/src_py/utilities/plot_errors.py'
-    plot_exp_file = os.path.join(save_dir, 'plot_errors.py')
-    shutil.copyfile(plot_file, plot_exp_file)
-    st = os.stat(plot_exp_file)
-    os.chmod(plot_exp_file, st.st_mode | stat.S_IEXEC)
+    write_plot_errors(save_dir)
     if metrics is not None:
         save_metrics(errs, save_dir, metrics)
     else:
