@@ -123,10 +123,16 @@ def prep(fname, conf_info):
 
     try:
         binsizes = config_map.binning
+        bins = []
+        for binsize in binsizes:
+            bins.append(binsize)
+        filler = len(prep_data.shape) - len(bins)
+        for _ in range(filler):
+            bins.append(1)
         # The bins are entered in reverse order
-        binsizes.reverse()
+        bins.reverse()
         print ('binning')
-        prep_data = ut.binning(prep_data, binsizes)
+        prep_data = ut.binning(prep_data, bins)
     except AttributeError:
         pass
 
@@ -174,6 +180,7 @@ def prep(fname, conf_info):
     print ('saving data ready for reconstruction, data dims:', shape)
     # np.save(data_file, prep_data)
     ut.save_tif(prep_data, data_file)
+    print ('---data shape', prep_data.shape)
 
 
 #prep('/local/bfrosik/CDI/S149/Staff14-3_S0149.tif', 'config_data')

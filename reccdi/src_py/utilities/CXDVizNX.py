@@ -100,7 +100,7 @@ class DispalyParams:
             pixel = pixel.split(',')
             pixel[0], pixel[1] = float(pixel[0]), float(pixel[1])
         except Exception as e:
-            print (str(e))
+            # print (str(e))
             try:
                 self.lamda = config_map.lamda
             except AttributeError:
@@ -127,13 +127,26 @@ class DispalyParams:
                 print ('pixel not defined')
 
         try:
-            self.binning = config_map.binning
+            self.binning = []
+            binning = config_map.binning
+            for i in range(len(binning)):
+                self.binning.append(binning[i])
+            for _ in range(3 - len(self.binning)):
+                self.binning.append(1)
         except AttributeError:
             self.binning = [1,1,1]
-        self.dpx = pixel[0] * self.binning[0] / self.arm
-        self.dpy = pixel[1] * self.binning[1] / self.arm
+        self.dpx = pixel[0] * self.binning[0] / self.arm / self.binning[2]
+        self.dpy = pixel[1] * self.binning[1] / self.arm / self.binning[2]
         try:
-            self.crop = config_map.crop.reverse()
+            self.crop = []
+            crop = config_map.crop
+            for i in range(len(crop)):
+                self.crop.append(crop[i])
+            for _ in range(3 - len(self.crop)):
+                self.crop.append(1.0)
+            self.crop.reverse()
+            for i in range(3):
+                self.crop[i] = self.crop[i] * self.binning[i]
         except AttributeError:
             self.crop = None
 

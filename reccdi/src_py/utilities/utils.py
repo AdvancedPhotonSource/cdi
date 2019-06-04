@@ -459,7 +459,6 @@ def save_metrics(errs, dir, metrics=None):
     f.close()
 
 def write_plot_errors(save_dir):
-    print ('in plot err')
     plot_file = os.path.join(save_dir, 'plot_errors.py')
     f = open(plot_file, 'w+')
     f.write("#! /usr/bin/env python\n")
