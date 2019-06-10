@@ -89,10 +89,21 @@ Reconstruction::~Reconstruction()
     support_vector.clear();
     coherence_vector.clear();
     iter_flow.clear();
+    algorithm_map.clear();
 }
 
 void Reconstruction::Init()
 {
+    // create algorithms that are used in algorithm sequence
+    // and load the objects into a map
+    for (int i = 0; i < params->GetAlgSwitches().size(); i++)
+    {
+        int alg_id = params->GetAlgSwitches()[i].algorithm_id;
+        if (algorithm_map[alg_id] == 0)
+        {
+            MapAlgorithmObject(alg_id);
+        }
+    }
     std::map<char*, fp> flow_ptr_map;
     flow_ptr_map["NextIter"] = &Reconstruction::NextIter;
     flow_ptr_map["ResolutionTrigger"] =  &Reconstruction::ResolutionTrigger;
@@ -148,6 +159,20 @@ void Reconstruction::Init()
     ds_image *= support->GetSupportArray();
     printf("initial image norm %f\n", GetNorm(ds_image));
 
+}
+
+void Reconstruction::MapAlgorithmObject(int alg_id)
+{
+    // TODO consider refactoring if there are many subclasses
+    // this method is called only during initialization, so it might be ok
+    if (alg_id == ALGORITHM_HIO)
+    {
+        algorithm_map[alg_id] = new Hio;
+    }
+    else if(alg_id == ALGORITHM_ER)
+    {
+        algorithm_map[alg_id] = new Er;
+    }
 }
 
 void Reconstruction::Iterate()
@@ -261,7 +286,7 @@ void Reconstruction::ToDirect()
 
 void Reconstruction::RunAlg()
 {
-    Algorithm * alg  = state->GetCurrentAlg();
+    Algorithm * alg  = algorithm_map[state->GetCurrentAlg()];
     alg->RunAlgorithm(this);
     printf("RunAlg\n");
 }

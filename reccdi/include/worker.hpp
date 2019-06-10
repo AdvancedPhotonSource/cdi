@@ -18,6 +18,7 @@ class State;
 class Support;
 class PartialCoherence;
 class Resolution;
+class Algorithm;
 
 using namespace af;
 
@@ -60,8 +61,12 @@ private:
     std::vector<d_type> coherence_vector;
     std::vector<std::vector<fp> > iter_flow;
 
+    // mapping of algorithm id to an Algorithm object
+    std::map<int, Algorithm*> algorithm_map;
+
         //d_type max_data;
 //    af::Window * errors_plot;
+    void MapAlgorithmObject(int alg_id);
     
     // This method returns sum of squares of all elements in the array
     double GetNorm(af::array arr);

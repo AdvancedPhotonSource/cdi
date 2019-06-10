@@ -9,7 +9,6 @@ See LICENSE file.
 #include "state.hpp"
 #include "parameters.hpp"
 #include "support.hpp"
-#include "algorithm.hpp"
 #include "pcdi.hpp"
 #include "arrayfire.h"
 
@@ -21,44 +20,19 @@ State::State(Params* parameters)
     params = parameters;
     current_iter = -1;
     total_iter_num = 0;
-    current_alg = NULL;
+    current_alg = 0;
     alg_switch_index = 0;
 }
 
 State::~State()
 {
     errors.clear();
-    algorithm_map.clear();
 }
 
 void State::Init()
 {
     total_iter_num = params->GetNumberIterations();
-    // create algorithms that are used in algorithm sequence
-    // and load the objects into a map
-    for (int i = 0; i < params->GetAlgSwitches().size(); i++)
-    {
-        int alg_id = params->GetAlgSwitches()[i].algorithm_id;
-        if (algorithm_map[alg_id] == 0)
-        {
-            MapAlgorithmObject(alg_id);
-        }
-    }
-    current_alg = algorithm_map[params->GetAlgSwitches()[0].algorithm_id];
-}
-
-void State::MapAlgorithmObject(int alg_id)
-{
-    // TODO consider refactoring if there are many subclasses
-    // this method is called only during initialization, so it might be ok
-    if (alg_id == ALGORITHM_HIO)
-    {
-        algorithm_map[alg_id] = new Hio;
-    }
-    else if(alg_id == ALGORITHM_ER)
-    {
-        algorithm_map[alg_id] = new Er;
-    }
+    current_alg = params->GetAlgSwitches()[0].algorithm_id;
 }
 
 int State::Next()
@@ -72,13 +46,13 @@ int State::Next()
     // switch to the next algorithm
     {
         alg_switch_index++;
-        current_alg = algorithm_map[params->GetAlgSwitches()[alg_switch_index].algorithm_id];
+        current_alg = params->GetAlgSwitches()[alg_switch_index].algorithm_id;
     }
 
     return true;
 }
 
-Algorithm * State::GetCurrentAlg()
+int State::GetCurrentAlg()
 {
     return current_alg;
 }

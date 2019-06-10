@@ -13,7 +13,6 @@ See LICENSE file.
 
 class Params;
 class Reconstruction;
-class Algorithm;
 
 namespace af {
     class array;
@@ -34,15 +33,10 @@ private:
     // The vector of errors indexed by iteration
     std::vector<d_type>  errors;
     
-    // current algorithm
-    Algorithm * current_alg;
+    // current algorithm id
+    int current_alg;
     // current index of index switches vector
     int alg_switch_index;
-    
-    // mapping of algorithm id to an Algorithm object
-    std::map<int, Algorithm*> algorithm_map;
-
-    void MapAlgorithmObject(int alg_id);
 
 public:
     // Constructor. Takes pointer to the Param object. Uses the Param object to set the initial values.
@@ -68,7 +62,8 @@ public:
     int GetCurrentIteration();
 
     // Returns an algorithm that should be run in a current state (i.e. iteration).
-    Algorithm * GetCurrentAlg();
+//    Algorithm * GetCurrentAlg();
+    int GetCurrentAlg();
 
     // Stores the error
     void RecordError(d_type error);
