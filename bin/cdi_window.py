@@ -374,6 +374,8 @@ class cdi_conf_tab(QTabWidget):
         self.tab4 = QWidget()
 
         self.specfile = None
+        self.darkfile = None
+        self.whitefile = None
         self.addTab(self.tab1, "Data prep")
         self.addTab(self.tab2, "Data")
         self.addTab(self.tab3, "Reconstruction")
