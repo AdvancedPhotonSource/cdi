@@ -49,9 +49,7 @@ def get_dir_list(scans, map):
                 continue
             try:
                 index = int(name[-4:])
-                if index > scans[1]:
-                    break
-                if index >= scans[0] and not index in exclude_scans:
+                if index >= scans[0] and index <= scans[1] and not index in exclude_scans:
                     dirs.append(subdir)
             except:
                 continue
