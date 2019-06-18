@@ -43,7 +43,10 @@ def save_vtk(res_dir, conf, last_scan):
 
 def to_vtk(experiment_dir):
     if os.path.isdir(experiment_dir):
-        scan = experiment_dir.split("-")
+        if '-' in experiment_dir:
+            scan = experiment_dir.split("-")
+        else:
+            scan = experiment_dir.split("_")
         last_scan = int(scan[-1])
         conf = os.path.join(experiment_dir, 'conf', 'config_disp')
         if not os.path.isfile(conf):
