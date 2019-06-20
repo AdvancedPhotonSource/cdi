@@ -112,11 +112,11 @@ def to_vtk(experiment_dir):
     for sub in os.listdir(save_dir):
         subdir = os.path.join(save_dir, sub)
         if os.path.isdir(subdir):
-            save_vtk(subdir, conf)
+            save_vtk(subdir, conf, last_scan)
             for sub_sub in os.listdir(subdir):
                 sub_sub = os.path.join(subdir, sub_sub)
                 if os.path.isdir(sub_sub):
-                    save_vtk(sub_sub, conf)
+                    save_vtk(sub_sub, conf, last_scan)
 
     last = os.path.join('conf', 'last', 'config_disp')
     shutil.copy(conf, last)
