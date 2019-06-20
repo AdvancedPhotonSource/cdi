@@ -1060,7 +1060,7 @@ class amplitude_support(Feature):
 
     def rec_default(self):
         self.support_triggers.setText('(1,1)')
-        self.support_type.setText('"GAUSS"')
+        self.support_type.setText('GAUSS')
         self.support_area.setText('(.5,.5,.5)')
         self.sigma.setText('1.0')
         self.threshold.setText('0.1')
@@ -1160,7 +1160,7 @@ class pcdi(Feature):
 
     def rec_default(self):
         self.pcdi_triggers.setText('(50,50)')
-        self.pcdi_type.setText('"LUCY"')
+        self.pcdi_type.setText('LUCY')
         self.pcdi_iter.setText('20')
         self.pcdi_normalize.setText('true')
         self.pcdi_roi.setText('(32,32,32)')
