@@ -8,6 +8,7 @@ import reccdi.src_py.run_scripts.run_data as run_dt
 import reccdi.src_py.run_scripts.run_rec as run_rc
 import reccdi.src_py.run_scripts.run_disp as run_dp
 import reccdi.src_py.utilities.utils as ut
+import reccdi.src_py.utilities.spec as spec
 import importlib
 
 
@@ -205,7 +206,7 @@ class cdi_conf(QWidget):
         self.t.data_dir_button.setText(self.t.data_dir)
         self.t.spec_file_button.setStyleSheet("Text-align:left")
         self.t.spec_file_button.setText(self.t.specfile)
-        # set also in display tab
+        # set specfile also in display tab
         self.t.spec_file_button1.setStyleSheet("Text-align:left")
         self.t.spec_file_button1.setText(self.t.specfile)
         self.t.dark_file_button.setStyleSheet("Text-align:left")
@@ -293,7 +294,7 @@ class cdi_conf(QWidget):
         except AttributeError:
             pass
         try:
-            self.t.lamda.setText(str(conf_map.lamda).replace(" ", ""))
+            self.t.energy.setText(str(conf_map.energy).replace(" ", ""))
         except AttributeError:
             pass
         try:
@@ -323,6 +324,8 @@ class cdi_conf(QWidget):
             self.t.spec_file_button1.setText(self.t.specfile)
         except AttributeError:
             pass
+        if os.path.isfile(self.t.specfile):
+            self.t.parse_spec()
 
 
     def msg_window(self, text):
@@ -373,6 +376,7 @@ class cdi_conf_tab(QTabWidget):
         self.tab3 = QWidget()
         self.tab4 = QWidget()
 
+        self.data_dir = None
         self.specfile = None
         self.darkfile = None
         self.whitefile = None
@@ -387,8 +391,6 @@ class cdi_conf_tab(QTabWidget):
 
 
     def tab1UI(self):
-        self.data_dir = None
-        # self.specfile = None
         self.script = None
         self.imported_script = False
         layout = QFormLayout()
@@ -425,6 +427,8 @@ class cdi_conf_tab(QTabWidget):
         self.spec_file_button.clicked.connect(self.set_spec_file)
         self.dark_file_button.clicked.connect(self.set_dark_file)
         self.white_file_button.clicked.connect(self.set_white_file)
+        self.det_quad.textChanged.connect(lambda: self.set_overriden(self.det_quad))
+        self.layout1 = layout
 
 
     def load_prep(self, layout):
@@ -523,16 +527,16 @@ class cdi_conf_tab(QTabWidget):
         layout.addRow("crop", self.crop)
         self.spec_file_button1 = QPushButton()
         layout.addRow("spec file", self.spec_file_button1)
-        self.lamda = QLineEdit()
-        layout.addRow("lamda", self.lamda)
+        self.energy = QLineEdit()
+        layout.addRow("energy", self.energy)
         self.delta = QLineEdit()
-        layout.addRow("delta", self.delta)
+        layout.addRow("delta (deg)", self.delta)
         self.gamma = QLineEdit()
-        layout.addRow("gamma", self.gamma)
+        layout.addRow("gamma (deg)", self.gamma)
         self.arm = QLineEdit()
-        layout.addRow("arm", self.arm)
+        layout.addRow("arm (m)", self.arm)
         self.dth = QLineEdit()
-        layout.addRow("dth", self.dth)
+        layout.addRow("dth (deg)", self.dth)
         self.pixel = QLineEdit()
         layout.addRow("pixel", self.pixel)
         self.config_disp = QPushButton('process display', self)
@@ -541,6 +545,17 @@ class cdi_conf_tab(QTabWidget):
 
         self.spec_file_button1.clicked.connect(self.set_spec_file)
         self.config_disp.clicked.connect(self.display)
+        self.energy.textChanged.connect(lambda: self.set_overriden(self.energy))
+        self.delta.textChanged.connect(lambda: self.set_overriden(self.delta))
+        self.gamma.textChanged.connect(lambda: self.set_overriden(self.gamma))
+        self.arm.textChanged.connect(lambda: self.set_overriden(self.arm))
+        self.dth.textChanged.connect(lambda: self.set_overriden(self.dth))
+        self.pixel.textChanged.connect(lambda: self.set_overriden(self.pixel))
+        self.layout4 = layout
+
+
+    def set_overriden(self, item):
+        item.setStyleSheet('color: black')
 
 
     def set_spec_file(self):
@@ -549,6 +564,28 @@ class cdi_conf_tab(QTabWidget):
         self.spec_file_button.setText(self.specfile)
         self.spec_file_button1.setStyleSheet("Text-align:left")
         self.spec_file_button1.setText(self.specfile)
+        self.parse_spec()
+
+
+    def parse_spec(self):
+        last_scan = int(self.main_win.scan.split('-')[-1])
+        det1, det2, det_quad = spec.get_det_from_spec(self.specfile, last_scan)
+        if det_quad is not None:
+            self.det_quad.setText(det_quad)
+            self.det_quad.setStyleSheet('color: blue')
+        energy, delta, gamma, dth, arm, pixel = spec.parse_spec(self.specfile, last_scan)
+        self.energy.setText(str(energy))
+        self.energy.setStyleSheet('color: blue')
+        self.delta.setText(str(delta))
+        self.delta.setStyleSheet('color: blue')
+        self.gamma.setText(str(gamma))
+        self.gamma.setStyleSheet('color: blue')
+        self.dth.setText(str(dth))
+        self.dth.setStyleSheet('color: blue')
+        self.arm.setText(str(arm))
+        self.arm.setStyleSheet('color: blue')
+        self.pixel.setText(str(pixel))
+        self.pixel.setStyleSheet('color: blue')
 
 
     def set_dark_file(self):
@@ -792,7 +829,7 @@ class cdi_conf_tab(QTabWidget):
 
     def display(self):
         if (self.specfile is None or not os.path.isfile(self.specfile)) and \
-           (len(self.lamda.text()) == 0 or \
+           (len(self.energy.text()) == 0 or \
             len(self.delta.text()) == 0 or \
             len(self.gamma.text()) == 0 or \
             len(self.arm.text()) == 0 or \
@@ -808,8 +845,8 @@ class cdi_conf_tab(QTabWidget):
             conf_map = {}
             if type(self.specfile) is not None:
                 conf_map['specfile'] = '"' + str(self.specfile) + '"'
-            if len(self.lamda.text()) > 0:
-                conf_map['lamda'] = str(self.lamda.text())
+            if len(self.energy.text()) > 0:
+                conf_map['energy'] = str(self.energy.text())
             if len(self.delta.text()) > 0:
                 conf_map['delta'] = str(self.delta.text())
             if len(self.gamma.text()) > 0:

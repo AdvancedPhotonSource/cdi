@@ -5,17 +5,7 @@ import copy
 import scipy.fftpack as sf
 import os
 import glob
-from xrayutilities.io import spec as spec
-
-
-def get_det_from_spec(specfile, scan):
-    # Scan numbers start at one but the list is 0 indexed
-    ss = spec.SPECFile(specfile)[scan - 1]
-    # Stuff from the header
-    det_area = ss.getheader_element('UIMR5').split()
-    det_area1 = int(det_area[0]), int(det_area[1])
-    det_area2 = int(det_area[2]), int(det_area[3])
-    return det_area1, det_area2
+import reccdi.src_py.utilities.spec as spec
 
 
 def get_dir_list(scans, map):
@@ -233,7 +223,7 @@ def prepare(experiment_dir, scans, conf_file, *args):
     try:
         specfile = config_map.specfile
         # parse det1 and det2 parameters from spec
-        det_area1, det_area2 = get_det_from_spec(specfile, scan_end)
+        det_area1, det_area2, quad = spec.get_det_from_spec(specfile, scan_end)
     except:
         try:
             det_quad = config_map.det_quad

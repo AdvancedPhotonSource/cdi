@@ -83,7 +83,6 @@ def parse_and_prepare(prefix, scan, conf_dir):
     return experiment_dir
 
 
-
 def main(arg):
     parser = argparse.ArgumentParser()
     parser.add_argument("id", help="prefix to name of the experiment/data reconstruction")

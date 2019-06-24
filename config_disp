@@ -1,6 +1,6 @@
 // PARAMETERS FOR VISUALISATION
 // wavelength
-lamda = .13933;
+energy = .13933;
 // delta (degrees)
 delta = 30.1;
 // gamma (degrees)
