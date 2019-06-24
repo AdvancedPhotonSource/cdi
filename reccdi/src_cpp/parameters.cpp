@@ -109,8 +109,13 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
         {
             if (root.exists(flow_item))
             {
-                is_pcdi = true;
-                used_flow_seq.push_back(i);
+                const Setting &tmp = root[flow_item];
+                int first_pcdi = tmp[0];
+                if (first_pcdi < number_iterations)
+                {
+                    is_pcdi = true;
+                    used_flow_seq.push_back(i);
+                }
             }
         }
         else
