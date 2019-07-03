@@ -1,0 +1,22 @@
+// size to crop the image array, can be entered as actual size or fraction
+//crop = (120,120,120)
+crop = (.75, .75, .75)
+
+//If specfile is defined the parameters for visualization will be parsed from it
+specfile = "/net/s34data/export/34idc-data/2019/Staff19-1/Staff19-1a.spec"
+
+// PARAMETERS FOR VISUALISATION
+// wavelength
+energy = .13933;
+// delta (degrees)
+delta = 30.1;
+// gamma (degrees)
+gamma = 14.0;
+// camera distance (m)
+arm=0.6350;
+// angular step size
+dth=0.000174532925199;
+// detector pixel size
+pixel = (55.0e-6, 55.0e-6);
+
+

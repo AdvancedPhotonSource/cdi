@@ -1,11 +1,12 @@
 import pylibconfig2 as cfg
 import numpy as np
-import tifffile as tif
 import copy
 import scipy.fftpack as sf
 import os
 import glob
+import tifffile as tif
 import reccdi.src_py.utilities.spec as spec
+import reccdi.src_py.utilities.utils as ut
 
 
 def get_dir_list(scans, map):
@@ -50,8 +51,6 @@ def get_dark_white(darkfile, whitefile, det_area1, det_area2):
     if darkfile is not None:
         # find the darkfield array
         dark_full = tif.imread(darkfile).astype(float)
-        # Ross' arrays are transposed from imread
-        dark_full = np.transpose(dark_full)
         # crop the corresponding quad or use the whole array, depending on what info was parsed from spec file
         dark = dark_full[slice(det_area1[0], det_area1[1]), slice(det_area2[0], det_area2[1])]
     else:
@@ -60,12 +59,9 @@ def get_dark_white(darkfile, whitefile, det_area1, det_area2):
     if whitefile is not None:
         # find the whitefield array
         white_full = tif.imread(whitefile).astype(float)
-        # Ross' arrays are transposed from imread
-        white_full = np.transpose(white_full)
         # crop the corresponding quad or use the whole array, depending on what info was parsed from spec file
         white = white_full[slice(det_area1[0], det_area1[1]), slice(det_area2[0], det_area2[1])]
         # set the bad pixels to some large value
-        #white = np.where(white==0, 1e20, white) #Some large value
         white = np.where(white<5000, 1e20, white) #Some large value
     else:
         white = None
@@ -74,7 +70,7 @@ def get_dark_white(darkfile, whitefile, det_area1, det_area2):
 
 
 def get_normalized_slice(file, dark, white):
-    slice = np.transpose(tif.TiffFile(file).asarray())
+    slice = tif.TiffFile(file).asarray()
     if dark is not None:
         slice = np.where(dark > 5, 0, slice) #Ignore cosmic rays
     # here would be code for correction for dead time
@@ -197,7 +193,7 @@ def prep_data(experiment_dir, scans, map, det_area1, det_area2, *args):
             # add the arrays together
             part_f = sf.fftn(part)
             slice_sum = combine_part(part_f, slice_sum, refpart, part)
-        arr = np.transpose(np.abs(slice_sum).astype(np.int32))
+        arr = np.abs(slice_sum).astype(np.int32)
 
     arr = fit(arr, det_area1, det_area2)
 
@@ -207,8 +203,8 @@ def prep_data(experiment_dir, scans, map, det_area1, det_area2, *args):
         os.makedirs(prep_data_dir)
     data_file = os.path.join(prep_data_dir, 'prep_data.tif')
 
-    tif.imsave(data_file, arr.astype(np.int32))
-    print ('done with prep')
+    ut.save_tif(arr, data_file)
+    print ('done with prep, shape:', arr.shape)
 
 
 def prepare(experiment_dir, scans, conf_file, *args):

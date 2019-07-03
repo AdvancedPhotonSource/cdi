@@ -1,5 +1,0 @@
-aliens = ((107,77,57,119,91,70))
-amp_threshold = 2.0
-binning = (1,1,1)
-center_shift = (0,0,0)
-adjust_dimensions = (0,0,0,0,0,0)

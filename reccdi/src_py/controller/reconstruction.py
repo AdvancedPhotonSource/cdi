@@ -18,7 +18,6 @@ visualization.
 """
 
 import numpy as np
-# import matplotlib.pyplot as plt
 import os
 import reccdi.src_py.controller.fast_module as calc
 import reccdi.src_py.utilities.utils as ut

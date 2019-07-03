@@ -20,7 +20,7 @@ visualization.
 import numpy as np
 import reccdi.src_py.utilities.utils as ut
 import os
-import tifffile as tif
+
 
 __author__ = "Barbara Frosik"
 __copyright__ = "Copyright (c) 2016, UChicago Argonne, LLC."
@@ -58,8 +58,9 @@ def prep(fname, conf_info):
     -------
     nothing
     """
+    # The data has been transposed when saved in tif format for the ImageJ to show the right orientation
+    data = ut.read_tif(fname)
 
-    data = ut.get_array_from_tif(fname)
     if os.path.isdir(conf_info):
         experiment_dir = conf_info
         conf = os.path.join(experiment_dir, 'conf', 'config_data')
@@ -80,15 +81,14 @@ def prep(fname, conf_info):
     print ('saving for AI')
     d_f = os.path.join(experiment_dir, 'prep', 'prep_data.npy')
     np.save(d_f, data)
-    shape = list(data.shape)
-    shape.reverse()
-    print ('data dimensions before prep', shape)
-    # zero out the aliens, aliens are the same for each data prep
+    # zero out the ares defined by aliens
     try:
         aliens = config_map.aliens
         print ('removing aliens')
         for alien in aliens:
-            data[alien[2]:alien[5], alien[1]:alien[4], alien[0]:alien[3]] = 0
+            # The ImageJ swaps the x and y axis, so the aliens coordinates needs to be swapped, since ImageJ is used
+            # to find aliens
+            data[alien[1]:alien[4], alien[0]:alien[3], alien[2]:alien[5]] = 0
         # saving file for Kenley project - AI aliens removing
         aliens_f = os.path.join(experiment_dir, 'prep', 'aliens')
         with open(aliens_f, 'a') as a_f:
@@ -106,7 +106,7 @@ def prep(fname, conf_info):
         d_f = os.path.join(experiment_dir, 'prep', 'prep_no_aliens.npy')
         np.save(d_f, data)
         d_f = os.path.join(experiment_dir, 'prep', 'prep_no_aliens.tif')
-        tif.imsave(d_f, data.astype(np.int32))
+        ut.save_tif(data, d_f)
 
     except AttributeError:
         pass
@@ -121,6 +121,34 @@ def prep(fname, conf_info):
     # zero out the noise
     prep_data = np.where(data < amp_threshold, 0, data)
 
+    # square root data
+    prep_data = np.sqrt(prep_data)
+
+    try:
+        crops_pads = config_map.adjust_dimensions
+    except AttributeError:
+        # the size still has to be adjusted to the opencl supported dimension
+        crops_pads = (0, 0, 0, 0, 0, 0)
+    # adjust the size, either pad with 0s or crop array
+    print ('cropping and/or padding dimensions')
+    pairs = []
+    for i in range(int(len(crops_pads)/2)):
+        pair = crops_pads[2*i:2*i+2]
+        pairs.append(pair)
+    # change pairs x and y, as the ImageJ swaps the axes
+    pairs[0], pairs[1] = pairs[1], pairs[0]
+    prep_data = ut.adjust_dimensions(prep_data, crops_pads)
+    print ('shape after adjust', prep_data.shape)
+    if prep_data is None:
+        return
+
+    try:
+        center_shift = config_map.center_shift
+        print ('shift center')
+        prep_data = ut.get_centered(prep_data, center_shift)
+    except AttributeError:
+        prep_data = ut.get_centered(prep_data, [0,0,0])
+
     try:
         binsizes = config_map.binning
         bins = []
@@ -129,40 +157,9 @@ def prep(fname, conf_info):
         filler = len(prep_data.shape) - len(bins)
         for _ in range(filler):
             bins.append(1)
-        # The bins are entered in reverse order
-        bins.reverse()
-        print ('binning')
         prep_data = ut.binning(prep_data, bins)
     except AttributeError:
         pass
-
-    # square root data
-    prep_data = np.sqrt(prep_data)
-
-    try:
-        pads = config_map.adjust_dimensions
-        # adjust the size, either pad with 0s or crop array
-        print ('adjusting dimensions')
-        # need to reverse the padding
-        pairs = []
-        for i in range(int(len(pads)/2)):
-            pair = pads[2*i:2*i+2]
-            pairs.append(pair)
-        pairs.reverse()
-        pads = []
-        for pair in pairs:
-            pads.extend(pair)
-        prep_data = ut.adjust_dimensions(prep_data, pads)
-    except AttributeError:
-        prep_data = ut.adjust_dimensions(prep_data, (0,0,0,0,0,0))
-
-    try:
-        center_shift = config_map.center_shift
-        center_shift.reverse()
-        print ('shift center')
-        prep_data = ut.get_centered(prep_data, center_shift)
-    except AttributeError:
-        prep_data = ut.get_centered(prep_data, [0,0,0])
 
     try:
         data_dir = config_map.data_dir
@@ -175,12 +172,9 @@ def prep(fname, conf_info):
 
     # save data
     data_file = os.path.join(data_dir, 'data.tif')
-    shape = list(prep_data.shape)
-    shape.reverse()
-    print ('saving data ready for reconstruction, data dims:', shape)
     # np.save(data_file, prep_data)
     ut.save_tif(prep_data, data_file)
-    print ('---data shape', prep_data.shape)
+    print ('data ready for reconstruction, data dims:', prep_data.shape)
 
 
 #prep('/local/bfrosik/CDI/S149/Staff14-3_S0149.tif', 'config_data')

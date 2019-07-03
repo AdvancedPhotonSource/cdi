@@ -16,7 +16,7 @@ amp_threshold = 2.0
                              // after removing.
 
 adjust_dimensions = (-13, -13, -65, -65, -65, -65)
-                             // optional
+                             // optional 
                              // enter adjust dimensions tuple
                              // If number is positive, the array will be padded. If negative, cropped.
                              // The parameters correspond to [x left, x right, y left, y right, z left, z right]

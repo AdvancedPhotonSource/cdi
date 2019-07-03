@@ -9,13 +9,6 @@ import shutil
 def prepare(experiment_dir, scan_range, conf_file):
     prep.prepare(experiment_dir, scan_range, conf_file)
 
-    # copy experiment config into last config, this is the last used
-    main_conf = os.path.join(experiment_dir, 'conf', 'config')
-    last = os.path.join('conf', 'last')
-    if not os.path.exists(last):
-        os.makedirs(last)
-    shutil.copy(main_conf, last)
-
     return experiment_dir
 
 

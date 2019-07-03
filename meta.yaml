@@ -1,0 +1,37 @@
+package:
+  name: reccdi
+  version: v1.0
+
+source:
+  path: .
+
+build:
+  script_env:
+    - LD_LIBRARY_PATH
+  number: 0
+  noarch: generic
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+
+  host:
+    - python
+    - cython
+
+  run:
+    - python
+    - parsl
+    - tifffile
+    - pylibconfig2
+    - xrayutilities
+    - python
+    - traits
+    - mayavi
+
+
+about:
+  home: https://github.com/advancedPhotonSource/cdi
+  license: UChicago Argonne, see LICENSE file
+  summary: Implement and parallelize genetic algorithms and phase retrieval methods for Bragg CDI techniques.

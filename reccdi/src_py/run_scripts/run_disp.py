@@ -4,7 +4,6 @@ import sys
 import os
 import reccdi.src_py.utilities.utils as ut
 import numpy as np
-import shutil
 
 
 def save_vtk(res_dir, conf, last_scan):
@@ -117,9 +116,6 @@ def to_vtk(experiment_dir):
                 sub_sub = os.path.join(subdir, sub_sub)
                 if os.path.isdir(sub_sub):
                     save_vtk(sub_sub, conf, last_scan)
-
-    last = os.path.join('conf', 'last', 'config_disp')
-    shutil.copy(conf, last)
 
 
 def main(arg):

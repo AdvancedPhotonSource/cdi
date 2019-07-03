@@ -67,15 +67,12 @@ class cdi_conf(QWidget):
 
 
     def assure_experiment_dir(self):
-        # if self.id is None or self.scan is None:
-        #     self.msg_window('enter Reconstruction ID and scan')
-        #     return False
         if not os.path.exists(self.experiment_dir):
             os.makedirs(self.experiment_dir)
         experiment_conf_dir = os.path.join(self.experiment_dir, 'conf')
         if not os.path.exists(experiment_conf_dir):
             os.makedirs(experiment_conf_dir)
-        #return True
+
 
     def load_conf_dir(self):
         if self.id is None or self.scan is None:
@@ -83,17 +80,30 @@ class cdi_conf(QWidget):
         else:
             # the function above assures that the working directory is set
             if os.path.isfile(os.path.join(self.experiment_dir, 'conf', 'config')):
-                load_dir = select_dir(self.experiment_dir)
-            elif os.path.isfile(os.path.join(os.getcwd(), 'conf', 'last', 'config')):
-                load_dir = select_dir(os.path.join(os.getcwd(), 'conf', 'last'))
-            elif os.path.isfile(os.path.join(os.getcwd(), 'conf', 'defaults', 'config')):
-                load_dir = select_dir(os.path.join(os.getcwd(), 'conf', 'defaults'))
+                load_dir = select_dir(os.path.join(self.experiment_dir, 'conf'))
+            elif os.path.isfile(os.path.join(os.getcwd(), 'conf', 'config')):
+                load_dir = select_dir(os.path.join(os.getcwd(), 'conf'))
             else:
                 load_dir = select_dir(self.working_dir)
             if load_dir is not None:
-                self.set_conf_from_button.setStyleSheet("Text-align:left")
-                self.set_conf_from_button.setText(load_dir)
-                self.init_from_conf(load_dir)
+                if not os.path.isfile(os.path.join(load_dir, 'config')):
+                    self.msg_window('missing config file in load directory')
+                    return
+                elif not os.path.isfile(os.path.join(load_dir, 'config_data')):
+                    self.msg_window('missing config_data file in load directory')
+                    return
+                elif not os.path.isfile(os.path.join(load_dir, 'config_rec')):
+                    self.msg_window('missing config_rec file in load directory')
+                    return
+                elif not os.path.isfile(os.path.join(load_dir, 'config_disp')):
+                    self.msg_window('missing config_disp file in load directory')
+                    return
+                else:
+                    self.set_conf_from_button.setStyleSheet("Text-align:left")
+                    self.set_conf_from_button.setText('config loaded')
+                    self.init_from_conf(load_dir)
+            else:
+                self.msg_window('please select valid conf directory')
 
 
     def set_working_dir(self):
@@ -102,6 +112,10 @@ class cdi_conf(QWidget):
             self.set_work_dir_button.setStyleSheet("Text-align:left")
             self.set_work_dir_button.setText(self.working_dir)
             self.set_experiment_dir()
+        else:
+            self.set_work_dir_button.setText('')
+            self.msg_window('please select valid working directory')
+            return
 
 
     def set_id(self):
@@ -124,36 +138,25 @@ class cdi_conf(QWidget):
         if self.id is not None and self.scan is not None:
             self.exp_id = self.id + '_' + self.scan
             self.experiment_dir = os.path.join(self.working_dir, self.exp_id)
+            self.set_conf_from_button.setText('')
 
 
     def run_everything(self):
         self.t.prepare()
-        self.t.model_data()
+        self.t.format_data()
         self.t.reconstruction()
         self.t.display()
 
 
     def init_work_dir(self):
-        if os.path.isdir('conf/last'):
-            dir = 'conf/last'
-        elif os.path.isdir('conf/defaults'):
-            dir = 'conf/defaults'
-        else:
-            dir = None
-
-        if dir is None:
-            self.working_dir = os.getcwd()
-        else:
-            main_conf = os.path.join(dir, 'config')
-            if not os.path.isfile(main_conf):
-                self.msg_window('missing configuration file ' + main_conf)
-                return
+        self.working_dir = os.getcwd()
+        if os.path.isdir('conf'):
+            main_conf = os.path.join('conf', 'config')
             try:
                 conf_map = ut.read_config(main_conf)
                 self.working_dir = conf_map.working_dir
-            except Exception as e:
-                self.msg_window('please check configuration file ' + main_conf + '. Cannot parse, ' + str(e))
-                return
+            except:
+                pass
 
         self.set_work_dir_button.setStyleSheet("Text-align:left")
         self.set_work_dir_button.setText(self.working_dir)
@@ -457,19 +460,19 @@ class cdi_conf_tab(QTabWidget):
         layout.addRow("aliens", self.aliens)
         self.amp_threshold = QLineEdit()
         layout.addRow("amp_threshold", self.amp_threshold)
-        self.binning = QLineEdit()
-        layout.addRow("binning", self.binning)
         self.center_shift = QLineEdit()
         layout.addRow("center_shift", self.center_shift)
         self.adjust_dimensions = QLineEdit()
-        layout.addRow("adjust_dimensions", self.adjust_dimensions)
-        self.config_data_button = QPushButton('model data', self)
+        layout.addRow("pad, crop", self.adjust_dimensions)
+        self.binning = QLineEdit()
+        layout.addRow("binning", self.binning)
+        self.config_data_button = QPushButton('format data', self)
         layout.addWidget(self.config_data_button)
         self.tab2.setLayout(layout)
 
         # this will create config_data file and run data script
         # to generate data ready for reconstruction
-        self.config_data_button.clicked.connect(self.model_data)
+        self.config_data_button.clicked.connect(self.format_data)
 
 
     def tab3UI(self):
@@ -487,7 +490,7 @@ class cdi_conf_tab(QTabWidget):
         self.device = QLineEdit()
         ulayout.addRow("device(s)", self.device)
         self.samples = QLineEdit()
-        ulayout.addRow("number of samples", self.samples)
+        ulayout.addRow("number of reconstructions", self.samples)
         self.gc = QLineEdit()
         ulayout.addRow("gc triggers", self.gc)
         self.alg_seq = QLineEdit()
@@ -773,7 +776,7 @@ class cdi_conf_tab(QTabWidget):
         #scripts.run_34id_prepare.prepare(self.main_win.working_dir, self.main_win.exp_id, scan_range, self.data_dir, self.specfile, self.darkfile, self.whitefile)
 
 
-    def model_data(self):
+    def format_data(self):
         if os.path.isfile(os.path.join(self.main_win.experiment_dir, 'prep','prep_data.tif')):
             conf_map = {}
             if len(self.aliens.text()) > 0:
@@ -824,7 +827,7 @@ class cdi_conf_tab(QTabWidget):
             if self.main_win.write_conf(conf_map, conf_dir, 'config_rec'):
                 run_rc.reconstruction(str(self.proc.currentText()), self.main_win.experiment_dir)
         else:
-            self.msg_window('Please, run model data in previous tab to activate this function')
+            self.msg_window('Please, run format data in previous tab to activate this function')
 
 
     def display(self):

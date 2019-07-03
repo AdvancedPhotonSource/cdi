@@ -17,13 +17,12 @@ import pylibconfig2 as cfg
 import numpy as np
 import os
 import logging
-import shutil
 import stat
 
 __author__ = "Barbara Frosik"
 __copyright__ = "Copyright (c) 2016, UChicago Argonne, LLC."
 __docformat__ = 'restructuredtext en'
-__all__ = ['get_array_from_tif',
+__all__ = ['read_tif',
            'get_opencl_dim',
            'binning',
            'get_centered',
@@ -44,7 +43,7 @@ def get_logger(name, ldir=''):
     return logger
 
 
-def get_array_from_tif(filename):
+def read_tif(filename):
     """
     This method reads tif type file containing experiment data and returns the data as array.
     Parameters
@@ -57,11 +56,16 @@ def get_array_from_tif(filename):
         an array containing the experiment data
     """
 
-    return tf.imread(filename)
+    ar = tf.imread(filename)
+    ar = np.swapaxes(ar, 0, 2)
+    ar = np.swapaxes(ar, 0, 1)
+    return ar
 
 
-def save_tif(ar, tif_file):
-    tf.imsave(tif_file, ar.astype(np.int32))
+def save_tif(arr, tif_file):
+    arr = np.swapaxes(arr, 0, 2)
+    arr = np.swapaxes(arr, 1, 2)
+    tf.imsave(tif_file, arr.astype(np.int32))
 
 
 def read_config(config):
@@ -307,6 +311,9 @@ def adjust_dimensions(arr, pad):
     for i in range(len(old_dims)):
         crop_front = max(0, -pad[2 * i])
         crop_end = max(0, -pad[2 * i + 1])
+        if crop_front + crop_end >= arr.shape[i]:
+            print ('the crop exceeds size, please change the crop and run again')
+            return None
         splitted = np.split(cropped, [crop_front, old_dims[i] - crop_end], axis=i)
         cropped = splitted[1]
     # logger.info('cutting from to ' + str(crop[0]) + ', ' + str(old_dims[0]-crop[1]) + ', ' + str(crop[2]) + ', ' \
