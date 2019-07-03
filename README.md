@@ -13,7 +13,7 @@ It is desired to implement and parallelize software for fast processing by non-e
 
 Version
 -------
-0.0.1 - 10/25/2017
+v1.0 - 06/24/2019
 
 Pre-requisites
 ---------------
