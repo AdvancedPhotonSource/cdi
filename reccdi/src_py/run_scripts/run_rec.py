@@ -59,6 +59,8 @@ def reconstruction(proc, experiment_dir):
     try:
         data = ut.read_tif(datafile)
         print ('data shape', data.shape)
+        data = np.swapaxes(data, 0, 2)
+        data = np.swapaxes(data, 0, 1)
     except:
         print ('data file ' + datafile + ' is missing')
         p.terminate()
