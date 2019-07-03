@@ -157,6 +157,7 @@ def prep(fname, conf_info):
         filler = len(prep_data.shape) - len(bins)
         for _ in range(filler):
             bins.append(1)
+        bins[0], bins[1] = bins[1], bins[0]
         prep_data = ut.binning(prep_data, bins)
     except AttributeError:
         pass
