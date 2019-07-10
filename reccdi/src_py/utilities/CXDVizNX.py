@@ -90,7 +90,6 @@ class DispalyParams:
                 self.binning.append(1)
         except AttributeError:
             self.binning = [1,1,1]
-        print ('binning', self.binning, )
         self.dpx = pixel[0] * self.binning[0] / self.arm / self.binning[2]
         self.dpy = pixel[1] * self.binning[1] / self.arm / self.binning[2]
         try:
