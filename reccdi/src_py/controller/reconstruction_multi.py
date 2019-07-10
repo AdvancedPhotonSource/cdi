@@ -89,7 +89,6 @@ def assign_devices(devices, samples):
             dev.append(devices[sample])
         else:
             dev.append(devices[sample % len(devices)])
-    print (dev)
     return dev
 
 
