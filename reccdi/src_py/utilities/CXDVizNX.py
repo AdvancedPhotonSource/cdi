@@ -90,8 +90,9 @@ class DispalyParams:
                 self.binning.append(1)
         except AttributeError:
             self.binning = [1,1,1]
-        self.dpx = pixel[0] * self.binning[1] / self.arm / self.binning[2]
-        self.dpy = pixel[1] * self.binning[0] / self.arm / self.binning[2]
+        print ('binning', self.binning, )
+        self.dpx = pixel[0] * self.binning[0] / self.arm / self.binning[2]
+        self.dpy = pixel[1] * self.binning[1] / self.arm / self.binning[2]
         try:
             self.crop = []
             crop = config_map.crop
@@ -99,9 +100,7 @@ class DispalyParams:
                 self.crop.append(crop[i])
             for _ in range(3 - len(self.crop)):
                 self.crop.append(1.0)
-            self.crop.reverse()
-            for i in range(3):
-                self.crop[i] = self.crop[i] * self.binning[i]
+            crop[0], crop[1] = crop[1], crop[0]
         except AttributeError:
             self.crop = None
 
@@ -350,17 +349,11 @@ def get_crop(params, shape):
     return crop
 
 
-def unbin(ar, bins):
-    array = ar
-    for ax in range(len(bins)):
-        if bins[ax] > 1:
-            array = np.repeat(array, bins[ax], axis=ax)
-    return array
-
-
 def save_CX(conf, image, support, coh, save_dir, last_scan):
     image = np.swapaxes(image, 1,2)
+    image = np.swapaxes(image, 0,1)
     support = np.swapaxes(support, 1,2)
+    support = np.swapaxes(support, 0,1)
     coh = np.swapaxes(coh, 1,2)
     image, support = center(image, support)
     params = DispalyParams(conf, last_scan)

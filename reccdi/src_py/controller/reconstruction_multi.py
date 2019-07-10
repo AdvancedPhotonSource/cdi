@@ -17,12 +17,19 @@ The module starts the data preparation routines, calls for reconstruction using 
 visualization.
 """
 
+import parsl
+from parsl.config import Config
+from parsl.executors.ipp import IPyParallelExecutor
+# from parsl.executors import HighThroughputExecutor
+from parsl.providers import LocalProvider
+from parsl.channels import LocalChannel
 
 import os
 import reccdi.src_py.utilities.utils as ut
 import reccdi.src_py.controller.fast_module as calc
 from parsl.app.app import python_app
 import time
+import logging
 
 
 __author__ = "Barbara Frosik"
@@ -32,13 +39,10 @@ __all__ = ['read_config',
            'reconstruction']
 
 
-def load_config(samples):
-    import parsl
-    from parsl.config import Config
-    from parsl.executors.ipp import IPyParallelExecutor
-    #from parsl.executors import HighThroughputExecutor
-    from parsl.providers import LocalProvider
-    from parsl.channels import LocalChannel
+def load_config(devices):
+    parsl.set_stream_logger(name='parsl', level=logging.ERROR)
+    logging.getLogger('parsl').setLevel(logging.ERROR)
+    Config.checkpoint_mode = 'task_exit'
     local_config = Config(
         executors=[
             IPyParallelExecutor(
@@ -47,13 +51,14 @@ def load_config(samples):
                 provider=LocalProvider(
                     channel=LocalChannel(),
                     init_blocks=1,
-                    max_blocks=samples,
+                    max_blocks=devices,
                     parallelism=1,
                 )
             )
         ]
     )
     dfk = parsl.load(local_config)
+    return dfk
 
 
 def assign_devices(devices, samples):
@@ -83,7 +88,8 @@ def assign_devices(devices, samples):
         if sample < dev_no:
             dev.append(devices[sample])
         else:
-            dev.append(-1)
+            dev.append(devices[sample % len(devices)])
+    print (dev)
     return dev
 
 
@@ -303,7 +309,12 @@ def reconstruction(samples, proc, data, conf_info, config_map):
             supports.append(None)
             cohs.append(None)
 
-    load_config(samples)
+    try:
+        devices = config_map.device
+    except:
+        devices = [-1]
+
+    dfk = load_config(len(devices))
     start = time.time()
 
     if os.path.isdir(conf_info):
@@ -327,6 +338,12 @@ def reconstruction(samples, proc, data, conf_info, config_map):
         if experiment_dir is not None:
             save_dir = os.path.join(experiment_dir, save_dir)
 
+    clear(dfk)
+
     ut.save_multiple_results(samples, images, supports, cohs, errs, recips, save_dir)
 
+
+def clear(dfk):
+    dfk.cleanup()
+    parsl.clear()
 

@@ -395,6 +395,7 @@ def reconstruction(generations, proc, data, conf_info, config_map):
 
     # init starting values
     # if multiple samples configured (typical for genetic algorithm), use "reconstruction_multi" module
+    dfk = None
     if samples > 1:
         images = []
         supports = []
@@ -405,7 +406,13 @@ def reconstruction(generations, proc, data, conf_info, config_map):
             cohs.append(None)
         rec = multi
         # load parls configuration
-        rec.load_config(samples)
+        try:
+            devices = config_map.device
+        except:
+            devices = [-1]
+
+        dfk = rec.load_config(len(devices))
+
         for g in range(generations):
             gen_data = gen_obj.get_data(data)
             images, supports, cohs, errs, recips = rec.rec(proc, gen_data, conf, config_map, images, supports, cohs)
@@ -433,6 +440,9 @@ def reconstruction(generations, proc, data, conf_info, config_map):
             gen_save_dir = os.path.join(save_dir, 'g_' + str(g))
             ut.save_results(image, support, coh, err, recip, gen_save_dir)
             gen_obj.next_gen()
+
+    if dfk is not None:
+        rec.clear(dfk)
 
     print ('done gen')
 
