@@ -56,7 +56,7 @@ void Support::UpdateAmp(const af::array ds_image, d_type sig, int iter)
         distribution = GetDistribution(ds_image.dims(), sig);
     }
 
-    printf("updating support\n");
+    //printf("updating support\n");
     af::array convag = GaussConvFft(abs(ds_image));
     d_type max_convag = af::max<d_type>(convag);
     convag = convag/max_convag;
@@ -69,7 +69,7 @@ void Support::UpdateAmp(const af::array ds_image, d_type sig, int iter)
 
 void Support::UpdatePhase(const af::array ds_image, int iter)
 {
-        printf("phase trigger\n");
+        //printf("phase trigger\n");
         af::array phase = atan2(imag(ds_image), real(ds_image));
         af::array phase_condition = ((phase > params->GetPhaseMin()) && (phase < params->GetPhaseMax()));
         if (iter == update_iter)

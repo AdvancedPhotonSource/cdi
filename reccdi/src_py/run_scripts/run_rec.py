@@ -6,6 +6,7 @@ from multiprocessing import Process
 import reccdi.src_py.controller.reconstruction as rec
 import reccdi.src_py.controller.gen_rec as gen_rec
 import reccdi.src_py.utilities.utils as ut
+import numpy as np
 
 
 def interrupt_thread(arg):

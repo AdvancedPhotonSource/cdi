@@ -108,12 +108,12 @@ void Utils::GetMaxIndices(af::array arr, int* indices)
     std::vector<d_type> v(arr_values, arr_values + arr.elements());
     std::vector<d_type>::iterator result = std::max_element(v.begin(), v.end());
     int max_offset = result - v.begin();
-    printf("maximum value, %i %f\n", max_offset, v[max_offset]);
+    //printf("maximum value, %i %f\n", max_offset, v[max_offset]);
     delete [] arr_values;
     indices[0] = max_offset % arr.dims()[0];
     indices[1] = max_offset / arr.dims()[0] % arr.dims()[1];
     indices[2] = max_offset/ (arr.dims()[0] * arr.dims()[1]);
-    printf("offset, ind1, ind2 ind3 %i %i %i %i\n", max_offset, indices[0], indices[1], indices[2]);
+    //printf("offset, ind1, ind2 ind3 %i %i %i %i\n", max_offset, indices[0], indices[1], indices[2]);
 }
 
 af::array Utils::GaussDistribution(af::dim4 data_dim, d_type * sgma, int alpha)

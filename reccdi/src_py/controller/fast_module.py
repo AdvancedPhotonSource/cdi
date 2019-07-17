@@ -132,7 +132,7 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
     image_r = copy.deepcopy(np.asarray(fast_module.get_image_r()))
     image_i = copy.deepcopy(np.asarray(fast_module.get_image_i()))
     image = image_r + 1j*image_i
-    print ('image norm in fast module',  sum(abs(image)**2))
+    #print ('image norm in fast module',  sum(abs(image)**2))
     # normalize image
     mx = max(np.absolute(image).ravel().tolist())
     image = image/mx

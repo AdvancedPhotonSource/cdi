@@ -70,7 +70,10 @@ def get_dark_white(darkfile, whitefile, det_area1, det_area2):
 
 
 def get_normalized_slice(file, dark, white):
-    slice = tif.TiffFile(file).asarray()
+    # file is a tuple of slice and either background slice or None
+    slice = tif.TiffFile(file[0]).asarray()
+    if file[1] is not None:
+        slice = slice - tif.TiffFile(file[1]).asarray()
     if dark is not None:
         slice = np.where(dark > 5, 0, slice) #Ignore cosmic rays
     # here would be code for correction for dead time
@@ -95,7 +98,12 @@ def read_scan(dir, dark, white):
 
     for key in ordered_keys:
         file = files_dir[key]
-        files.append(os.path.join(dir, file))
+        file = os.path.join(dir, file)
+        bg_file = file.replace('.tif', '_bg.tif')
+        if not os.path.isfile(bg_file):
+            bg_file = None
+
+        files.append((file, bg_file))
 
     # look at slice0 to find out shape
     n = 0

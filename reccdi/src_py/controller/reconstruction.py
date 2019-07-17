@@ -161,8 +161,6 @@ def reconstruction(proc, data, conf_info, config_map):
 
         ut.save_results(image, support, coh, np.asarray(errs), recips, save_dir)
 
-        print('done')
-
         # if len(images) == 1:
         #     errors = results[0][3]
         #     errors.pop(0)

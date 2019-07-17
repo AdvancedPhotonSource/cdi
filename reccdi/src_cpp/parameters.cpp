@@ -419,7 +419,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
     {
         twin_halves.push_back(0);
         twin_halves.push_back(0);
-        printf((std::string("No 'twin_halves' parameter in configuration file. Setting to (0,0).\n")).c_str());
+        //printf((std::string("No 'twin_halves' parameter in configuration file. Setting to (0,0).\n")).c_str());
     }
 
     if ((first) && root.exists("resolution_trigger"))

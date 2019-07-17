@@ -80,8 +80,8 @@ af::array PartialCoherence::ApplyPartialCoherence(af::array abs_amplitudes)
     af::array converged = sqrt(converged_2);
     //af::array converged = sqrt(fftConvolve(pow(abs_amplitudes, 2), kernel_array));  // implemented here, but works different than af::fftConvolve
 
-    printf("coherence norm %f\n", sum<d_type>(pow(abs(kernel_array), 2)));
-    printf("converged norm %f\n", sum<d_type>(pow(abs(converged), 2)));
+    //printf("coherence norm %f\n", sum<d_type>(pow(abs(kernel_array), 2)));
+    //printf("converged norm %f\n", sum<d_type>(pow(abs(converged), 2)));
     return converged;
 }
 
@@ -92,7 +92,7 @@ void PartialCoherence::UpdatePartialCoherence(af::array abs_amplitudes)
 
     af::array roi_combined_amp = 2*roi_abs_amplitudes - roi_amplitudes_prev;
     OnTrigger(roi_combined_amp);   // use_2k_1 from matlab program
-    printf("Updating coherence\n");
+    //printf("Updating coherence\n");
 
 }
 
@@ -165,7 +165,7 @@ void PartialCoherence::DeconvLucy(af::array amplitudes, af::array data, int iter
     coherence = real(coherence);
     d_type coh_sum = sum<d_type>(abs(coherence));
     coherence = abs(coherence)/coh_sum;    
-    printf("coherence norm ,  %f\n", sum<d_type>(pow(abs(coherence), 2)));
+    //printf("coherence norm ,  %f\n", sum<d_type>(pow(abs(coherence), 2)));
     kernel_array = coherence;
 }
 

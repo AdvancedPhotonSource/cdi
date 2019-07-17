@@ -70,8 +70,9 @@ typedef struct flow_item_def { char* item_name;
 // To add a new trigger/function do the following:
 // 1. Insert a new definition for the flow_item in the correct order in the flow_def array.
 // 2. Update the flow_seq_len below.
-// 3. Add the new function to the worker.hh and worker.cc, and add the pair (func_name, fp) to the flow_ptr_map in worker.cc.
+// 3. Add the new function to the worker.hh and worker.cc, and add the pair (func_name, fp) to the flow_ptr_map in worker.cpp.
 const flow_item_def flow_def[] = {
+  flow_item_def("progress_trigger",      FOR_ALL_RUNS,         "Prog"),
   flow_item_def("next",                  NOT_TRIGGER,          "NextIter"),
   flow_item_def("resolution_trigger",    FIRST_RUN_ONLY,       "ResolutionTrigger"),
   flow_item_def("amp_support_trigger",   MODIFIED_AFTER_FIRST, "SupportTrigger"),
@@ -88,6 +89,6 @@ const flow_item_def flow_def[] = {
   flow_item_def("average_trigger",       FOR_ALL_RUNS,         "Average")
 };
 
-const int flow_seq_len = 14;
+const int flow_seq_len = 15;
 
 #endif /* common_h */

@@ -60,7 +60,7 @@ int State::GetCurrentAlg()
 void State::RecordError(d_type error)
 {
     errors.push_back(error);
-    printf("iter, error %i %fl\n", current_iter, error);
+    //printf("iter, error %i %fl\n", current_iter, error);
 }
 
 int State::GetCurrentIteration()

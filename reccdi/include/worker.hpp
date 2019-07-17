@@ -83,6 +83,7 @@ private:
     d_type CalculateError();
  
 //    void Plot();
+    void Progress();
     void NextIter();
     void ResolutionTrigger();
     void SupportTrigger();

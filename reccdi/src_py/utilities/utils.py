@@ -289,7 +289,7 @@ def get_zero_padded_centered(arr, new_shape):
     return centered
 
 
-def adjust_dimensions(arr, pad):
+def adjust_dimensions(arr, pads):
     """
     This function adds to or subtracts from each dimension of the array elements defined by pad. If the pad is positive,
     the array is padded in this dimension. If the pad is negative, the array is cropped.
@@ -305,33 +305,39 @@ def adjust_dimensions(arr, pad):
     array : array
         the padded/cropped array
     """
-    logger = get_logger('adjust_dimensions')
+    # logger = get_logger('adjust_dimensions')
     old_dims = arr.shape
-    cropped = arr
+    start = []
+    stop = []
     for i in range(len(old_dims)):
-        crop_front = max(0, -pad[2 * i])
-        crop_end = max(0, -pad[2 * i + 1])
-        if crop_front + crop_end >= arr.shape[i]:
+        pad = pads[i]
+        first = max(0, -pad[0])
+        last = old_dims[i] - max(0, -pad[1])
+        if first >= last:
             print ('the crop exceeds size, please change the crop and run again')
             return None
-        splitted = np.split(cropped, [crop_front, old_dims[i] - crop_end], axis=i)
-        cropped = splitted[1]
+        else:
+            start.append(first)
+            stop.append(last)
+
+    cropped = arr[ start[0]:stop[0], start[1]:stop[1], start[2]:stop[2] ]
     # logger.info('cutting from to ' + str(crop[0]) + ', ' + str(old_dims[0]-crop[1]) + ', ' + str(crop[2]) + ', ' \
     #             + str(old_dims[1]-crop[3]) + ', ' + str(crop[4]) + ', ' + str(old_dims[2]-crop[5]))
     dims = cropped.shape
     c_vals = []
     new_pad = []
     for i in range(len(dims)):
+        pad = pads[i]
         # find a good dimension and find padding
-        temp_dim = old_dims[i] + pad[2 * i] + pad[2 * i + 1]
+        temp_dim = old_dims[i] + pad[0] + pad[1]
         new_dim = get_good_dim(temp_dim)
         added = new_dim - temp_dim
         # if the pad is positive
-        pad_front = max(0, pad[2 * i]) + int(added / 2)
+        pad_front = max(0, pad[0]) + int(added / 2)
         pad_end = new_dim - dims[i] - pad_front
         new_pad.append((pad_front, pad_end))
         c_vals.append((0.0, 0.0))
-    adjusted = np.lib.pad(cropped, (new_pad), 'constant', constant_values=c_vals)
+    adjusted = np.pad(cropped, new_pad, 'constant', constant_values=c_vals)
 
     # logger.info('pads ' + str(new_pad[0]) + ', ' + str(new_pad[1]) + ', ' + str(new_pad[2]) + ', ' + str(new_pad[3]) \
     #         + ', ' + str(new_pad[4]) + ', ' + str(new_pad[5]))
@@ -340,7 +346,8 @@ def adjust_dimensions(arr, pad):
 
     return adjusted
 
-
+# ar = np.zeros((256,256,90))
+# pads = (-100,-100,0,0,0,0)
 # ar = np.zeros((81,256,256))
 # pads = (5,-7,-20,-30,4,-20)
 # arr = adjust_dimensions(ar,pads)

@@ -137,8 +137,7 @@ def prep(fname, conf_info):
         pairs.append(pair)
     # change pairs x and y, as the ImageJ swaps the axes
     pairs[0], pairs[1] = pairs[1], pairs[0]
-    prep_data = ut.adjust_dimensions(prep_data, crops_pads)
-    print ('shape after adjust', prep_data.shape)
+    prep_data = ut.adjust_dimensions(prep_data, pairs)
     if prep_data is None:
         return
 

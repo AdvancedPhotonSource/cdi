@@ -18,6 +18,8 @@ def select_file(start_dir):
     dialog.setSidebarUrls([QUrl.fromLocalFile(start_dir)])
     if dialog.exec_() == QDialog.Accepted:
         return str(dialog.selectedFiles()[0])
+    else:
+        return None
 
 
 def select_dir(start_dir):
@@ -90,7 +92,7 @@ class cdi_conf(QWidget):
                     self.msg_window('missing config file in load directory')
                     return
                 elif not os.path.isfile(os.path.join(load_dir, 'config_data')):
-                    self.msg_window('missing config_data file in load directory')
+                    self.msg_window('missing config_p in load directory')
                     return
                 elif not os.path.isfile(os.path.join(load_dir, 'config_rec')):
                     self.msg_window('missing config_rec file in load directory')
@@ -188,10 +190,38 @@ class cdi_conf(QWidget):
             self.msg_window('please check configuration file ' + main_conf + '. Cannot parse, ' + str(e))
             return
 
-        self.t.data_dir = conf_map.data_dir
-        self.t.specfile = conf_map.specfile
-        self.t.darkfile = conf_map.darkfile
-        self.t.whitefile = conf_map.whitefile
+        try:
+            self.t.data_dir = conf_map.data_dir
+            self.t.data_dir_button.setStyleSheet("Text-align:left")
+            self.t.data_dir_button.setText(self.t.data_dir)
+        except:
+            self.t.data_dir = None
+            self.t.data_dir_button.setText('')
+        try:
+            self.t.specfile = conf_map.specfile
+            self.t.spec_file_button.setStyleSheet("Text-align:left")
+            self.t.spec_file_button.setText(self.t.specfile)
+            # set specfile also in display tab
+            self.t.spec_file_button1.setStyleSheet("Text-align:left")
+            self.t.spec_file_button1.setText(self.t.specfile)
+        except:
+            self.t.specfile = None
+            self.t.spec_file_button.setText('')
+            self.t.spec_file_button1.setText('')
+        try:
+            self.t.darkfile = conf_map.darkfile
+            self.t.dark_file_button.setStyleSheet("Text-align:left")
+            self.t.dark_file_button.setText(self.t.darkfile)
+        except:
+            self.t.darkfile = None
+            self.t.dark_file_button.setText('')
+        try:
+            self.t.whitefile = conf_map.whitefile
+            self.t.white_file_button.setStyleSheet("Text-align:left")
+            self.t.white_file_button.setText(self.t.whitefile)
+        except:
+            self.t.whitefile = None
+            self.t.white_file_button.setText('')
         try:
             self.t.min_files.setText(str(conf_map.min_files).replace(" ", ""))
         except:
@@ -204,18 +234,6 @@ class cdi_conf(QWidget):
             self.t.det_quad.setText(str(conf_map.det_quad).replace(" ", ""))
         except:
             pass
-        # set the text in the window
-        self.t.data_dir_button.setStyleSheet("Text-align:left")
-        self.t.data_dir_button.setText(self.t.data_dir)
-        self.t.spec_file_button.setStyleSheet("Text-align:left")
-        self.t.spec_file_button.setText(self.t.specfile)
-        # set specfile also in display tab
-        self.t.spec_file_button1.setStyleSheet("Text-align:left")
-        self.t.spec_file_button1.setText(self.t.specfile)
-        self.t.dark_file_button.setStyleSheet("Text-align:left")
-        self.t.dark_file_button.setText(self.t.darkfile)
-        self.t.white_file_button.setStyleSheet("Text-align:left")
-        self.t.white_file_button.setText(self.t.whitefile)
 
         # initialize "Data" tab
         data_conf = os.path.join(dir, 'config_data')
@@ -325,10 +343,10 @@ class cdi_conf(QWidget):
             self.t.specfile = specfile
             self.t.spec_file_button1.setStyleSheet("Text-align:left")
             self.t.spec_file_button1.setText(self.t.specfile)
+            if os.path.isfile(self.t.specfile):
+                self.t.parse_spec()
         except AttributeError:
             pass
-        if os.path.isfile(self.t.specfile):
-            self.t.parse_spec()
 
 
     def msg_window(self, text):
@@ -563,11 +581,16 @@ class cdi_conf_tab(QTabWidget):
 
     def set_spec_file(self):
         self.specfile = select_file(self.specfile)
-        self.spec_file_button.setStyleSheet("Text-align:left")
-        self.spec_file_button.setText(self.specfile)
-        self.spec_file_button1.setStyleSheet("Text-align:left")
-        self.spec_file_button1.setText(self.specfile)
-        self.parse_spec()
+        if self.specfile is not None:
+            self.spec_file_button.setStyleSheet("Text-align:left")
+            self.spec_file_button.setText(self.specfile)
+            self.spec_file_button1.setStyleSheet("Text-align:left")
+            self.spec_file_button1.setText(self.specfile)
+            self.parse_spec()
+        else:
+            self.spec_file_button.setText('')
+            self.spec_file_button.setText('')
+
 
 
     def parse_spec(self):
@@ -593,46 +616,60 @@ class cdi_conf_tab(QTabWidget):
 
     def set_dark_file(self):
         self.darkfile = select_file(self.darkfile)
-        self.dark_file_button.setStyleSheet("Text-align:left")
-        self.dark_file_button.setText(self.darkfile)
+        if self.darkfile is not None:
+            self.dark_file_button.setStyleSheet("Text-align:left")
+            self.dark_file_button.setText(self.darkfile)
+        else:
+            self.dark_file_button.setText('')
 
 
     def set_white_file(self):
         self.whitefile = select_file(self.whitefile)
-        self.white_file_button.setStyleSheet("Text-align:left")
-        self.white_file_button.setText(self.whitefile)
-
+        if self.whitefile is not None:
+            self.white_file_button.setStyleSheet("Text-align:left")
+            self.white_file_button.setText(self.whitefile)
+        else:
+            self.white_file_button.setText('')
 
     def set_data_dir(self):
         self.data_dir = select_dir(self.data_dir)
         if self.data_dir is not None:
             self.data_dir_button.setStyleSheet("Text-align:left")
             self.data_dir_button.setText(self.data_dir)
+        else:
+            self.data_dir_button.setText('')
 
 
     def set_prep_file(self):
         prep_file = select_file(self.main_win.working_dir)
-        selected = str(prep_file)
-        if not selected.endswith('tif') and not selected.endswith('tiff'):
-            self.msg_window("the file extension must be tif or tiff")
-            return
-        self.ready_prep.setStyleSheet("Text-align:left")
-        self.ready_prep.setText(prep_file)
-        # save the file as experiment prep file
-        prep_dir = os.path.join(self.main_win.experiment_dir, 'prep')
-        if not os.path.exists(prep_dir):
-            os.makedirs(prep_dir)
-        exp_prep_file = os.path.join(prep_dir, 'prep_data.tif')
-        shutil.copyfile(selected, exp_prep_file)
+        if prep_file is not None:
+            selected = str(prep_file)
+            if not selected.endswith('tif') and not selected.endswith('tiff'):
+                self.msg_window("the file extension must be tif or tiff")
+                return
+            self.ready_prep.setStyleSheet("Text-align:left")
+            self.ready_prep.setText(prep_file)
+            # save the file as experiment prep file
+            prep_dir = os.path.join(self.main_win.experiment_dir, 'prep')
+            if not os.path.exists(prep_dir):
+                os.makedirs(prep_dir)
+            exp_prep_file = os.path.join(prep_dir, 'prep_data.tif')
+            shutil.copyfile(selected, exp_prep_file)
+        else:
+            self.ready_prep.setText('')
 
 
     def set_prep_script(self):
         self.script = select_file(self.main_win.working_dir)
-        self.script_button.setStyleSheet("Text-align:left")
-        self.script_button.setText(self.script)
-        # fill the arguments with experiment_dir, scans, config file
-        conf_file = os.path.join(self.main_win.experiment_dir, 'conf', 'config')
-        self.args.setText(str(self.main_win.experiment_dir) + ',' + str(self.main_win.scan) + ',' + conf_file)
+        if self.script is not None:
+            self.script_button.setStyleSheet("Text-align:left")
+            self.script_button.setText(self.script)
+            # fill the arguments with experiment_dir, scans, config file
+            conf_file = os.path.join(self.main_win.experiment_dir, 'conf', 'config')
+            self.args.setText(str(self.main_win.experiment_dir) + ',' + str(self.main_win.scan) + ',' + conf_file)
+        else:
+            self.script_button.setText('')
+
 
 
     def prepare(self):
@@ -643,7 +680,7 @@ class cdi_conf_tab(QTabWidget):
             if not os.path.exists(prep_dir):
                 os.makedirs(prep_dir)
             conf_map = {}
-            if len(self.main_win.working_dir) > 0:
+            if self.main_win.working_dir is not None:
                 conf_map['working_dir'] = '"' + str(self.main_win.working_dir) + '"'
             else:
                 self.msg_window("working_dir not defined")
@@ -664,13 +701,13 @@ class cdi_conf_tab(QTabWidget):
 
 
     def prepare_custom(self, conf_map):
-        if len(self.data_dir) > 0:
+        if self.data_dir is not None:
             conf_map['data_dir'] = '"' + str(self.data_dir) + '"'
-        if len(self.specfile) > 0:
+        if self.specfile is not None:
             conf_map['specfile'] = '"' + str(self.specfile) + '"'
-        if len(self.darkfile) > 0:
+        if self.darkfile is not None:
             conf_map['darkfile'] = '"' + str(self.darkfile) + '"'
-        if len(self.whitefile) > 0:
+        if self.whitefile is not None:
             conf_map['whitefile'] = '"' + str(self.whitefile) + '"'
 
         # determine script directory and script name
@@ -753,20 +790,15 @@ class cdi_conf_tab(QTabWidget):
             self.msg_window('enter all parameters: working_dir, id, scan, data_dir, specfile or detector quad')
             return
 
-        if type(self.data_dir) is not None:
+        if self.data_dir is not None:
             conf_map['data_dir'] = '"' + str(self.data_dir) + '"'
-        if type(self.specfile) is not None:
+        if self.specfile is not None:
             conf_map['specfile'] = '"' + str(self.specfile) + '"'
-        if type(self.darkfile) is not None:
+        if self.darkfile is not None:
             conf_map['darkfile'] = '"' + str(self.darkfile) + '"'
-        else:
-            self.msg_window("darkfile not defined")
-            return
-        if type(self.whitefile) is not None:
+        if self.whitefile is not None:
             conf_map['whitefile'] = '"' + str(self.whitefile) + '"'
-        else:
-            self.msg_window("whitefile not defined")
-            return
+
         conf_dir = os.path.join(self.main_win.experiment_dir, 'conf')
         conf_file = os.path.join(conf_dir, 'config')
         if self.main_win.write_conf(conf_map, conf_dir, 'config'):
@@ -846,7 +878,7 @@ class cdi_conf_tab(QTabWidget):
         os.path.isfile(os.path.join(res_dir, '0', 'image.npy')) or \
         os.path.isfile(os.path.join(res_dir, 'g_0', '0', 'image.npy')):
             conf_map = {}
-            if type(self.specfile) is not None:
+            if self.specfile is not None:
                 conf_map['specfile'] = '"' + str(self.specfile) + '"'
             if len(self.energy.text()) > 0:
                 conf_map['energy'] = str(self.energy.text())
@@ -1274,11 +1306,37 @@ class average(Feature):
         conf_map['average_trigger'] = str(self.average_triggers.text()).replace('\n','')
 
 
+class progress(Feature):
+    def __init__(self):
+        super(progress, self).__init__()
+        self.id = 'progress'
+
+
+    def init_config(self, conf_map):
+        try:
+            self.progress_triggers.setText(str(conf_map.progress_trigger).replace(" ", ""))
+        except AttributeError:
+            pass
+
+
+    def fill_active(self, layout):
+        self.progress_triggers = QLineEdit()
+        layout.addRow("progress triggers", self.progress_triggers)
+
+
+    def rec_default(self):
+        self.progress_triggers.setText('(0,20)')
+
+
+    def add_feat_conf(self, conf_map):
+        conf_map['progress_trigger'] = str(self.progress_triggers.text()).replace('\n','')
+
+
 
 class Features(QWidget):
     def __init__(self, tab, layout):
         super(Features, self).__init__()
-        feature_ids = ['GA', 'low resolution', 'amplitude support', 'phase support', 'pcdi', 'twin', 'average']
+        feature_ids = ['GA', 'low resolution', 'amplitude support', 'phase support', 'pcdi', 'twin', 'average', 'progress']
         self.leftlist = QListWidget()
         self.feature_dir = {'GA' : GA(),
                             'low resolution' : low_resolution(),
@@ -1286,7 +1344,8 @@ class Features(QWidget):
                             'phase support' : phase_support(),
                             'pcdi' : pcdi(),
                             'twin' : twin(),
-                            'average' : average()}
+                            'average' : average(),
+                            'progress' : progress()}
         self.Stack = QStackedWidget(self)
         for i in range(len(feature_ids)):
             id = feature_ids[i]
