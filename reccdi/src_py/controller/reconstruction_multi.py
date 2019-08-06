@@ -320,6 +320,9 @@ def reconstruction(samples, proc, data, conf_info, config_map):
         # if conf_info is directory, look for subdir "conf" and "config_rec" in it
         experiment_dir = conf_info
         conf = os.path.join(experiment_dir, 'conf', 'config_rec')
+        if not os.path.isfile(conf):
+            base_dir = os.path.abspath(os.path.join(experiment_dir, os.pardir))
+            conf = os.path.join(base_dir, 'conf', 'config_rec')
     else:
         # assuming it's a file
         conf = conf_info
@@ -336,6 +339,8 @@ def reconstruction(samples, proc, data, conf_info, config_map):
         save_dir = 'results'
         if experiment_dir is not None:
             save_dir = os.path.join(experiment_dir, save_dir)
+        else:
+            save_dir = os.path.join(os.getcwd(), 'results')    # save in current dir
 
     clear(dfk)
 

@@ -40,6 +40,18 @@ def save_vtk(res_dir, conf, last_scan):
         cx.save_CX(conf, image, support, None, res_dir, last_scan)
 
 
+def save_dir_tree(save_dir, conf, last_scan):
+    save_vtk(save_dir, conf, last_scan)
+    for sub in os.listdir(save_dir):
+        subdir = os.path.join(save_dir, sub)
+        if os.path.isdir(subdir):
+            save_vtk(subdir, conf, last_scan)
+            for sub_sub in os.listdir(subdir):
+                sub_sub = os.path.join(subdir, sub_sub)
+                if os.path.isdir(sub_sub):
+                    save_vtk(sub_sub, conf, last_scan)
+
+
 def to_vtk(experiment_dir):
     if os.path.isdir(experiment_dir):
         scan = experiment_dir.split("-")[-1]
@@ -60,13 +72,13 @@ def to_vtk(experiment_dir):
                     f.write('specfile = "' + specfile + '"')
                     f.close()
                 except:
-                    print ("Missing config_disp file and can't find spec file in experiment config")
+                    print ("1Missing config_disp file and can't find spec file in experiment config")
                     return
             else:
-                print ("Missing config_disp file and can't find spec file in experiment config")
+                print ("2Missing config_disp file and can't find spec file in experiment config")
                 return
     else:
-        print("Please provide an experiment directory argument")
+        print("Please provide a valid experiment directory")
         return
 
     try:
@@ -107,15 +119,15 @@ def to_vtk(experiment_dir):
     except AttributeError:
         save_dir = os.path.join(experiment_dir, 'results')
 
-    save_vtk(save_dir, conf, last_scan)
-    for sub in os.listdir(save_dir):
-        subdir = os.path.join(save_dir, sub)
-        if os.path.isdir(subdir):
-            save_vtk(subdir, conf, last_scan)
-            for sub_sub in os.listdir(subdir):
-                sub_sub = os.path.join(subdir, sub_sub)
-                if os.path.isdir(sub_sub):
-                    save_vtk(sub_sub, conf, last_scan)
+    if os.path.isdir(save_dir):
+        save_dir_tree(save_dir, conf, last_scan)
+    else:
+        dirs = os.listdir(experiment_dir)
+        for dir in dirs:
+            if dir.startswith('scan'):
+                scan_dir = os.path.join(experiment_dir, dir)
+                save_dir = os.path.join(scan_dir, 'results')
+                save_dir_tree(save_dir, conf, last_scan)
 
 
 def main(arg):

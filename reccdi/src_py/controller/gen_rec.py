@@ -374,24 +374,24 @@ def reconstruction(generations, proc, data, conf_info, config_map):
     gen_obj = Generation(config_map)
 
     if os.path.isdir(conf_info):
-        if conf_info.endswith('conf'):
-            experiment_dir = conf_info[0:len(conf_info)-5]
-        else:
-            experiment_dir = conf_info
+        experiment_dir = conf_info
         conf = os.path.join(experiment_dir, 'conf', 'config_rec')
-        save_dir = os.path.join(experiment_dir, 'results')
+        if not os.path.isfile(conf):
+            base_dir = os.path.abspath(os.path.join(experiment_dir, os.pardir))
+            conf = os.path.join(base_dir, 'conf', 'config_rec')
     else:
         # assuming it's a file
         conf = conf_info
-        dirs = conf_info.split('/')
-        try:
-            save_dir = config_map.save_dir
-        except:
-            if dirs[len(dirs)-2] == 'conf':    # it is the experiment structure
-                offset = len(dirs[len(dirs)-2]) + len(dirs[len(dirs)-1]) + 1
-                save_dir = os.path.join(conf_info[0:-offset], 'results')
-            else:
-                save_dir = os.path.join(os.getcwd(), 'results')    # save in current dir
+        experiment_dir = None
+
+    try:
+        save_dir = config_map.save_dir
+    except AttributeError:
+        save_dir = 'results'
+        if experiment_dir is not None:
+            save_dir = os.path.join(experiment_dir, save_dir)
+        else:
+            save_dir = os.path.join(os.getcwd(), 'results')    # save in current dir
 
     # init starting values
     # if multiple samples configured (typical for genetic algorithm), use "reconstruction_multi" module

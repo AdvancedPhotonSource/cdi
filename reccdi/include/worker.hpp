@@ -47,8 +47,9 @@ private:
     Resolution *resolution;
 
     af::array data;   // this is abs
-    af::array iter_data;  // if low resolutionis used, data will differ in iterations
+    af::array iter_data;  // if low resolution is used, data will differ in iterations
     d_type sig;
+    d_type current_error;
     int num_points;
     d_type norm_data;
     int current_iteration;

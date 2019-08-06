@@ -81,7 +81,6 @@ def rec(proc, data, conf, config_map, image, support, coh):
         coh_dims = tuple(config_map.partial_coherence_roi)
     except:
         coh_dims = None
-
     image, support, coh, er, reciprocal = calc.fast_module_reconstruction(proc, devices[0], conf, data, coh_dims, image, support, coh)
 
     # errs contain errors for each iteration
@@ -145,6 +144,9 @@ def reconstruction(proc, data, conf_info, config_map):
         if os.path.isdir(conf_info):
             experiment_dir = conf_info
             conf = os.path.join(experiment_dir, 'conf', 'config_rec')
+            if not os.path.isfile(conf):
+                base_dir = os.path.abspath(os.path.join(experiment_dir, os.pardir))
+                conf = os.path.join(base_dir, 'conf', 'config_rec')
         else:
             # assuming it's a file
             conf = conf_info
@@ -158,6 +160,8 @@ def reconstruction(proc, data, conf_info, config_map):
             save_dir = 'results'
             if experiment_dir is not None:
                 save_dir = os.path.join(experiment_dir, save_dir)
+            else:
+                save_dir = os.path.join(os.getcwd(), 'results')    # save in current dir
 
         ut.save_results(image, support, coh, np.asarray(errs), recips, save_dir)
 

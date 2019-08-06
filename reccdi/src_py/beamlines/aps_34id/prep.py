@@ -171,6 +171,11 @@ def prep_data(experiment_dir, scans, map, det_area1, det_area2, *args):
     if len(scans) == 1:
         scans.append(scans[0])
     dirs = get_dir_list(scans, map)
+    if len(dirs) == 0:
+        return
+    else:
+        if not os.path.exists(experiment_dir):
+            os.makedirs(experiment_dir)
 
     try:
         whitefile = map.whitefile
@@ -253,7 +258,19 @@ def prepare(experiment_dir, scans, conf_file, *args):
             print('neither spec file or detector quad is configured')
             return
 
+    try:
+        separate_scans = config_map.separate_scans
+    except:
+        separate_scans = False
+
     # data prep
-    prep_data(experiment_dir, scans, config_map, det_area1, det_area2, args)
+    # if separate scans, prepare data in each scan separately in subdirectory
+    if separate_scans and len(scans) > 1:
+        for scan in range (scans[0], scans[1]+1):
+            single_scan = [scan]
+            scan_exp_dir = os.path.join(experiment_dir, 'scan_' + str(scan))
+            prep_data(scan_exp_dir, single_scan, config_map, det_area1, det_area2, args)
+    else:
+        prep_data(experiment_dir, scans, config_map, det_area1, det_area2, args)
 
 

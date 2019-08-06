@@ -29,6 +29,7 @@ Reconstruction::Reconstruction(af::array image_data, af::array guess, Params* pa
     norm_data = 0;
     current_iteration = 0;
     aver_iter = 0;
+    current_error = 0.0;
     data = image_data;
     ds_image = guess;
     params = parameters;
@@ -105,7 +106,6 @@ void Reconstruction::Init()
         }
     }
     std::map<char*, fp> flow_ptr_map;
-    flow_ptr_map["Prog"] = &Reconstruction::Progress;
     flow_ptr_map["NextIter"] = &Reconstruction::NextIter;
     flow_ptr_map["ResolutionTrigger"] =  &Reconstruction::ResolutionTrigger;
     flow_ptr_map["SupportTrigger"] = &Reconstruction::SupportTrigger;
@@ -120,6 +120,7 @@ void Reconstruction::Init()
     flow_ptr_map["RunAlg"] = &Reconstruction::RunAlg;
     flow_ptr_map["Twin"] = &Reconstruction::Twin;
     flow_ptr_map["Average"] = &Reconstruction::Average;
+    flow_ptr_map["Prog"] = &Reconstruction::Progress;
 
 
     std::vector<int> used_flow_seq = params->GetUsedFlowSeq();
@@ -207,11 +208,6 @@ void Reconstruction::Iterate()
     }
 }
 
-void Reconstruction::Progress()
-{
-    printf("------------------current iteration %i -----------------\n", current_iteration);
-}
-
 void Reconstruction::NextIter()
 {
     iter_data = data;
@@ -258,7 +254,8 @@ void Reconstruction::Pcdi()
     af::array converged = partialCoherence->ApplyPartialCoherence(abs_amplitudes);
     af::array ratio = Utils::GetRatio(iter_data, abs(converged));
     //printf("ratio norm %f\n", GetNorm(ratio));
-    state->RecordError( GetNorm(abs(converged)(converged > 0)-iter_data(converged > 0))/GetNorm(iter_data));
+    current_error =  GetNorm(abs(converged)(converged > 0)-iter_data(converged > 0))/GetNorm(iter_data);
+    state->RecordError(current_error);
     rs_amplitudes *= ratio;
     //printf("Pcdi\n");
 }
@@ -266,7 +263,8 @@ void Reconstruction::Pcdi()
 void Reconstruction::NoPcdi()
 {
     af::array ratio = Utils::GetRatio(iter_data, abs(rs_amplitudes));
-    state->RecordError( GetNorm(abs(rs_amplitudes)(rs_amplitudes > 0)-iter_data(rs_amplitudes > 0))/GetNorm(iter_data));
+    current_error = GetNorm(abs(rs_amplitudes)(rs_amplitudes > 0)-iter_data(rs_amplitudes > 0))/GetNorm(iter_data);
+    state->RecordError(current_error);
     rs_amplitudes *= ratio;
     //printf("NoPcdi\n");
 }
@@ -334,6 +332,11 @@ void Reconstruction::Average()
 
     delete [] image_v;
     //printf("Average\n");
+}
+
+void Reconstruction::Progress()
+{
+    printf("------- current iteration %i, error %f -------\n", current_iteration, current_error);
 }
 
 void Reconstruction::ModulusConstrainEr()

@@ -64,6 +64,10 @@ def prep(fname, conf_info):
     if os.path.isdir(conf_info):
         experiment_dir = conf_info
         conf = os.path.join(experiment_dir, 'conf', 'config_data')
+        # if the experiment contains separate scan directories
+        if not os.path.isfile(conf):
+            base_dir = os.path.abspath(os.path.join(experiment_dir, os.pardir))
+            conf = os.path.join(base_dir, 'conf', 'config_data')
     else:
         #assuming it's a file
         conf = conf_info

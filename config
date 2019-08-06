@@ -1,8 +1,39 @@
+// This configuration contains parameters defining the data reading and parsing phase
 working_dir = "/local/bfrosik/cdi/test"
+                                            // working directory will have a bin sub directory and new experiment will
+                                            // be created in this directory
+
 data_dir = "/net/s34data/export/34idc-data/2019/Staff19-1/ADStaff19-1a"
+                                            // The directory with data. This directory will have several subdirectories
+                                            // each containing .tif data files. Each subdirectory represents separate
+                                            // scan and is numbered with the scan index
+
 specfile = "/net/s34data/export/34idc-data/2019/Staff19-1/Staff19-1a.spec"
+                                            // a specfile captured during experiment
+
 darkfile = "/net/s34data/export/34idc-work/2019/dark.tif"
+                                            // dark file taken at the time of experiment
+
 whitefile = "/net/s34data/export/34idc-work/2019/CelaWhiteField.tif"
+                                            // white file taken at the time of experiment
+
 exclude_scans = (78,81)
+                                            // a tuple containing scan numbers that will be excluded from preparation
+
 min_files = 80
+                                            // only scans containing minimum of .tif files will be included
+
 det_quad = 1
+                                            // defines which detector quad was used during experiment.
+                                            // 0: all four quads
+                                            // 1: lower left
+                                            // 2: top left
+                                            // 3: lower right
+                                            // 4: top right
+                                            // this information is typically read from spec file,
+                                            // is required if not included in spec file or no spec file is given
+separate_scans = true
+                                            // in typical scenario the data from all scans in experiment are combined.
+                                            // if specified as separate scans, each scan will be processed separately
+                                            // and will have sub-experiment name containing scan index
+                                            // ex. "scan_9", where 9 is scan index

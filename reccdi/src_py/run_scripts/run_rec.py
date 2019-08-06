@@ -25,6 +25,23 @@ def interrupt_thread(arg):
     signal.pause()
 
 
+def run_rec(datafile, config_map, proc, exp_dir):
+    data = ut.read_tif(datafile)
+    print ('data shape', data.shape)
+    data = np.swapaxes(data, 0, 2)
+    data = np.swapaxes(data, 0, 1)
+
+    try:
+        generations = config_map.generations
+    except:
+        generations = 1
+
+    if generations > 1:
+        gen_rec.reconstruction(generations, proc, data, exp_dir, config_map)
+    else:
+        rec.reconstruction(proc, data, exp_dir, config_map)
+
+
 def reconstruction(proc, experiment_dir):
     """
     This function starts the interruption discovery thread and the recontruction thread.
@@ -55,29 +72,20 @@ def reconstruction(proc, experiment_dir):
         data_dir = config_map.data_dir
     except AttributeError:
         data_dir = os.path.join(experiment_dir, 'data')
+
+    # check if the experiment has separate data for every scan. If so, for every scan there will be subdirectory
+    # starting with "scan" that will have an experiment directory structure
     datafile = os.path.join(data_dir, 'data.tif')
-
-    try:
-        data = ut.read_tif(datafile)
-        print ('data shape', data.shape)
-        data = np.swapaxes(data, 0, 2)
-        data = np.swapaxes(data, 0, 1)
-    except:
-        print ('data file ' + datafile + ' is missing')
-        p.terminate()
-        return
-
-    try:
-        generations = config_map.generations
-    except:
-        generations = 1
-
-    if generations > 1:
-        gen_rec.reconstruction(generations, proc, data, experiment_dir, config_map)
+    if os.path.isfile(datafile):
+        run_rec(datafile, config_map, proc, experiment_dir)
     else:
-        rec.reconstruction(proc, data, experiment_dir, config_map)
-    print ('done with reconstruction')
-
+        dirs = os.listdir(experiment_dir)
+        for dir in dirs:
+            if dir.startswith('scan'):
+                scan_dir = os.path.join(experiment_dir, dir)
+                datafile = os.path.join(scan_dir, 'data', 'data.tif')
+                if os.path.isfile(datafile):
+                    run_rec(datafile, config_map, proc, scan_dir)
     p.terminate()
 
 

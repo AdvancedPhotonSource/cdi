@@ -47,6 +47,9 @@ class cdi_conf(QWidget):
         self.scan_widget = QLineEdit()
         uplayout.addRow("scan(s)", self.scan_widget)
         self.set_conf_from_button = QPushButton()
+        self.separate_scans = QCheckBox()
+        uplayout.addRow("separate scans", self.separate_scans)
+        self.separate_scans.setChecked(False)
         uplayout.addRow("Load conf from", self.set_conf_from_button)
         self.run_button = QPushButton('run_everything', self)
         uplayout.addWidget(self.run_button)
@@ -676,9 +679,9 @@ class cdi_conf_tab(QTabWidget):
         if self.main_win.id is None:
             self.msg_window('enter Reconstruction ID and scan')
         else:
-            prep_dir = os.path.join(self.main_win.experiment_dir, 'prep')
-            if not os.path.exists(prep_dir):
-                os.makedirs(prep_dir)
+            # prep_dir = os.path.join(self.main_win.experiment_dir, 'prep')
+            # if not os.path.exists(prep_dir):
+            #     os.makedirs(prep_dir)
             conf_map = {}
             if self.main_win.working_dir is not None:
                 conf_map['working_dir'] = '"' + str(self.main_win.working_dir) + '"'
@@ -693,7 +696,8 @@ class cdi_conf_tab(QTabWidget):
             if len(self.det_quad.text()) > 0:
                 det_quad = str(self.det_quad.text())
                 conf_map['det_quad'] = det_quad
-
+            if self.main_win.separate_scans.isChecked():
+                conf_map['separate_scans'] = 'true'
             if str(self.prep.currentText()) == "custom":
                 self.prepare_custom(conf_map)
             elif str(self.prep.currentText()) == "34ID prep":
@@ -809,7 +813,8 @@ class cdi_conf_tab(QTabWidget):
 
 
     def format_data(self):
-        if os.path.isfile(os.path.join(self.main_win.experiment_dir, 'prep','prep_data.tif')):
+        if os.path.isfile(os.path.join(self.main_win.experiment_dir, 'prep','prep_data.tif'))\
+                or self.main_win.separate_scans.isChecked():
             conf_map = {}
             if len(self.aliens.text()) > 0:
                 conf_map['aliens'] = str(self.aliens.text()).replace('\n','')
@@ -841,7 +846,8 @@ class cdi_conf_tab(QTabWidget):
 
 
     def reconstruction(self):
-        if os.path.isfile(os.path.join(self.main_win.experiment_dir, 'data', 'data.tif')):
+        if os.path.isfile(os.path.join(self.main_win.experiment_dir, 'data', 'data.tif'))\
+                or self.main_win.separate_scans.isChecked():
             conf_map = {}
             conf_map['samples'] = str(self.samples.text())
             conf_map['device'] = str(self.device.text()).replace('\n','')
@@ -876,7 +882,8 @@ class cdi_conf_tab(QTabWidget):
         res_dir = os.path.join(self.main_win.experiment_dir, 'results')
         if os.path.isfile(os.path.join(res_dir, 'image.npy')) or \
         os.path.isfile(os.path.join(res_dir, '0', 'image.npy')) or \
-        os.path.isfile(os.path.join(res_dir, 'g_0', '0', 'image.npy')):
+        os.path.isfile(os.path.join(res_dir, 'g_0', '0', 'image.npy')) or \
+        self.main_win.separate_scans.isChecked():
             conf_map = {}
             if self.specfile is not None:
                 conf_map['specfile'] = '"' + str(self.specfile) + '"'
