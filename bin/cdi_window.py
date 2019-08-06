@@ -80,35 +80,33 @@ class cdi_conf(QWidget):
 
 
     def load_conf_dir(self):
-        if self.id is None or self.scan is None:
-            self.msg_window('enter Reconstruction ID and scan')
-        else:
-            # the function above assures that the working directory is set
-            if os.path.isfile(os.path.join(self.experiment_dir, 'conf', 'config')):
+        # select starting directory
+        if self.experiment_dir is not None and \
+            os.path.isfile(os.path.join(self.experiment_dir, 'conf', 'config')):
                 load_dir = select_dir(os.path.join(self.experiment_dir, 'conf'))
-            elif os.path.isfile(os.path.join(os.getcwd(), 'conf', 'config')):
-                load_dir = select_dir(os.path.join(os.getcwd(), 'conf'))
+        elif os.path.isfile(os.path.join(os.getcwd(), 'conf', 'config')):
+            load_dir = select_dir(os.path.join(os.getcwd(), 'conf'))
+        else:
+            load_dir = select_dir(self.working_dir)
+        if load_dir is not None:
+            if not os.path.isfile(os.path.join(load_dir, 'config')):
+                self.msg_window('missing config file in load directory')
+                return
+            elif not os.path.isfile(os.path.join(load_dir, 'config_data')):
+                self.msg_window('missing config_p in load directory')
+                return
+            elif not os.path.isfile(os.path.join(load_dir, 'config_rec')):
+                self.msg_window('missing config_rec file in load directory')
+                return
+            elif not os.path.isfile(os.path.join(load_dir, 'config_disp')):
+                self.msg_window('missing config_disp file in load directory')
+                return
             else:
-                load_dir = select_dir(self.working_dir)
-            if load_dir is not None:
-                if not os.path.isfile(os.path.join(load_dir, 'config')):
-                    self.msg_window('missing config file in load directory')
-                    return
-                elif not os.path.isfile(os.path.join(load_dir, 'config_data')):
-                    self.msg_window('missing config_p in load directory')
-                    return
-                elif not os.path.isfile(os.path.join(load_dir, 'config_rec')):
-                    self.msg_window('missing config_rec file in load directory')
-                    return
-                elif not os.path.isfile(os.path.join(load_dir, 'config_disp')):
-                    self.msg_window('missing config_disp file in load directory')
-                    return
-                else:
-                    self.set_conf_from_button.setStyleSheet("Text-align:left")
-                    self.set_conf_from_button.setText('config loaded')
-                    self.init_from_conf(load_dir)
-            else:
-                self.msg_window('please select valid conf directory')
+                self.set_conf_from_button.setStyleSheet("Text-align:left")
+                self.set_conf_from_button.setText('config loaded')
+                self.init_from_conf(load_dir)
+        else:
+            self.msg_window('please select valid conf directory')
 
 
     def set_working_dir(self):
@@ -143,7 +141,6 @@ class cdi_conf(QWidget):
         if self.id is not None and self.scan is not None:
             self.exp_id = self.id + '_' + self.scan
             self.experiment_dir = os.path.join(self.working_dir, self.exp_id)
-            self.set_conf_from_button.setText('')
 
 
     def run_everything(self):
@@ -168,6 +165,16 @@ class cdi_conf(QWidget):
 
 
     def init_from_conf(self, dir):
+        # if experiment not set, get it from the load_dir
+        if self.experiment_dir is None:
+            exp_name = dir.split('/')[-2]
+            exp_name_parts = exp_name.split('_')
+            self.scan = exp_name_parts[-1]
+            self.scan_widget.setText(self.scan)
+            self.id = exp_name[0:-len(self.scan)-1]
+            self.Id_widget.setText(self.id)
+            self.set_experiment_dir()
+
         main_conf = os.path.join(dir, 'config')
         if not os.path.isfile(main_conf):
             dir = os.path.join(dir, 'conf')
@@ -192,7 +199,12 @@ class cdi_conf(QWidget):
         except Exception as e:
             self.msg_window('please check configuration file ' + main_conf + '. Cannot parse, ' + str(e))
             return
-
+        try:
+            separate_scans = conf_map.separate_scans
+            if separate_scans:
+                self.separate_scans.setChecked(True)
+        except:
+            pass
         try:
             self.t.data_dir = conf_map.data_dir
             self.t.data_dir_button.setStyleSheet("Text-align:left")
