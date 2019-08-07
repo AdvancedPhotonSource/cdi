@@ -367,8 +367,6 @@ def save_CX(conf, image, support, coh, save_dir, last_scan):
     support_file = os.path.join(save_dir, 'support')
     viz.write_structured_grid(support_file)
     if coh is not None:
-        coh = np.swapaxes(coh, 1, 2)
-        # investigate if pad_center before fft or after
         coh = np.fft.fftshift(np.fft.fftn(np.fft.fftshift(coh))).real
         coh = ut.get_zero_padded_centered(coh, image.shape)
         coh_file = os.path.join(save_dir, 'coherence')
