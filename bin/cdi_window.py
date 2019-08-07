@@ -942,7 +942,7 @@ class Feature(object):
     def stackUI(self, item, feats):
         layout = QFormLayout()
         self.active = QCheckBox("active")
-        self.active.setChecked(True)
+#        self.active.setChecked(True)
         layout.addWidget(self.active)
         self.toggle(layout, item, feats)
         self.stack.setLayout(layout)
@@ -952,8 +952,6 @@ class Feature(object):
     def toggle(self, layout, item, feats):
         if self.active.isChecked():
             self.fill_active(layout)
-            # experiment_dir = self.
-            # self.init_config(conf_map)
 
             self.default_button = QPushButton('set to defaults', feats)
             layout.addWidget(self.default_button)
@@ -993,14 +991,16 @@ class GA(Feature):
     # override setting the active to set it False
     def stackUI(self, item, feats):
         super(GA, self).stackUI(item, feats)
-        # self.active.setChecked(False)
 
 
     def init_config(self, conf_map):
         try:
-            self.generations.setText(str(conf_map.generations).replace(" ", ""))
+            gens = conf_map.generations
+            self.active.setChecked(True)
+            self.generations.setText(str(gens).replace(" ", ""))
         except AttributeError:
-            pass
+            self.active.setChecked(False)
+            return
         try:
             self.metrics.setText(str(conf_map.ga_metrics).replace(" ", ""))
         except AttributeError:
@@ -1052,6 +1052,7 @@ class GA(Feature):
         self.ga_support_thresholds.setText('(.1,.1,.1,.1,.1)')
         self.ga_support_sigmas.setText('(1.0,1.0,1.0,1.0)')
         self.lr_sigmas.setText('(2.0,1.5)')
+        self.active.setChecked(True)
 
 
     def add_feat_conf(self, conf_map):
@@ -1072,9 +1073,12 @@ class low_resolution(Feature):
 
     def init_config(self, conf_map):
         try:
-            self.res_triggers.setText(str(conf_map.resolution_trigger).replace(" ", ""))
+            triggers = conf_map.resolution_trigger
+            self.active.setChecked(True)
+            self.res_triggers.setText(str(triggers).replace(" ", ""))
         except AttributeError:
-            pass
+            self.active.setChecked(False)
+            return
         try:
             self.sigma_range.setText(str(conf_map.iter_res_sigma_range).replace(" ", ""))
         except AttributeError:
@@ -1115,9 +1119,12 @@ class amplitude_support(Feature):
 
     def init_config(self, conf_map):
         try:
-            self.support_triggers.setText(str(conf_map.amp_support_trigger).replace(" ", ""))
+            triggers = conf_map.amp_support_trigger
+            self.active.setChecked(True)
+            self.support_triggers.setText(str(triggers).replace(" ", ""))
         except AttributeError:
-            pass
+            self.active.setChecked(False)
+            return
         try:
             self.support_type.setText(str(conf_map.support_type).replace(" ", ""))
         except AttributeError:
@@ -1173,9 +1180,12 @@ class phase_support(Feature):
 
     def init_config(self, conf_map):
         try:
-            self.phase_triggers.setText(str(conf_map.phase_support_trigger).replace(" ", ""))
+            triggers = conf_map.phase_support_trigger
+            self.active.setChecked(True)
+            self.phase_triggers.setText(str(triggers).replace(" ", ""))
         except AttributeError:
-            pass
+            self.active.setChecked(False)
+            return
         try:
             self.phase_min.setText(str(conf_map.phase_min).replace(" ", ""))
         except AttributeError:
@@ -1215,9 +1225,12 @@ class pcdi(Feature):
 
     def init_config(self, conf_map):
         try:
-            self.pcdi_triggers.setText(str(conf_map.pcdi_trigger).replace(" ", ""))
+            triggers = conf_map.pcdi_trigger
+            self.active.setChecked(True)
+            self.pcdi_triggers.setText(str(triggers).replace(" ", ""))
         except AttributeError:
-            pass
+            self.active.setChecked(False)
+            return
         try:
             self.pcdi_type.setText(str(conf_map.partial_coherence_type).replace(" ", ""))
         except AttributeError:
@@ -1273,9 +1286,12 @@ class twin(Feature):
 
     def init_config(self, conf_map):
         try:
-            self.twin_triggers.setText(str(conf_map.twin_trigger).replace(" ", ""))
+            triggers = conf_map.twin_trigger
+            self.active.setChecked(True)
+            self.twin_triggers.setText(str(triggers).replace(" ", ""))
         except AttributeError:
-            pass
+            self.active.setChecked(False)
+            return
         try:
             self.twin_halves.setText(str(conf_map.twin_halves).replace(" ", ""))
         except AttributeError:
@@ -1307,9 +1323,12 @@ class average(Feature):
 
     def init_config(self, conf_map):
         try:
-            self.average_triggers.setText(str(conf_map.average_trigger).replace(" ", ""))
+            triggers = conf_map.average_trigger
+            self.active.setChecked(True)
+            self.average_triggers.setText(str(triggers).replace(" ", ""))
         except AttributeError:
-            pass
+            self.active.setChecked(False)
+            return
 
 
     def fill_active(self, layout):
@@ -1333,9 +1352,12 @@ class progress(Feature):
 
     def init_config(self, conf_map):
         try:
-            self.progress_triggers.setText(str(conf_map.progress_trigger).replace(" ", ""))
+            triggers = conf_map.progress_trigger
+            self.active.setChecked(True)
+            self.progress_triggers.setText(str(triggers).replace(" ", ""))
         except AttributeError:
-            pass
+            self.active.setChecked(False)
+            return
 
 
     def fill_active(self, layout):
