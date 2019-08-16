@@ -4,6 +4,7 @@ import sys
 import os
 import reccdi.src_py.utilities.utils as ut
 import numpy as np
+from multiprocessing import Process
 
 
 def save_vtk(res_dir, conf, last_scan):
@@ -53,6 +54,12 @@ def save_dir_tree(save_dir, conf, last_scan):
 
 
 def to_vtk(experiment_dir):
+    def add_res_dirs(dir, dirs):
+        for res_dir in os.listdir(dir):
+            if res_dir.endswith('results'):
+                dirs.append(os.path.join(dir, res_dir))
+        return dirs
+
     if os.path.isdir(experiment_dir):
         scan = experiment_dir.split("-")[-1]
         try:
@@ -114,20 +121,24 @@ def to_vtk(experiment_dir):
         with open(conf, "a") as f:
             f.write(binning_info)
 
+    # find all directories with results, this will include results directories in "scan" directories, and
+    # <rec_id>_results directories.
+    res_dirs = []
     try:
         save_dir = config_map.save_dir
+        res_dirs.append(save_dir)
     except AttributeError:
-        save_dir = os.path.join(experiment_dir, 'results')
+        pass
 
-    if os.path.isdir(save_dir):
-        save_dir_tree(save_dir, conf, last_scan)
-    else:
-        dirs = os.listdir(experiment_dir)
-        for dir in dirs:
-            if dir.startswith('scan'):
-                scan_dir = os.path.join(experiment_dir, dir)
-                save_dir = os.path.join(scan_dir, 'results')
-                save_dir_tree(save_dir, conf, last_scan)
+    res_dirs = add_res_dirs(experiment_dir, res_dirs)
+
+    for dir in os.listdir(experiment_dir):
+        if dir.startswith('scan'):
+            res_dirs = add_res_dirs(os.path.join(experiment_dir, dir), res_dirs)
+
+    for save_dir in res_dirs:
+        p = Process(target = save_dir_tree, args = (save_dir, conf, last_scan,))
+        p.start()
 
 
 def main(arg):

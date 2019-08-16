@@ -87,7 +87,7 @@ def rec(proc, data, conf, config_map, image, support, coh):
     return image, support, coh, er, reciprocal
 
 
-def reconstruction(proc, data, conf_info, config_map):
+def reconstruction(proc, data, conf_info, config_map, rec_id=None):
     """
     This function starts the reconstruction. It checks whether it is continuation of reconstruction defined by
     configuration. If continuation, the arrays of image, support, coherence are read from cont_directory,
@@ -141,12 +141,17 @@ def reconstruction(proc, data, conf_info, config_map):
             support = None
             coh = None
 
+        if rec_id is None:
+            conf_file = 'config_rec'
+        else:
+            conf_file = rec_id + '_config_rec'
+
         if os.path.isdir(conf_info):
             experiment_dir = conf_info
-            conf = os.path.join(experiment_dir, 'conf', 'config_rec')
+            conf = os.path.join(experiment_dir, 'conf', conf_file)
             if not os.path.isfile(conf):
                 base_dir = os.path.abspath(os.path.join(experiment_dir, os.pardir))
-                conf = os.path.join(base_dir, 'conf', 'config_rec')
+                conf = os.path.join(base_dir, 'conf', conf_file)
         else:
             # assuming it's a file
             conf = conf_info
@@ -158,20 +163,11 @@ def reconstruction(proc, data, conf_info, config_map):
             save_dir = config_map.save_dir
         except AttributeError:
             save_dir = 'results'
+            if rec_id is not None:
+                save_dir = rec_id + '_' + save_dir
             if experiment_dir is not None:
                 save_dir = os.path.join(experiment_dir, save_dir)
             else:
                 save_dir = os.path.join(os.getcwd(), 'results')    # save in current dir
 
         ut.save_results(image, support, coh, np.asarray(errs), recips, save_dir)
-
-        # if len(images) == 1:
-        #     errors = results[0][3]
-        #     errors.pop(0)
-        #     plt.plot(errors)
-        #     plt.ylabel('errors')
-        #     plt.show()
-
-
-
-

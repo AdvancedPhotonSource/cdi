@@ -340,7 +340,7 @@ class Generation:
         return child_images, child_supports
 
 
-def reconstruction(generations, proc, data, conf_info, config_map):
+def reconstruction(generations, proc, data, conf_info, config_map, rec_id=None):
     """
     This function controls reconstruction utilizing genetic algorithm.
 
@@ -373,12 +373,17 @@ def reconstruction(generations, proc, data, conf_info, config_map):
 
     gen_obj = Generation(config_map)
 
+    if rec_id is None:
+        conf_file = 'config_rec'
+    else:
+        conf_file = rec_id + '_config_rec'
+
     if os.path.isdir(conf_info):
         experiment_dir = conf_info
-        conf = os.path.join(experiment_dir, 'conf', 'config_rec')
+        conf = os.path.join(experiment_dir, 'conf', conf_file)
         if not os.path.isfile(conf):
             base_dir = os.path.abspath(os.path.join(experiment_dir, os.pardir))
-            conf = os.path.join(base_dir, 'conf', 'config_rec')
+            conf = os.path.join(base_dir, 'conf', conf_file)
     else:
         # assuming it's a file
         conf = conf_info
@@ -388,6 +393,8 @@ def reconstruction(generations, proc, data, conf_info, config_map):
         save_dir = config_map.save_dir
     except AttributeError:
         save_dir = 'results'
+        if rec_id is not None:
+            save_dir = rec_id + '_' + save_dir
         if experiment_dir is not None:
             save_dir = os.path.join(experiment_dir, save_dir)
         else:

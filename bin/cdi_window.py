@@ -43,7 +43,7 @@ class cdi_conf(QWidget):
         self.set_work_dir_button = QPushButton()
         uplayout.addRow("Working Directory", self.set_work_dir_button)
         self.Id_widget = QLineEdit()
-        uplayout.addRow("Reconstruction ID", self.Id_widget)
+        uplayout.addRow("Experiment ID", self.Id_widget)
         self.scan_widget = QLineEdit()
         uplayout.addRow("scan(s)", self.scan_widget)
         self.set_conf_from_button = QPushButton()
@@ -51,7 +51,8 @@ class cdi_conf(QWidget):
         uplayout.addRow("separate scans", self.separate_scans)
         self.separate_scans.setChecked(False)
         uplayout.addRow("Load conf from", self.set_conf_from_button)
-        self.run_button = QPushButton('run_everything', self)
+        self.run_button = QPushButton('run everything', self)
+        self.run_button.setStyleSheet("background-color:rgb(175,208,156)")
         uplayout.addWidget(self.run_button)
 
         vbox = QVBoxLayout()
@@ -281,39 +282,8 @@ class cdi_conf(QWidget):
         except AttributeError:
             pass
 
-        # initialize "Reconstruction" tab
-        rec_conf = os.path.join(dir, 'config_rec')
-        if not os.path.isfile(rec_conf):
-            self.msg_window('missing configuration file ' + rec_conf)
-            return
-        try:
-            conf_map = ut.read_config(rec_conf)
-        except Exception as e:
-            self.msg_window('please check configuration file ' + rec_conf + '. Cannot parse, ' + str(e))
-            return
-        try:
-            self.t.device.setText(str(conf_map.device).replace(" ", ""))
-        except AttributeError:
-            pass
-        try:
-            self.t.samples.setText(str(conf_map.samples).replace(" ", ""))
-        except AttributeError:
-            pass
-        try:
-            self.t.gc.setText(str(conf_map.garbage_trigger).replace(" ", ""))
-        except AttributeError:
-            pass
-        try:
-            self.t.alg_seq.setText(str(conf_map.algorithm_sequence).replace(" ", ""))
-        except AttributeError:
-            pass
-        try:
-            self.t.beta.setText(str(conf_map.beta).replace(" ", ""))
-        except AttributeError:
-            pass
-
-        for feat_id in self.t.features.feature_dir:
-            self.t.features.feature_dir[feat_id].init_config(conf_map)
+        # initialize "Reconstruction" tab, pass True to indicate the first nit
+        self.init_rec_tab(True)
 
         # initialize "Display" tab
         disp_conf = os.path.join(dir, 'config_disp')
@@ -364,6 +334,59 @@ class cdi_conf(QWidget):
             pass
 
 
+    def init_rec_tab(self, first_init=False):
+        # find current configuration id and file
+        conf_dir = os.path.join(self.experiment_dir, 'conf')
+        if first_init:
+            rec_conf = os.path.join(conf_dir, 'config_rec')
+        else:
+            if self.t.old_conf_id == '':
+                rec_conf = os.path.join(conf_dir, 'config_rec')
+            else:
+                rec_conf = os.path.join(conf_dir, self.t.old_conf_id + '_config_rec')
+
+        if not os.path.isfile(rec_conf):
+            self.msg_window('missing configuration file ' + rec_conf)
+            return
+        try:
+            conf_map = ut.read_config(rec_conf)
+        except Exception as e:
+            self.msg_window('please check configuration file ' + rec_conf + '. Cannot parse, ' + str(e))
+            return
+        try:
+            self.t.device.setText(str(conf_map.device).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.t.samples.setText(str(conf_map.samples).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.t.gc.setText(str(conf_map.garbage_trigger).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.t.alg_seq.setText(str(conf_map.algorithm_sequence).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.t.beta.setText(str(conf_map.beta).replace(" ", ""))
+        except AttributeError:
+            pass
+
+        for feat_id in self.t.features.feature_dir:
+            self.t.features.feature_dir[feat_id].init_config(conf_map)
+
+        if first_init:
+            # fill out the config_id choice bar by reading configuration files names
+            rec_ids = []
+            for file in os.listdir(conf_dir):
+                if file.endswith('rec') and file != 'config_rec':
+                    rec_ids.append(file[0:len(file)-len('_config_rec')])
+            self.t.rec_id.addItems(rec_ids)
+            self.t.rec_id.show()
+
+
     def msg_window(self, text):
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Information)
@@ -394,7 +417,7 @@ class cdi_conf(QWidget):
                 tab = 'Data Prep'
             elif file == 'config_data':
                 tab = 'Data'
-            elif file == 'config_rec':
+            elif file.endswith('config_rec'):
                 tab = 'Reconstruction'
             elif file == 'config_disp':
                 tab = 'Display'
@@ -454,6 +477,7 @@ class cdi_conf_tab(QTabWidget):
         self.load_prep(sub_layout)
         layout.addRow(sub_layout)
         self.prep_button = QPushButton('prepare', self)
+        self.prep_button.setStyleSheet("background-color:rgb(175,208,156)")
         layout.addWidget(self.prep_button)
         self.tab1.setLayout(layout)
 
@@ -500,6 +524,7 @@ class cdi_conf_tab(QTabWidget):
         self.binning = QLineEdit()
         layout.addRow("binning", self.binning)
         self.config_data_button = QPushButton('format data', self)
+        self.config_data_button.setStyleSheet("background-color:rgb(175,208,156)")
         layout.addWidget(self.config_data_button)
         self.tab2.setLayout(layout)
 
@@ -509,9 +534,18 @@ class cdi_conf_tab(QTabWidget):
 
 
     def tab3UI(self):
+        self.mult_rec_conf = False
+        self.old_conf_id = ''
         layout = QVBoxLayout()
         ulayout = QFormLayout()
         llayout = QHBoxLayout()
+        self.add_conf_button = QPushButton('add configuration', self)
+        ulayout.addWidget(self.add_conf_button)
+        self.rec_id = QComboBox()
+        self.rec_id.InsertAtBottom
+        self.rec_id.addItem("")
+        ulayout.addWidget(self.rec_id)
+        self.rec_id.hide()
         self.proc = QComboBox()
         self.proc.addItem("opencl")
         self.proc.addItem("cpu")
@@ -538,6 +572,7 @@ class cdi_conf_tab(QTabWidget):
         layout.addLayout(llayout)
         self.features = Features(self, llayout)
         self.config_rec_button = QPushButton('run reconstruction', self)
+        self.config_rec_button.setStyleSheet("background-color:rgb(175,208,156)")
         layout.addWidget(self.config_rec_button)
         self.tab3.setAutoFillBackground(True)
         self.tab3.setLayout(layout)
@@ -545,6 +580,8 @@ class cdi_conf_tab(QTabWidget):
         self.config_rec_button.clicked.connect(self.reconstruction)
         self.cont.stateChanged.connect(lambda: self.toggle_cont(ulayout))
         self.rec_default_button.clicked.connect(self.rec_default)
+        self.add_conf_button.clicked.connect(self.add_rec_conf)
+        self.rec_id.currentIndexChanged.connect(self.toggle_conf)
 
 
     def toggle_cont(self, layout):
@@ -555,6 +592,38 @@ class cdi_conf_tab(QTabWidget):
             cb_label.setStyleSheet('color: black')
         else:
             cb_label.setStyleSheet('color: grey')
+
+
+    def add_rec_conf(self):
+        id, ok = QInputDialog.getText(self, '',"enter configuration id")
+        if ok and len(id) > 0:
+            if self.mult_rec_conf:
+                self.rec_id.addItem(id)
+            else:
+                self.mult_rec_conf = True
+                self.rec_id.show()
+                self.rec_id.addItem(id)
+            #self.rec_id.setCurrentIndex(self.rec_id.count()-1)
+
+        # copy the config_rec into <id>_config_rec and show the
+        conf_file = os.path.join(self.main_win.experiment_dir, 'conf', 'config_rec')
+        new_conf_file = os.path.join(self.main_win.experiment_dir, 'conf', id + '_config_rec')
+        shutil.copyfile(conf_file, new_conf_file)
+        self.rec_id.setCurrentIndex(self.rec_id.count()-1)
+
+
+    def toggle_conf(self, i):
+        # save the configuration file before updating the incoming config
+        if self.old_conf_id == '':
+            conf_file = 'config_rec'
+        else:
+            conf_file = self.old_conf_id + '_config_rec'
+        # save
+        if not self.save_conf(conf_file):
+            self.msg_window('configuration was not saved')
+        self.old_conf_id = str(self.rec_id.currentText())
+        # read from base configuration and display
+        self.main_win.init_rec_tab()
 
 
     def tab4UI(self):
@@ -576,6 +645,7 @@ class cdi_conf_tab(QTabWidget):
         self.pixel = QLineEdit()
         layout.addRow("pixel", self.pixel)
         self.config_disp = QPushButton('process display', self)
+        self.config_disp.setStyleSheet("background-color:rgb(175,208,156)")
         layout.addWidget(self.config_disp)
         self.tab4.setLayout(layout)
 
@@ -857,24 +927,34 @@ class cdi_conf_tab(QTabWidget):
         msg.exec_()
 
 
+    def save_conf(self, config_file):
+        conf_map = {}
+        conf_map['samples'] = str(self.samples.text())
+        conf_map['device'] = str(self.device.text()).replace('\n','')
+        conf_map['garbage_trigger'] = str(self.gc.text()).replace('\n','')
+        conf_map['algorithm_sequence'] = str(self.alg_seq.text()).replace('\n','')
+        conf_map['beta'] = str(self.beta.text())
+        if self.cont.isChecked():
+            conf_map['continue_dir'] = str(self.cont_dir.text())
+
+        for feat_id in self.features.feature_dir:
+            self.features.feature_dir[feat_id].add_config(conf_map)
+
+        #self.create_config('config_rec', conf_map)
+        conf_dir = os.path.join(self.main_win.experiment_dir, 'conf')
+        return self.main_win.write_conf(conf_map, conf_dir, config_file)
+
+
     def reconstruction(self):
         if os.path.isfile(os.path.join(self.main_win.experiment_dir, 'data', 'data.tif'))\
                 or self.main_win.separate_scans.isChecked():
-            conf_map = {}
-            conf_map['samples'] = str(self.samples.text())
-            conf_map['device'] = str(self.device.text()).replace('\n','')
-            conf_map['garbage_trigger'] = str(self.gc.text()).replace('\n','')
-            conf_map['algorithm_sequence'] = str(self.alg_seq.text()).replace('\n','')
-            conf_map['beta'] = str(self.beta.text())
-            if self.cont.isChecked():
-                conf_map['continue_dir'] = str(self.cont_dir.text())
+            # find out which configuration should be saved
+            if self.old_conf_id == '':
+                conf_file = 'config_rec'
+            else:
+                conf_file = self.old_conf_id + '_config_rec'
 
-            for feat_id in self.features.feature_dir:
-                self.features.feature_dir[feat_id].add_config(conf_map)
-
-            #self.create_config('config_rec', conf_map)
-            conf_dir = os.path.join(self.main_win.experiment_dir, 'conf')
-            if self.main_win.write_conf(conf_map, conf_dir, 'config_rec'):
+            if self.save_conf(conf_file):
                 run_rc.reconstruction(str(self.proc.currentText()), self.main_win.experiment_dir)
         else:
             self.msg_window('Please, run format data in previous tab to activate this function')
