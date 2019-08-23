@@ -26,8 +26,8 @@ struct Alg_switch
 };
 typedef struct Alg_switch alg_switch;
 
-const int ALGORITHM_ER = 1;
-const int ALGORITHM_HIO = 2;
+const int ALGORITHM_ER = 2;
+const int ALGORITHM_HIO = 3;
 
 const int ALGORITHM_LUCY = 13;
 const int ALGORITHM_LUCY_PREV = 14;
@@ -83,7 +83,7 @@ const flow_item_def flow_def[] = {
   flow_item_def("garbage_trigger",       FOR_ALL_RUNS,         "Gc"),
   flow_item_def("set_prev_pcdi_trigger", CUSTOM,               "SetPcdiPrevious"),
   flow_item_def("to_direct_space",       NOT_TRIGGER,          "ToDirect"),
-  flow_item_def("algorithm",             NOT_TRIGGER,          "RunAlg"),
+  flow_item_def("algorithm",             CUSTOM,               "RunAlg"),
   flow_item_def("twin_trigger",          FIRST_RUN_ONLY,       "Twin"),
   flow_item_def("average_trigger",       FOR_ALL_RUNS,         "Average"),
   flow_item_def("progress_trigger",      FOR_ALL_RUNS,         "Prog")

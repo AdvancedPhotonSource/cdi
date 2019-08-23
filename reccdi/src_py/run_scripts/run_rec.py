@@ -54,27 +54,6 @@ def run_rec(datafile, config_map, proc, exp_dir, rec_id=None):
         rec.reconstruction(proc, data, exp_dir, config_map, rec_id)
 
 
-# def rec_for_config(proc, experiment_dir, config_map, rec_id=None):
-#     try:
-#         data_dir = config_map.data_dir
-#     except AttributeError:
-#         data_dir = os.path.join(experiment_dir, 'data')
-#
-#     # check if the experiment has separate data for every scan. If so, for every scan there will be subdirectory
-#     # starting with "scan" that will have an experiment directory structure
-#     datafile = os.path.join(data_dir, 'data.tif')
-#     if os.path.isfile(datafile):
-#         run_rec(datafile, config_map, proc, experiment_dir, rec_id)
-#     else:
-#         dirs = os.listdir(experiment_dir)
-#         for dir in dirs:
-#             if dir.startswith('scan'):
-#                 scan_dir = os.path.join(experiment_dir, dir)
-#                 datafile = os.path.join(scan_dir, 'data', 'data.tif')
-#                 if os.path.isfile(datafile):
-#                     run_rec(datafile, config_map, proc, scan_dir, rec_id)
-#
-
 def reconstruction(proc, experiment_dir):
     """
     This function starts the interruption discovery thread and the recontruction thread.
@@ -135,37 +114,10 @@ def reconstruction(proc, experiment_dir):
     if len(rec_processes) == 0:
         # return if no process has started
         return
+
     sp = Process(target=interrupt_thread, args=(len(rec_processes),))
     sp.start()
 
-
-    # rec_processes = []
-    # stop_processes = []
-    # for rec_config in rec_configs:
-    #     if rec_config == 'config_rec':
-    #         rec_id = None
-    #     else:
-    #         rec_id = rec_config[0:len(rec_config)-len('_config_rec')]
-    #     conf = os.path.join(experiment_dir, 'conf', rec_config)
-    #
-    #     sp = Process(target=interrupt_thread, args=(1,))
-    #     stop_processes.append(sp)
-    #     sp.start()
-    #     try:
-    #         config_map = ut.read_config(conf)
-    #         if config_map is None:
-    #             print("can't read configuration file")
-    #             sp.terminate()
-    #             continue
-    #     except:
-    #         print('Please check configuration file ' + conf + '. Cannot parse')
-    #         sp.terminate()
-    #         continue
-    #
-    #     p = Process(target = rec_for_config, args = (proc, experiment_dir, config_map, rec_id,))
-    #     p.start()
-    #     rec_processes.append(p)
-    #
     exit_codes = [p.join() for p in rec_processes]
     sp.terminate()
 

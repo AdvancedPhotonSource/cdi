@@ -18,7 +18,6 @@ See LICENSE file.
 #include "pcdi.hpp"
 #include "state.hpp"
 #include "common.h"
-#include "algorithm.hpp"
 #include "util.hpp"
 #include "resolution.hpp"
 
@@ -95,16 +94,9 @@ Reconstruction::~Reconstruction()
 
 void Reconstruction::Init()
 {
-    // create algorithms that are used in algorithm sequence
-    // and load the objects into a map
-    for (int i = 0; i < params->GetAlgSwitches().size(); i++)
-    {
-        int alg_id = params->GetAlgSwitches()[i].algorithm_id;
-        if (algorithm_map[alg_id] == 0)
-        {
-            MapAlgorithmObject(alg_id);
-        }
-    }
+    // create map of algorithms ids to the algorithm functions
+    CreateAlgorithmMap();
+
     std::map<char*, fp> flow_ptr_map;
     flow_ptr_map["NextIter"] = &Reconstruction::NextIter;
     flow_ptr_map["ResolutionTrigger"] =  &Reconstruction::ResolutionTrigger;
@@ -117,7 +109,7 @@ void Reconstruction::Init()
     flow_ptr_map["Gc"] = &Reconstruction::Gc;
     flow_ptr_map["SetPcdiPrevious"] = &Reconstruction::SetPcdiPrevious;
     flow_ptr_map["ToDirect"] = &Reconstruction::ToDirect;
-    flow_ptr_map["RunAlg"] = &Reconstruction::RunAlg;
+    flow_ptr_map["RunAlg"] = &Reconstruction::ModulusConstrainEr;  //This will be replaced by configured algorithm method
     flow_ptr_map["Twin"] = &Reconstruction::Twin;
     flow_ptr_map["Average"] = &Reconstruction::Average;
     flow_ptr_map["Prog"] = &Reconstruction::Progress;
@@ -130,13 +122,21 @@ void Reconstruction::Init()
     for (int i = 0; i < used_flow_seq.size(); i++)
     {
         int func_order = used_flow_seq[i];
-        fp func_ptr = flow_ptr_map[flow_def[func_order].func_name];
         int offset = i * num_iter;
         for (int j=0; j < num_iter; j++)
         {
             if (flow_array[offset + j])
             {
-                iter_flow[j].push_back(func_ptr);
+                if (flow_array[offset + j] > 1)
+                {
+                    fp func_ptr = algorithm_map[flow_array[offset + j]];
+                    iter_flow[j].push_back(func_ptr);
+                }
+                else
+                {
+                    fp func_ptr = flow_ptr_map[flow_def[func_order].func_name];
+                    iter_flow[j].push_back(func_ptr);
+                }
             }
         }
     }
@@ -163,18 +163,10 @@ void Reconstruction::Init()
 
 }
 
-void Reconstruction::MapAlgorithmObject(int alg_id)
+void Reconstruction::CreateAlgorithmMap()
 {
-    // TODO consider refactoring if there are many subclasses
-    // this method is called only during initialization, so it might be ok
-    if (alg_id == ALGORITHM_HIO)
-    {
-        algorithm_map[alg_id] = new Hio;
-    }
-    else if(alg_id == ALGORITHM_ER)
-    {
-        algorithm_map[alg_id] = new Er;
-    }
+    algorithm_map[ALGORITHM_ER] = &Reconstruction::ModulusConstrainEr;
+    algorithm_map[ALGORITHM_HIO] = &Reconstruction::ModulusConstrainHio;
 }
 
 void Reconstruction::Iterate()
@@ -285,13 +277,6 @@ void Reconstruction::ToDirect()
 {
     ds_image_raw = Utils::fft(rs_amplitudes)/num_points;
     //printf("ToDirect\n");
-}
-
-void Reconstruction::RunAlg()
-{
-    Algorithm * alg  = algorithm_map[state->GetCurrentAlg()];
-    alg->RunAlgorithm(this);
-    //printf("RunAlg\n");
 }
 
 void Reconstruction::Twin()

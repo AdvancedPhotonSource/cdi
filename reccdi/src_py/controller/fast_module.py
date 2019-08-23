@@ -19,9 +19,9 @@ visualization.
 
 import numpy as np
 import scipy.fftpack as sf
-import reccdi.src_py.cyth.bridge_cpu as bridge_cpu
-import reccdi.src_py.cyth.bridge_opencl as bridge_opencl
-import reccdi.src_py.cyth.bridge_cuda as bridge_cuda
+# import reccdi.src_py.cyth.bridge_cpu as bridge_cpu
+# import reccdi.src_py.cyth.bridge_opencl as bridge_opencl
+# import reccdi.src_py.cyth.bridge_cuda as bridge_cuda
 import copy
 
 
@@ -79,13 +79,13 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
         a vector containing errors for each iteration
     """
     if proc == 'cpu':
-        #bridge = bridge_cpu
+        import reccdi.src_py.cyth.bridge_cpu as bridge_cpu
         fast_module = bridge_cpu.PyBridge()
     elif proc == 'opencl':
-        #bridge = bridge_opencl
+        import reccdi.src_py.cyth.bridge_opencl as bridge_opencl
         fast_module = bridge_opencl.PyBridge()
     elif proc == 'cuda':
-        #bridge = bridge_cuda
+        import reccdi.src_py.cyth.bridge_cuda as bridge_cuda
         fast_module = bridge_cuda.PyBridge()
 
     # shift data

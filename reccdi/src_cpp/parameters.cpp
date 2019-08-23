@@ -71,6 +71,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
         int count = tmp.getLength();
         
         int switch_iter = 0;
+        number_iterations = 0;
         int iter = 0;
         for (int i = 0; i < count; ++i)
         {   
@@ -81,11 +82,11 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
                 {
                     iter = tmp[i][j][1];
                     switch_iter = switch_iter + iter;
-                    alg_switches.push_back(Alg_switch(algorithm_id_map[tmp[i][j][0]], switch_iter));
+                    alg_switches.push_back(Alg_switch(algorithm_id_map[tmp[i][j][0]], iter));
+                    number_iterations += iter;
                 }
             }
         }
-        number_iterations = alg_switches[alg_switches.size()-1].iterations;
     }
     catch ( const SettingNotFoundException &nfex)
     {
@@ -122,8 +123,11 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
         {
             if (type == CUSTOM)
             {
-                // currently custom triggers are related to pcdi
-                if (flow_item == "no_pcdi")
+                if (flow_item == "algorithm")
+                {
+                    used_flow_seq.push_back(i);
+                }
+                else if (flow_item == "no_pcdi")
                 {
                     if (!is_pcdi || first)
                     {
@@ -170,8 +174,16 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
         }
         else if (type == CUSTOM)
         {
-            // for now all custom triggers are associated with pcdi trigger being configured
-            if (flow_item == "pcdi")
+            if (flow_item == "algorithm")
+            {
+                int alg_start = 0;
+                for (int k=0; k < alg_switches.size(); k++)
+                {
+                    std::fill_n(flow + offset + alg_start, alg_switches[k].iterations, alg_switches[k].algorithm_id);
+                    alg_start += alg_switches[k].iterations;
+                }
+            }
+            else if (flow_item == "pcdi")
             {
                 int start_pcdi = first ? pcdi_tr_iter[0] : 0;
                 for (int i = start_pcdi; i < number_iterations; i ++)
