@@ -414,3 +414,13 @@ af::array Reconstruction::GetReciprocal()
 {
     return rs_amplitudes;
 }
+
+std::vector<int> Reconstruction::GetFlowVector()
+{
+    return params->GetUsedFlowSeq();
+}
+
+std::vector<int> Reconstruction::GetIterFlowVector()
+{
+    return params->GetFlowArray();
+}

@@ -132,6 +132,8 @@ public:
     std::vector<d_type> GetCoherenceVector();
     std::vector<d_type> GetCoherenceVectorR();
     std::vector<d_type> GetCoherenceVectorI();
+    std::vector<int> GetFlowVector();
+    std::vector<int> GetIterFlowVector();
 
     af::array GetReciprocal();
 };

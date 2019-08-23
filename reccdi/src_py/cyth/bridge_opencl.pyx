@@ -28,6 +28,8 @@ cdef extern from "../include/bridge.hpp":
         vector[double] GetCoherenceV()
         vector[double] GetReciprocalR()
         vector[double] GetReciprocalI()
+        vector[int] GetFlowV()
+        vector[int] GetIterFlowV()
         void Cleanup()
 
 
@@ -59,6 +61,10 @@ cdef class PyBridge:
         return self.thisptr.GetReciprocalR()
     def get_reciprocal_i(self):
         return self.thisptr.GetReciprocalI()
+    def get_flow(self):
+        return self.thisptr.GetFlowV()
+    def get_iter_flow(self):
+        return self.thisptr.GetIterFlowV()
     def cleanup(self):
         self.thisptr.Cleanup()
 

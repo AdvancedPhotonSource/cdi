@@ -68,6 +68,12 @@ public:
     // This method returns last amplitudes in reciprocal space. The returned buffer contains the imaginary part.
     std::vector<d_type> GetReciprocalI();
 
+    // This method returns flow vector, i.e the actins that were used.
+    std::vector<int> GetFlowV();
+
+    // This method returns 2D flow array (flow x iterations).
+    std::vector<int> GetIterFlowV();
+
 };
 
 

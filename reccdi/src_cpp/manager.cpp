@@ -213,5 +213,12 @@ std::vector<d_type> Manager::GetReciprocalI()
     return v;
 }
 
+std::vector<int> Manager::GetFlowV()
+{
+    return rec->GetFlowVector();
+}
 
-
+std::vector<int> Manager::GetIterFlowV()
+{
+    return rec->GetIterFlowVector();
+}

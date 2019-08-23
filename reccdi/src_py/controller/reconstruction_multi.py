@@ -135,9 +135,9 @@ def run_fast_module(proc, device, conf, data, coh_dims, prev_image, prev_support
 
     error : list containing errors for iterations
     """
-    image, support, coherence, errors, reciprocal = calc.fast_module_reconstruction(proc, device, conf, data, coh_dims,
+    image, support, coherence, errors, reciprocal, flow, iter_array = calc.fast_module_reconstruction(proc, device, conf, data, coh_dims,
                                                                        prev_image, prev_support, prev_coh)
-    return image, support, coherence, errors, reciprocal
+    return image, support, coherence, errors, reciprocal, flow, iter_array
 
 
 def read_results(read_dir):
@@ -233,6 +233,8 @@ def rec(proc, data, conf, config_map, images, supports, cohs=None):
     res = []
     errs = []
     recips = []
+    flows = []
+    iter_arrs = []
     for i in range(samples):
         if cohs is None:
             coh = None
@@ -241,6 +243,9 @@ def rec(proc, data, conf, config_map, images, supports, cohs=None):
         res.append(None)
         errs.append(None)
         recips.append(None)
+        flows.append(None)
+        iter_arrs.append(None)
+
         res[i] = run_fast_module(proc, devices[i], conf, data, coh_dims, images[i], supports[i], coh)
 
     # Wait for all Parsl runs to complete..
@@ -251,8 +256,10 @@ def rec(proc, data, conf, config_map, images, supports, cohs=None):
         cohs[i] = r[2]
         errs[i] = r[3]
         recips[i] = r[4]
+        flows[i] = r[5]
+        iter_arrs[i] = r[6]
     # return only error from last iteration for each reconstruction
-    return images, supports, cohs, errs, recips
+    return images, supports, cohs, errs, recips, flows, iter_arrs
 
 
 def reconstruction(samples, proc, data, conf_info, config_map):
@@ -328,7 +335,7 @@ def reconstruction(samples, proc, data, conf_info, config_map):
         conf = conf_info
         experiment_dir = None
 
-    images, supports, cohs, errs, recips = rec(proc, data, conf, config_map, images, supports, cohs)
+    images, supports, cohs, errs, recips, flows, iter_arrs = rec(proc, data, conf, config_map, images, supports, cohs)
     stop = time.time()
     t = stop - start
     print ('run in ' + str(t) + ' sec')
@@ -344,7 +351,7 @@ def reconstruction(samples, proc, data, conf_info, config_map):
 
     clear(dfk)
 
-    ut.save_multiple_results(samples, images, supports, cohs, errs, recips, save_dir)
+    ut.save_multiple_results(samples, images, supports, cohs, errs, recips, flows, iter_arrs, save_dir)
 
 
 def clear(dfk):

@@ -491,7 +491,7 @@ def write_plot_errors(save_dir):
     os.chmod(plot_file, st.st_mode | stat.S_IEXEC)
 
 
-def save_results(image, support, coh, errs, reciprocal, save_dir, metrics=None):
+def save_results(image, support, coh, errs, reciprocal, flow, iter_array, save_dir, metrics=None):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
@@ -507,13 +507,22 @@ def save_results(image, support, coh, errs, reciprocal, save_dir, metrics=None):
     reciprocal_file = os.path.join(save_dir, 'reciprocal')
     np.save(reciprocal_file, reciprocal)
     write_plot_errors(save_dir)
+
+    graph_dir = os.path.join(save_dir, 'graph')
+    if not os.path.exists(graph_dir):
+        os.makedirs(graph_dir)
+    flow_file = os.path.join(graph_dir, 'flow')
+    np.save(flow_file, np.asarray(flow))
+    iter_array_file = os.path.join(graph_dir, 'iter_array')
+    np.save(iter_array_file, iter_array)
+
     if metrics is not None:
         save_metrics(errs, save_dir, metrics)
     else:
         save_metrics(errs, save_dir)
 
 
-def save_multiple_results(samples, images, supports, cohs, errs, reciprocals, save_dir, metrics=None):
+def save_multiple_results(samples, images, supports, cohs, errs, reciprocals, flows, iter_arrs, save_dir, metrics=None):
     """
     This function saves results of multiple reconstructions to directory tree in save_dir.
     Parameters
@@ -535,9 +544,9 @@ def save_multiple_results(samples, images, supports, cohs, errs, reciprocals, sa
     for i in range(samples):
         subdir = os.path.join(save_dir, str(i))
         if metrics is None:
-            save_results(images[i], supports[i], cohs[i], np.asarray(errs[i]), reciprocals[i], subdir)
+            save_results(images[i], supports[i], cohs[i], np.asarray(errs[i]), reciprocals[i], flows[i], iter_arrs[i], subdir)
         else:
-            save_results(images[i], supports[i], cohs[i], np.asarray(errs[i]), reciprocals[i], subdir, metrics[i])
+            save_results(images[i], supports[i], cohs[i], np.asarray(errs[i]), reciprocals[i], flows[i], iter_arrs[i], subdir, metrics[i])
 
 
 def sub_pixel_shift(arr, row_shift, col_shift, z_shift):

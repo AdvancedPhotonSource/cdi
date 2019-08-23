@@ -162,7 +162,12 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
     reciprocal = np.swapaxes(reciprocal, 2, 1)
     reciprocal = sf.ifftshift(reciprocal)
 
+    iter_array = copy.deepcopy(np.asarray(fast_module.get_iter_flow()))
+    flow = copy.deepcopy(list(fast_module.get_flow()))
+    flow_len = len(flow)
+    iter_array = np.reshape(iter_array, (flow_len, int(iter_array.shape[0]/flow_len)))
+
     fast_module.cleanup()
 
-    return image, support, coherence, er, reciprocal
+    return image, support, coherence, er, reciprocal, flow, iter_array
 

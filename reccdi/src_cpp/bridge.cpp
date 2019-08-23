@@ -83,6 +83,16 @@ std::vector<d_type> Bridge::GetReciprocalI()
     return mgr->GetReciprocalI();
 }
 
+std::vector<int> Bridge::GetFlowV()
+{
+    return mgr->GetFlowV();
+}
+
+std::vector<int> Bridge::GetIterFlowV()
+{
+    return mgr->GetIterFlowV();
+}
+
 void Bridge::Cleanup()
 {
    delete mgr;

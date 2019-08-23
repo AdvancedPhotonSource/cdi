@@ -36,6 +36,8 @@ public:
     std::vector<d_type> GetImageR();
     std::vector<d_type> GetImageI();
     std::vector<d_type> GetErrors();
+    std::vector<int> GetFlowV();
+    std::vector<int> GetIterFlowV();
 
     void Cleanup();
 };

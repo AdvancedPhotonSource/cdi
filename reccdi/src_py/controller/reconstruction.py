@@ -81,10 +81,10 @@ def rec(proc, data, conf, config_map, image, support, coh):
         coh_dims = tuple(config_map.partial_coherence_roi)
     except:
         coh_dims = None
-    image, support, coh, er, reciprocal = calc.fast_module_reconstruction(proc, devices[0], conf, data, coh_dims, image, support, coh)
+    image, support, coh, er, reciprocal, flow, iter_array = calc.fast_module_reconstruction(proc, devices[0], conf, data, coh_dims, image, support, coh)
 
     # errs contain errors for each iteration
-    return image, support, coh, er, reciprocal
+    return image, support, coh, er, reciprocal, flow, iter_array
 
 
 def reconstruction(proc, data, conf_info, config_map, rec_id=None):
@@ -157,7 +157,7 @@ def reconstruction(proc, data, conf_info, config_map, rec_id=None):
             conf = conf_info
             experiment_dir = None
 
-        image, support, coh, errs, recips = rec(proc, data, conf, config_map, image, support, coh)
+        image, support, coh, errs, recips, flow, iter_array = rec(proc, data, conf, config_map, image, support, coh)
 
         try:
             save_dir = config_map.save_dir
@@ -170,4 +170,4 @@ def reconstruction(proc, data, conf_info, config_map, rec_id=None):
             else:
                 save_dir = os.path.join(os.getcwd(), 'results')    # save in current dir
 
-        ut.save_results(image, support, coh, np.asarray(errs), recips, save_dir)
+        ut.save_results(image, support, coh, np.asarray(errs), recips, flow, iter_array, save_dir)
