@@ -418,16 +418,14 @@ def reconstruction(generations, proc, data, conf_info, config_map, rec_id=None):
         except:
             devices = [-1]
 
-        dfk = rec.load_config(len(devices))
-
         for g in range(generations):
             gen_data = gen_obj.get_data(data)
-            images, supports, cohs, errs, recips = rec.rec(proc, gen_data, conf, config_map, images, supports, cohs)
+            images, supports, cohs, errs, recips, flows, iter_arrs = rec.rec(proc, gen_data, conf, config_map, images, supports, cohs)
             images, supports, cohs, errs, recips = gen_obj.order(images, supports, cohs, errs, recips)
             metrics = gen_obj.get_metrics(images, errs)
             # save the generation results
             gen_save_dir = os.path.join(save_dir, 'g_' + str(g))
-            ut.save_multiple_results(len(images), images, supports, cohs, errs, recips, gen_save_dir, metrics)
+            ut.save_multiple_results(len(images), images, supports, cohs, errs, recips, flows, iter_arrs, gen_save_dir, metrics)
 
             if g < generations - 1 and len(images) > 1:
                 images, shrink_supports = gen_obj.breed(images)
@@ -442,10 +440,10 @@ def reconstruction(generations, proc, data, conf_info, config_map, rec_id=None):
 
         for g in range(generations):
             gen_data = gen_obj.get_data(data)
-            image, support, coh, err, recip = rec.rec(proc, gen_data, conf, config_map, image, support, coh)
+            image, support, coh, err, recip, flows, iter_arrs = rec.rec(proc, gen_data, conf, config_map, image, support, coh)
             # save the generation results
             gen_save_dir = os.path.join(save_dir, 'g_' + str(g))
-            ut.save_results(image, support, coh, err, recip, gen_save_dir)
+            ut.save_results(image, support, coh, err, recip, flows, iter_arrs, gen_save_dir)
             gen_obj.next_gen()
 
     if dfk is not None:

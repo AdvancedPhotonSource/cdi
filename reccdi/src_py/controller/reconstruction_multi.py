@@ -17,48 +17,18 @@ The module starts the data preparation routines, calls for reconstruction using 
 visualization.
 """
 
-import parsl
-from parsl.config import Config
-from parsl.executors.ipp import IPyParallelExecutor
-# from parsl.executors import HighThroughputExecutor
-from parsl.providers import LocalProvider
-from parsl.channels import LocalChannel
-
 import os
 import reccdi.src_py.utilities.utils as ut
 import reccdi.src_py.controller.fast_module as calc
-from parsl.app.app import python_app
 import time
-import logging
-
+from multiprocessing import Pool
+from functools import partial
 
 __author__ = "Barbara Frosik"
 __copyright__ = "Copyright (c) 2016, UChicago Argonne, LLC."
 __docformat__ = 'restructuredtext en'
 __all__ = ['read_config',
            'reconstruction']
-
-
-def load_config(devices):
-    parsl.set_stream_logger(name='parsl', level=logging.ERROR)
-    logging.getLogger('parsl').setLevel(logging.ERROR)
-    Config.checkpoint_mode = 'task_exit'
-    local_config = Config(
-        executors=[
-            IPyParallelExecutor(
-            #HighThroughputExecutor(
-                label="local_htex",
-                provider=LocalProvider(
-                    channel=LocalChannel(),
-                    init_blocks=1,
-                    max_blocks=devices,
-                    parallelism=1,
-                )
-            )
-        ]
-    )
-    dfk = parsl.load(local_config)
-    return dfk
 
 
 def assign_devices(devices, samples):
@@ -92,8 +62,7 @@ def assign_devices(devices, samples):
     return dev
 
 
-@python_app
-def run_fast_module(proc, device, conf, data, coh_dims, prev_image, prev_support, prev_coh):
+def run_fast_module(proc, conf, data, coh_dims, prev):
     """
     This function runs in the sample palarellized by Parsl.
 
@@ -135,6 +104,11 @@ def run_fast_module(proc, device, conf, data, coh_dims, prev_image, prev_support
 
     error : list containing errors for iterations
     """
+    i, device, prev_image, prev_support, prev_coh = prev
+    # if this is initial reconstruction (i.e. first generation) add some random delay. Without the delay
+    # the multiple guesses might be the same. The value 2*i aws selected after several tries.
+    if prev_image is None:
+        time.sleep(i*2)
     image, support, coherence, errors, reciprocal, flow, iter_array = calc.fast_module_reconstruction(proc, device, conf, data, coh_dims,
                                                                        prev_image, prev_support, prev_coh)
     return image, support, coherence, errors, reciprocal, flow, iter_array
@@ -174,7 +148,7 @@ def read_results(read_dir):
     return images, supports, cohs
 
 
-def rec(proc, data, conf, config_map, images, supports, cohs=None):
+def rec(proc, data, conf, config_map, prev_images, prev_supports, prev_cohs=None):
     """
     This function controls the multiple reconstructions. It invokes a loop to execute parallel resconstructions,
     wait for all samples to deliver results, and store te results.
@@ -216,6 +190,24 @@ def rec(proc, data, conf, config_map, images, supports, cohs=None):
     errs : list
         list of lists of errors (now each element is another list by iterations, but should we take the last error?)
     """
+    images = []
+    supports = []
+    cohs = []
+    errs = []
+    recips = []
+    flows = []
+    iter_arrs = []
+    def collect_result(result):
+        for r in result:
+            images.append(r[0])
+            supports.append(r[1])
+            cohs.append(r[2])
+            errs.append(r[3])
+            recips.append(r[4])
+            flows.append(r[5])
+            iter_arrs.append(r[6])
+
+
     try:
         devices = config_map.device
     except:
@@ -230,34 +222,20 @@ def rec(proc, data, conf, config_map, images, supports, cohs=None):
     except:
         coh_dims = None
 
-    res = []
-    errs = []
-    recips = []
-    flows = []
-    iter_arrs = []
+    iterable = []
     for i in range(samples):
-        if cohs is None:
+        if prev_cohs is None:
             coh = None
         else:
-            coh = cohs[i]
-        res.append(None)
-        errs.append(None)
-        recips.append(None)
-        flows.append(None)
-        iter_arrs.append(None)
+            coh = prev_cohs[i]
+        iterable.append((i, devices[i], prev_images[i], prev_supports[i], coh))
 
-        res[i] = run_fast_module(proc, devices[i], conf, data, coh_dims, images[i], supports[i], coh)
+    func = partial(run_fast_module, proc, conf, data, coh_dims)
+    with Pool(processes = samples) as pool:
+        pool.map_async(func, iterable, callback=collect_result)
+        pool.close()
+        pool.join()
 
-    # Wait for all Parsl runs to complete..
-    complete_results = [i.result() for i in res]
-    for i, r in enumerate(complete_results):
-        images[i] = r[0]
-        supports[i] = r[1]
-        cohs[i] = r[2]
-        errs[i] = r[3]
-        recips[i] = r[4]
-        flows[i] = r[5]
-        iter_arrs[i] = r[6]
     # return only error from last iteration for each reconstruction
     return images, supports, cohs, errs, recips, flows, iter_arrs
 
@@ -315,12 +293,6 @@ def reconstruction(samples, proc, data, conf_info, config_map):
             supports.append(None)
             cohs.append(None)
 
-    try:
-        devices = config_map.device
-    except:
-        devices = [-1]
-
-    dfk = load_config(len(devices))
     start = time.time()
 
     if os.path.isdir(conf_info):
@@ -335,7 +307,7 @@ def reconstruction(samples, proc, data, conf_info, config_map):
         conf = conf_info
         experiment_dir = None
 
-    images, supports, cohs, errs, recips, flows, iter_arrs = rec(proc, data, conf, config_map, images, supports, cohs)
+    new_images, new_supports, new_cohs, errs, recips, flows, iter_arrs = rec(proc, data, conf, config_map, images, supports, cohs)
     stop = time.time()
     t = stop - start
     print ('run in ' + str(t) + ' sec')
@@ -349,12 +321,4 @@ def reconstruction(samples, proc, data, conf_info, config_map):
         else:
             save_dir = os.path.join(os.getcwd(), 'results')    # save in current dir
 
-    clear(dfk)
-
-    ut.save_multiple_results(samples, images, supports, cohs, errs, recips, flows, iter_arrs, save_dir)
-
-
-def clear(dfk):
-    dfk.cleanup()
-    parsl.clear()
-
+    ut.save_multiple_results(samples, new_images, new_supports, new_cohs, errs, recips, flows, iter_arrs, save_dir)
