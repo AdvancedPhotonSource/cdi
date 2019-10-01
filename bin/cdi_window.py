@@ -951,11 +951,13 @@ class cdi_conf_tab(QTabWidget):
             # find out which configuration should be saved
             if self.old_conf_id == '':
                 conf_file = 'config_rec'
+                conf_id = None
             else:
                 conf_file = self.old_conf_id + '_config_rec'
+                conf_id = self.old_conf_id
 
             if self.save_conf(conf_file):
-                run_rc.reconstruction(str(self.proc.currentText()), self.main_win.experiment_dir)
+                run_rc.reconstruction(str(self.proc.currentText()), self.main_win.experiment_dir, conf_id)
         else:
             self.msg_window('Please, run format data in previous tab to activate this function')
 

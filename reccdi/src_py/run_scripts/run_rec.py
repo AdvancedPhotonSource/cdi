@@ -54,7 +54,7 @@ def run_rec(datafile, config_map, proc, exp_dir, rec_id=None):
         rec.reconstruction(proc, data, exp_dir, config_map, rec_id)
 
 
-def reconstruction(proc, experiment_dir):
+def reconstruction(proc, experiment_dir, rec_id=None):
     """
     This function starts the interruption discovery thread and the recontruction thread.
 
@@ -68,39 +68,29 @@ def reconstruction(proc, experiment_dir):
     # find how many reconstruction configurations are in config directory
     # if more than one, it will run is separate processes
     conf_dir = os.path.join(experiment_dir, 'conf')
-    rec_configs = []
-    dir_conf_pairs = []
+    if rec_id is None:
+        conf_file = os.path.join(conf_dir, 'config_rec')
+        id = None
+    else:
+        conf_file = os.path.join(conf_dir, rec_id + '_config_rec')
+        id = rec_id
 
-    for file in os.listdir(conf_dir):
-        if file.endswith('rec'):
-            if file == 'config_rec':
-                rec_id = None
-            else:
-                rec_id = file[0:len(file)-len('_config_rec')]
-            rec_configs.append((file, rec_id))
+    try:
+        config_map = ut.read_config(conf_file)
+        if config_map is None:
+            print("can't read configuration file " + conf_file)
+    except:
+        print('Please check configuration file ' + conf_file + '. Cannot parse')
+
+    exp_dirs = []
     for dir in os.listdir(experiment_dir):
         if dir.startswith('scan'):
-            for conf in rec_configs:
-                dir_conf_pairs.append((os.path.join(experiment_dir, dir), conf))
-
-    if os.path.isdir(os.path.join(experiment_dir, 'data')):
-        for conf in rec_configs:
-            dir_conf_pairs.append((experiment_dir, conf))
+            exp_dirs.append(os.path.join(experiment_dir, dir))
+    if len(exp_dirs) == 0:
+        exp_dirs.append(experiment_dir)
 
     rec_processes = []
-    for pair in dir_conf_pairs:
-        dir,conf_id = pair
-        conf, id = conf_id
-        conf_file = os.path.join(conf_dir, conf)
-        try:
-            config_map = ut.read_config(conf_file)
-            if config_map is None:
-                print("can't read configuration file " + conf_file)
-                continue
-        except:
-            print('Please check configuration file ' + conf + '. Cannot parse')
-            continue
-
+    for dir in exp_dirs:
         try:
             data_dir = config_map.data_dir
         except AttributeError:
