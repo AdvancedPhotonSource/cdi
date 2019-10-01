@@ -72,14 +72,7 @@ void Support::UpdatePhase(const af::array ds_image, int iter)
         //printf("phase trigger\n");
         af::array phase = atan2(imag(ds_image), real(ds_image));
         af::array phase_condition = ((phase > params->GetPhaseMin()) && (phase < params->GetPhaseMax()));
-        if (iter == update_iter)
-        {
-            support_array *= phase_condition;
-        }
-        else
-        {
-            support_array = phase_condition * init_support_array;
-        }
+        support_array *= phase_condition;
 //    printf("support sum %f\n", sum<d_type>(support_array));
 }
 
