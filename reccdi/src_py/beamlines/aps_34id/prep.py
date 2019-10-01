@@ -133,8 +133,8 @@ def shift(arr, shifty):
     for d in range(len(dims)):
         ftarr *= np.exp(-1j*2*np.pi*shifty[d]*sf.fftshift(idxgrid[d])/float(dims[d]))
 
-    shiftedarr = sf.ifftn(ftarr)
-    return shiftedarr
+    shifted_arr = sf.ifftn(ftarr)
+    return shifted_arr
 
 
 def combine_part(part_f, slice_sum, refpart, part):
