@@ -12,6 +12,7 @@ def save_vtk(res_dir, conf, last_scan):
         imagefile = os.path.join(res_dir, 'image.npy')
         image = np.load(imagefile)
     except:
+        print ('no "image.npy" file in results directory')
         return
 
     try:
@@ -53,19 +54,25 @@ def save_dir_tree(save_dir, conf, last_scan):
                     save_vtk(sub_sub, conf, last_scan)
 
 
-def to_vtk(experiment_dir):
+def to_vtk(experiment_dir, conf_id=None):
     def add_res_dirs(dir, dirs):
-        for res_dir in os.listdir(dir):
-            if res_dir.endswith('results'):
-                dirs.append(os.path.join(dir, res_dir))
+        if conf_id is not None:
+            dirs.append(os.path.join(dir, conf_id + '_results'))
+        else:
+            dirs.append(os.path.join(dir, 'results'))
         return dirs
 
     if os.path.isdir(experiment_dir):
-        scan = experiment_dir.split("-")[-1]
-        try:
-            last_scan = int(scan)
-        except:
-            last_scan = int(scan.split("_")[-1])
+        #first check if the experiment name contains scan
+        if len(experiment_dir.split('_')) == 1:
+            # no scan in the name
+            last_scan = None
+        else:
+            scan = experiment_dir.split("-")[-1]
+            try:
+                last_scan = int(scan)
+            except:
+                last_scan = int(scan.split("_")[-1])
         conf = os.path.join(experiment_dir, 'conf', 'config_disp')
         if not os.path.isfile(conf):
             # try to get spec file from experiment's prep phase
@@ -79,10 +86,10 @@ def to_vtk(experiment_dir):
                     f.write('specfile = "' + specfile + '"')
                     f.close()
                 except:
-                    print ("1Missing config_disp file and can't find spec file in experiment config")
+                    print ("Missing config_disp file and can't find spec file in experiment config")
                     return
             else:
-                print ("2Missing config_disp file and can't find spec file in experiment config")
+                print ("Missing config_disp file and can't find spec file in experiment config")
                 return
     else:
         print("Please provide a valid experiment directory")
@@ -130,11 +137,12 @@ def to_vtk(experiment_dir):
     except AttributeError:
         pass
 
-    res_dirs = add_res_dirs(experiment_dir, res_dirs)
-
     for dir in os.listdir(experiment_dir):
         if dir.startswith('scan'):
             res_dirs = add_res_dirs(os.path.join(experiment_dir, dir), res_dirs)
+
+    if len(res_dirs) == 0:
+        res_dirs = add_res_dirs(experiment_dir, res_dirs)
 
     for save_dir in res_dirs:
         p = Process(target = save_dir_tree, args = (save_dir, conf, last_scan,))
@@ -149,7 +157,6 @@ def main(arg):
     experiment_dir = args.experiment_dir
 
     to_vtk(experiment_dir)
-    print ('done with display')
 
 if __name__ == "__main__":
         main(sys.argv[1:])

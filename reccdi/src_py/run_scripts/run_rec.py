@@ -38,11 +38,16 @@ def interrupt_thread(nu_processes):
     signal.pause()
 
 
-def run_rec(datafile, config_map, proc, exp_dir, rec_id=None):
+def run_rec(datafile, config_map, proc, exp_dir, index, rec_id=None):
     data = ut.read_tif(datafile)
     print ('data shape', data.shape)
     data = np.swapaxes(data, 0, 2)
     data = np.swapaxes(data, 0, 1)
+
+    try:
+        devices = config_map.device
+    except:
+        devices = (-1)
 
     try:
         generations = config_map.generations
@@ -51,6 +56,7 @@ def run_rec(datafile, config_map, proc, exp_dir, rec_id=None):
     if generations > 1:
         gen_rec.reconstruction(generations, proc, data, exp_dir, config_map, rec_id)
     else:
+
         rec.reconstruction(proc, data, exp_dir, config_map, rec_id)
 
 
@@ -79,8 +85,10 @@ def reconstruction(proc, experiment_dir, rec_id=None):
         config_map = ut.read_config(conf_file)
         if config_map is None:
             print("can't read configuration file " + conf_file)
+            return
     except:
         print('Please check configuration file ' + conf_file + '. Cannot parse')
+        return
 
     exp_dirs = []
     for dir in os.listdir(experiment_dir):
@@ -90,6 +98,10 @@ def reconstruction(proc, experiment_dir, rec_id=None):
         exp_dirs.append(experiment_dir)
 
     rec_processes = []
+    # index is used to find which device to utilize
+    # it will be used for case when multiple reconstructions are running for the separate scans
+    # but there is no GA (because the GA would utilize the devices)
+    index = 0
     for dir in exp_dirs:
         try:
             data_dir = config_map.data_dir
@@ -97,7 +109,8 @@ def reconstruction(proc, experiment_dir, rec_id=None):
             data_dir = os.path.join(dir, 'data')
         datafile = os.path.join(data_dir, 'data.tif')
         if os.path.isfile(datafile):
-            p = Process(target = run_rec, args = (datafile, config_map, proc, dir, id,))
+            p = Process(target = run_rec, args = (datafile, config_map, proc, dir, index, id,))
+            index += 1
             p.start()
             rec_processes.append(p)
 

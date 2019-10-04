@@ -114,6 +114,8 @@ def prep(fname, conf_info):
 
     except AttributeError:
         pass
+    except:
+        print ('error in aliens configuration')
 
     try:
         amp_threshold = config_map.amp_threshold
@@ -143,6 +145,7 @@ def prep(fname, conf_info):
     pairs[0], pairs[1] = pairs[1], pairs[0]
     prep_data = ut.adjust_dimensions(prep_data, pairs)
     if prep_data is None:
+        print('check "adjust_dimensions" configuration')
         return
 
     try:
@@ -154,14 +157,17 @@ def prep(fname, conf_info):
 
     try:
         binsizes = config_map.binning
-        bins = []
-        for binsize in binsizes:
-            bins.append(binsize)
-        filler = len(prep_data.shape) - len(bins)
-        for _ in range(filler):
-            bins.append(1)
-        bins[0], bins[1] = bins[1], bins[0]
-        prep_data = ut.binning(prep_data, bins)
+        try:
+            bins = []
+            for binsize in binsizes:
+                bins.append(binsize)
+            filler = len(prep_data.shape) - len(bins)
+            for _ in range(filler):
+                bins.append(1)
+            bins[0], bins[1] = bins[1], bins[0]
+            prep_data = ut.binning(prep_data, bins)
+        except:
+            print ('check "binning" configuration')
     except AttributeError:
         pass
 

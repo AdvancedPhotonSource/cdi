@@ -30,6 +30,7 @@ def get_dir_list(scans, map):
         data_dir = map.data_dir
     except:
         print ('please provide data_dir')
+        return
 
     dirs = []
     for name in os.listdir(data_dir):
@@ -172,6 +173,7 @@ def prep_data(experiment_dir, scans, map, det_area1, det_area2, *args):
         scans.append(scans[0])
     dirs = get_dir_list(scans, map)
     if len(dirs) == 0:
+        print ('no data directories found')
         return
     else:
         if not os.path.exists(experiment_dir):
