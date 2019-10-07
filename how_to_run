@@ -30,11 +30,19 @@ python bin/run_disp.py <experiment_dir>
 example:
 1. running all pieces
 source bin/everything.sh opencl B 290-290 conf/last
-2. running one by one
+
+2. running one by one (when envirenment is set)
 python bin/prepare_34id.py B 290-290 conf/last
 python bin/run_data.py test/B_290-290
-source bin/run_rec.sh opencl test/B_290-290
+python bin/run_rec.py opencl test/B_290-290
 python bin/run_disp.py test/B_290-290
+
+3. running reconstruction with alternate configuration:
+Note: the configuration should be in conf directory and have name <prefix>_config_rec
+python bin/run_rec.py opencl test/B_290-290 --rec_id <prefix>
+
+4. running display with alternate results:
+python bin/run_disp.py test/B_290-290 --rec_id <prefix>
 
 How to run using GUI:
 ---------------------

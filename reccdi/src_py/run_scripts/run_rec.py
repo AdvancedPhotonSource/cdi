@@ -126,17 +126,23 @@ def reconstruction(proc, experiment_dir, rec_id=None):
 
 
 def main(arg):
+    print (sys.argv[1:])
     parser = argparse.ArgumentParser()
     parser.add_argument("proc", help="the processor the code will run on, can be 'cpu', 'opencl', or 'cuda'.")
     parser.add_argument("experiment_dir", help="experiment directory.")
+    parser.add_argument("--rec_id", help="prefix to '_results' directory")
     args = parser.parse_args()
     proc = args.proc
     experiment_dir = args.experiment_dir
 
-    reconstruction(proc, experiment_dir)
+    if args.rec_id:
+        reconstruction(proc, experiment_dir, args.rec_id)
+    else:
+        reconstruction(proc, experiment_dir)
 
 
 if __name__ == "__main__":
+    print (sys.argv[1:])
     main(sys.argv[1:])
 
 #python run_rec.py opencl experiment_dir

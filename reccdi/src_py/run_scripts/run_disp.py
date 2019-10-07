@@ -12,7 +12,7 @@ def save_vtk(res_dir, conf, last_scan):
         imagefile = os.path.join(res_dir, 'image.npy')
         image = np.load(imagefile)
     except:
-        print ('no "image.npy" file in results directory')
+        print ('no "image.npy" file in the results directory')
         return
 
     try:
@@ -45,6 +45,8 @@ def save_vtk(res_dir, conf, last_scan):
 def save_dir_tree(save_dir, conf, last_scan):
     save_vtk(save_dir, conf, last_scan)
     for sub in os.listdir(save_dir):
+        if not sub.endswith('results'):
+            continue
         subdir = os.path.join(save_dir, sub)
         if os.path.isdir(subdir):
             save_vtk(subdir, conf, last_scan)
@@ -153,10 +155,13 @@ def main(arg):
     print ('preparing display')
     parser = argparse.ArgumentParser()
     parser.add_argument("experiment_dir", help="experiment directory")
+    parser.add_argument("--rec_id", help="prefix to '_results' directory")
     args = parser.parse_args()
     experiment_dir = args.experiment_dir
-
-    to_vtk(experiment_dir)
+    if args.rec_id:
+        to_vtk(experiment_dir, args.rec_id)
+    else:
+        to_vtk(experiment_dir)
 
 if __name__ == "__main__":
         main(sys.argv[1:])
