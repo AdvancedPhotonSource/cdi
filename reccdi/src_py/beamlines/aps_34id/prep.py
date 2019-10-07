@@ -53,7 +53,7 @@ def get_dark_white(darkfile, whitefile, det_area1, det_area2):
         # find the darkfield array
         dark_full = tif.imread(darkfile).astype(float)
         # crop the corresponding quad or use the whole array, depending on what info was parsed from spec file
-        dark = dark_full[slice(det_area1[0], det_area1[1]), slice(det_area2[0], det_area2[1])]
+        dark = dark_full[slice(det_area1[0], det_area1[0] + det_area1[1]), slice(det_area2[0], det_area2[0] + det_area2[1])]
     else:
         dark = None
 
@@ -61,7 +61,7 @@ def get_dark_white(darkfile, whitefile, det_area1, det_area2):
         # find the whitefield array
         white_full = tif.imread(whitefile).astype(float)
         # crop the corresponding quad or use the whole array, depending on what info was parsed from spec file
-        white = white_full[slice(det_area1[0], det_area1[1]), slice(det_area2[0], det_area2[1])]
+        white = white_full[slice(det_area1[0], det_area1[0] + det_area1[1]), slice(det_area2[0], det_area2[0] + det_area2[1])]
         # set the bad pixels to some large value
         white = np.where(white<5000, 1e20, white) #Some large value
     else:
