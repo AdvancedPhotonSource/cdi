@@ -3,6 +3,7 @@ import argparse
 import sys
 import os
 import reccdi.src_py.utilities.utils as ut
+import reccdi.src_py.utilities.parse_ver as ver
 import numpy as np
 from multiprocessing import Process
 
@@ -76,6 +77,11 @@ def to_vtk(experiment_dir, conf_id=None):
             except:
                 last_scan = int(scan.split("_")[-1])
         conf = os.path.join(experiment_dir, 'conf', 'config_disp')
+
+        # verify configuration file
+        if not ver.ver_config_disp(conf):
+            return
+
         if not os.path.isfile(conf):
             # try to get spec file from experiment's prep phase
             main_conf = os.path.join(experiment_dir, 'conf', 'config')

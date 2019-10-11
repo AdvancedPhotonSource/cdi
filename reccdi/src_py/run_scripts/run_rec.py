@@ -6,6 +6,7 @@ from multiprocessing import Process
 import reccdi.src_py.controller.reconstruction as rec
 import reccdi.src_py.controller.gen_rec as gen_rec
 import reccdi.src_py.utilities.utils as ut
+import reccdi.src_py.utilities.parse_ver as ver
 import numpy as np
 import time
 
@@ -81,13 +82,17 @@ def reconstruction(proc, experiment_dir, rec_id=None):
         conf_file = os.path.join(conf_dir, rec_id + '_config_rec')
         id = rec_id
 
+    # verify the configuration file
+    if not ver.ver_config_rec(conf_file):
+        return
+
     try:
         config_map = ut.read_config(conf_file)
         if config_map is None:
             print("can't read configuration file " + conf_file)
             return
     except:
-        print('Please check configuration file ' + conf_file + '. Cannot parse')
+        print('Cannot parse configuration file ' + conf_file + ' , check for matching parenthesis and quotations')
         return
 
     exp_dirs = []

@@ -3,6 +3,7 @@ import pylibconfig2 as cfg
 import sys
 import os
 import reccdi.src_py.beamlines.aps_34id.prep as prep
+import reccdi.src_py.utilities.parse_ver as ver
 import shutil
 
 
@@ -14,7 +15,7 @@ def prepare(experiment_dir, scan_range, conf_file):
 
 def copy_conf(src, dest):
     try:
-        main_conf = os.path.join(src, 'config')
+        main_conf = os.path.join(src, 'config_prep')
         shutil.copy(main_conf, dest)
         conf_data = os.path.join(src, 'config_data')
         shutil.copy(conf_data, dest)
@@ -34,9 +35,9 @@ def parse_and_prepare(prefix, scan, conf_dir):
         print ('configured directory ' + conf_dir + ' does not exist')
         return
 
-    main_conf = os.path.join(conf_dir, 'config')
+    main_conf = os.path.join(conf_dir, 'config_prep')
     if not os.path.isfile(main_conf):
-        print ('the configuration directory does not contain "config" file')
+        print ('the configuration directory does not contain "config_prep" file')
         return
 
     try:
@@ -49,6 +50,9 @@ def parse_and_prepare(prefix, scan, conf_dir):
         print ('enter numeric values for scan range')
         return
 
+    if not ver.ver_config_prep(main_conf):
+        return
+
     try:
         with open(main_conf, 'r') as f:
             config_map = cfg.Config(f.read())
@@ -57,7 +61,7 @@ def parse_and_prepare(prefix, scan, conf_dir):
         return
 
     try:
-        working_dir = config_map.working_dir
+        working_dir = config_map.working_dir.strip()
     except:
         print ('config file does not have "working_dir" entry, defaulting to current directory')
         working_dir = os.getcwd()

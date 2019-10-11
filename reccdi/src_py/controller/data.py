@@ -19,6 +19,7 @@ visualization.
 
 import numpy as np
 import reccdi.src_py.utilities.utils as ut
+import reccdi.src_py.utilities.parse_ver as ver
 import os
 
 
@@ -72,6 +73,11 @@ def prep(fname, conf_info):
         #assuming it's a file
         conf = conf_info
         experiment_dir = None
+
+    # verify the configuration file
+    if not ver.ver_config_data(conf):
+        return
+
     try:
         config_map = ut.read_config(conf)
         if config_map is None:
