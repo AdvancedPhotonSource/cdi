@@ -32,9 +32,9 @@ def select_dir(start_dir):
         return None
 
 
-class cdi_conf(QWidget):
+class cdi_gui(QWidget):
     def __init__(self, parent=None):
-        super(cdi_conf, self).__init__(parent)
+        super(cdi_gui, self).__init__(parent)
         self.id = None
         self.scan = None
         self.experiment_dir = None
@@ -389,7 +389,7 @@ class cdi_conf(QWidget):
         except AttributeError:
             pass
         try:
-            self.t.samples.setText(str(conf_map.samples).replace(" ", ""))
+            self.t.reconstructions.setText(str(conf_map.reconstructions).replace(" ", ""))
         except AttributeError:
             pass
         try:
@@ -591,8 +591,8 @@ class cdi_conf_tab(QTabWidget):
         self.cont.setChecked(False)
         self.device = QLineEdit()
         ulayout.addRow("device(s)", self.device)
-        self.samples = QLineEdit()
-        ulayout.addRow("number of reconstructions", self.samples)
+        self.reconstructions = QLineEdit()
+        ulayout.addRow("number of reconstructions", self.reconstructions)
         self.gc = QLineEdit()
         ulayout.addRow("gc triggers", self.gc)
         self.alg_seq = QLineEdit()
@@ -718,10 +718,6 @@ class cdi_conf_tab(QTabWidget):
     def parse_spec(self):
         try:
             last_scan = int(self.main_win.scan.split('-')[-1])
-            det1, det2, det_quad = spec.get_det_from_spec(self.specfile, last_scan)
-            if det_quad is not None:
-                self.det_quad.setText(det_quad)
-                self.det_quad.setStyleSheet('color: blue')
             energy, delta, gamma, dth, arm, pixel = spec.parse_spec(self.specfile, last_scan)
             self.energy.setText(str(energy))
             self.energy.setStyleSheet('color: blue')
@@ -981,7 +977,7 @@ class cdi_conf_tab(QTabWidget):
 
     def save_conf(self, config_file):
         conf_map = {}
-        conf_map['samples'] = str(self.samples.text())
+        conf_map['reconstructions'] = str(self.reconstructions.text())
         conf_map['device'] = str(self.device.text()).replace('\n','')
         conf_map['garbage_trigger'] = str(self.gc.text()).replace('\n','')
         conf_map['algorithm_sequence'] = str(self.alg_seq.text()).replace('\n','')
@@ -1081,7 +1077,7 @@ class cdi_conf_tab(QTabWidget):
             len(self.main_win.working_dir) == 0 or len(self.main_win.id) == 0:
             self.msg_window('Working Directory or Reconstruction ID not configured')
         else:
-            self.samples.setText('1')
+            self.reconstructions.setText('1')
             self.device.setText('(3)')
             self.gc.setText('(1000)')
             self.alg_seq.setText('((3,("ER",20),("HIO",180)),(1,("ER",20)))')
@@ -1562,7 +1558,7 @@ class Features(QWidget):
 
 def main():
     app = QApplication(sys.argv)
-    ex = cdi_conf()
+    ex = cdi_gui()
     ex.show()
     sys.exit(app.exec_())
 
