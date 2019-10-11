@@ -116,12 +116,12 @@ def reconstruction(proc, data, conf_info, config_map, rec_id=None):
 
     # how many reconstructions to start
     try:
-        samples = config_map.samples
+        reconstructions = config_map.reconstructions
     except:
-        samples = 1
+        reconstructions = 1
 
-    if samples > 1:
-        multi.reconstruction(samples, proc, data, conf_info, config_map)
+    if reconstructions > 1:
+        multi.reconstruction(reconstructions, proc, data, conf_info, config_map)
     else:
         cont = False
         try:

@@ -31,7 +31,7 @@ __all__ = ['read_config',
            'reconstruction']
 
 
-def assign_devices(devices, samples):
+def assign_devices(devices, reconstructions):
     """
     This function pairs device id with reconstruction run. When running multiple reconstructions, it should be
     distributed between available gpus. The GPUs might be configured. If not, it is left to Parsl logic how
@@ -42,29 +42,29 @@ def assign_devices(devices, samples):
     devices : list
         list containing ids of devices
 
-    samples : int
-        number of reconstructions (each in own sample)
+    reconstructions : int
+        number of reconstructions (each in own reconstruction)
 
     Returns
     -------
     dev : list
-        list containing devices allocated subsequently to samples. If the device was not configured, it will
+        list containing devices allocated subsequently to reconstructions. If the device was not configured, it will
         be set to -1, which leaves the allocation to Parsl
     """
 
     dev_no = len(devices)
     dev = []
-    for sample in range(samples):
-        if sample < dev_no:
-            dev.append(devices[sample])
+    for reconstruction in range(reconstructions):
+        if reconstruction < dev_no:
+            dev.append(devices[reconstruction])
         else:
-            dev.append(devices[sample % len(devices)])
+            dev.append(devices[reconstruction % len(devices)])
     return dev
 
 
 def run_fast_module(proc, conf, data, coh_dims, prev):
     """
-    This function runs in the sample palarellized by Parsl.
+    This function runs in the reconstruction palarellized by Parsl.
 
     Parameters
     ----------
@@ -72,7 +72,7 @@ def run_fast_module(proc, conf, data, coh_dims, prev):
         string defining library used 'cpu' or 'opencl' or 'cuda'
 
     device : int
-        device allocated to this sample or -1 if not configured
+        device allocated to this reconstruction or -1 if not configured
 
     conf : str
         configuration file
@@ -151,7 +151,7 @@ def read_results(read_dir):
 def rec(proc, data, conf, config_map, prev_images, prev_supports, prev_cohs=None):
     """
     This function controls the multiple reconstructions. It invokes a loop to execute parallel resconstructions,
-    wait for all samples to deliver results, and store te results.
+    wait for all reconstructions to deliver results, and store te results.
 
     Parameters
     ----------
@@ -213,9 +213,9 @@ def rec(proc, data, conf, config_map, prev_images, prev_supports, prev_cohs=None
     except:
         devices = [-1]
 
-    # assign device for each sample
-    samples = config_map.samples
-    devices = assign_devices(devices, samples)
+    # assign device for each reconstruction
+    reconstructions = config_map.reconstructions
+    devices = assign_devices(devices, reconstructions)
 
     try:
         coh_dims = tuple(config_map.partial_coherence_roi)
@@ -223,7 +223,7 @@ def rec(proc, data, conf, config_map, prev_images, prev_supports, prev_cohs=None
         coh_dims = None
 
     iterable = []
-    for i in range(samples):
+    for i in range(reconstructions):
         if prev_cohs is None:
             coh = None
         else:
@@ -231,7 +231,7 @@ def rec(proc, data, conf, config_map, prev_images, prev_supports, prev_cohs=None
         iterable.append((i, devices[i], prev_images[i], prev_supports[i], coh))
 
     func = partial(run_fast_module, proc, conf, data, coh_dims)
-    with Pool(processes = samples) as pool:
+    with Pool(processes = reconstructions) as pool:
         pool.map_async(func, iterable, callback=collect_result)
         pool.close()
         pool.join()
@@ -240,18 +240,18 @@ def rec(proc, data, conf, config_map, prev_images, prev_supports, prev_cohs=None
     return images, supports, cohs, errs, recips, flows, iter_arrs
 
 
-def reconstruction(samples, proc, data, conf_info, config_map):
+def reconstruction(reconstructions, proc, data, conf_info, config_map):
     """
     This function starts the reconstruction. It checks whether it is continuation of reconstruction defined by
-    configuration. If continuation, the lists contaning arrays of images, supports, coherence for multiple samples
+    configuration. If continuation, the lists contaning arrays of images, supports, coherence for multiple reconstructions
     are read from cont_directory, otherwise, they are initialized to None.
     After the lists are initialized, they are passed for the multi-reconstruction.
     The results are saved in the configured directory.
 
     Parameters
     ----------
-    samples : int
-        number of samples
+    reconstructions : int
+        number of reconstructions
 
     proc : str
         a string indicating the processor type (cpu, opencl, cuda)
@@ -288,7 +288,7 @@ def reconstruction(samples, proc, data, conf_info, config_map):
         images = []
         supports = []
         cohs = []
-        for _ in range(samples):
+        for _ in range(reconstructions):
             images.append(None)
             supports.append(None)
             cohs.append(None)
@@ -321,4 +321,4 @@ def reconstruction(samples, proc, data, conf_info, config_map):
         else:
             save_dir = os.path.join(os.getcwd(), 'results')    # save in current dir
 
-    ut.save_multiple_results(samples, new_images, new_supports, new_cohs, errs, recips, flows, iter_arrs, save_dir)
+    ut.save_multiple_results(reconstructions, new_images, new_supports, new_cohs, errs, recips, flows, iter_arrs, save_dir)
