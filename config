@@ -1,0 +1,9 @@
+// This configuration contains parameters defining the experiment
+working_dir = "/local/bfrosik/cdi/test"
+                                            // working directory; the new experiment will
+                                            // be created in this directory
+experiment_id = ab
+                                            // a string id
+
+scans = 2-7
+                                            // a single number or a range defining scans, optional

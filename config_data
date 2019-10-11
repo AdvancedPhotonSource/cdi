@@ -1,9 +1,9 @@
 // GENERAL
-data_dir = "data"
+// data_dir = "data"
                              // directory where prepared data is saved, default "data"
 
 // PARAMETER FOR DATA PREPARATION
-aliens = ((170,220,112,195,245,123), (50,96,10,60,110,20))
+aliens = [[170,220,112,195,245,123], [50,96,10,60,110,20]]
                              // comment out aliens for no removal, otherwise input them as
                              // aliens=[[x0,y0,z0,x1,y1,z1],[x2,y2,z2,x3,y3,z3]]
                              // will remove two instances of aliens given by the pairs
@@ -15,22 +15,22 @@ amp_threshold = 2.0
                              // min data threshold.  Values below this are set to 0. The threshold is applied
                              // after removing.
 
-adjust_dimensions = (-13, -13, -65, -65, -65, -65)
+adjust_dimensions = [-13, -13, -65, -65, -65, -65]
                              // optional
-                             // enter adjust dimensions tuple
+                             // enter adjust dimensions list
                              // If number is positive, the array will be padded. If negative, cropped.
-                             // The parameters correspond to [x left, x right, y left, y right, z left, z right]
+                             // The parameters correspond to (x left, x right, y left, y right, z left, z right)
                              // The final dimensions will be adjusted up to the good number for the FFT which
                              // also is compatible with opencl supported dimensions
                              // powers of 2 or a*2^n, where a is 3, 5, or 9
 
-center_shift = (0,0,0)
+center_shift = [0,0,0]
                              // optional
-                             // enter center shift tuple
+                             // enter center shift list
                              // the array maximum is centered before binning, and moved according to center_shift,
-                             // (0,0,0) has no effect
+                             // [0,0,0] has no effect
 
-binning = (1,1,1)
+binning = [1,1,1]
                              // optional
-                             // enter binning tuple
-                             // defines binning values in respective dimensions, (1,1,1) has no effect
+                             // enter binning list
+                             // defines binning values in respective dimensions, [1,1,1] has no effect
