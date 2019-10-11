@@ -372,7 +372,6 @@ def reconstruction(generations, proc, data, conf_info, config_map, rec_id=None):
         reconstructions = 1
 
     gen_obj = Generation(config_map)
-
     if rec_id is None:
         conf_file = 'config_rec'
     else:
