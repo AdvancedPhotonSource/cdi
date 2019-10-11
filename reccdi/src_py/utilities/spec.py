@@ -53,21 +53,9 @@ def get_det_from_spec(specfile, scan):
         det_area = ss.getheader_element('UIMR5').split()
         det_area1 = int(det_area[0]), int(det_area[1])
         det_area2 = int(det_area[2]), int(det_area[3])
-        if det_area1[0] == 0:
-            if det_area1[1] == 512:
-                quad = '0'
-            else:
-                if det_area2[0] == 0:
-                    quad = '1'
-                else:
-                    quad = '2'
-        else:
-            if det_area2[0] == 0:
-                quad = '3'
-            else:
-                quad = '4'
-        return det_area1, det_area2, quad
+
+        return det_area1, det_area2
     except:
-        return None, None, None
+        return None, None
 
 
