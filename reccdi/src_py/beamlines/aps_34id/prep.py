@@ -27,7 +27,7 @@ def get_dir_list(scans, map):
     except:
         exclude_scans = []
     try:
-        data_dir = map.data_dir
+        data_dir = map.data_dir.strip()
     except:
         print ('please provide data_dir')
         return
@@ -150,17 +150,24 @@ def combine_part(part_f, slice_sum, refpart, part):
 
 
 def fit(arr, det_area1, det_area2):
+    # The det_area parameters hold the [beginning of image, size] in both dimensions.
+    # the beginning of image is relative to the full sensor image 512 x 512.
     # if the full sensor was used for the image (i.e. the data size is 512x512)
+    # or if the image overleaps multiple quads,
     # the quadrants need to be shifted
-    if det_area1[0] == 0 and det_area1[1] == 512 and det_area1[0] == 0 and det_area2[1] == 512:
-        b = np.zeros((arr.shape[0],517,516),float)
-        b[:,:256,:256] = arr[:,:256,:256] #Quad top left unchanged
-        b[:,:256,260:] = arr[:,:256,256:] #Quad top right moved 4 right
-        b[:,261:,:256] = arr[:,256:,:256] #Quad bot left moved 6 down
-        b[:,261:,260:] = arr[:,256:,256:] #Quad bot right
+    # check whether the image was taken with a single quad, then no shift is needed
+    if (det_area1[0] + det_area1[1] <= 256) and (det_area2[0] + det_area2[1] <= 256):
+       return arr
     else:
-        b = arr
-    return b
+        b = np.zeros((517,516,arr.shape[2]),float)
+        tmp = np.zeros((512,512,arr.shape[2]),float)
+        tmp[det_area1[0]:det_area1[0]+det_area1[1],det_area2[0]:det_area2[0]+det_area2[1],:] = arr
+        b[:256,:256,:] = tmp[:256,:256,:] #Quad top left unchanged
+        b[:256,260:,:] = tmp[:256,256:,:] #Quad top right moved 4 right
+        b[261:,:256,:] = tmp[256:,:256,:] #Quad bot left moved 6 down
+        b[261:,260:,:] = tmp[256:,256:,:] #Quad bot right
+
+        return b[det_area1[0]:det_area1[0]+det_area1[1],det_area2[0]:det_area2[0]+det_area2[1],:]
 
 
 def prep_data(experiment_dir, scans, map, det_area1, det_area2, *args):
@@ -180,12 +187,12 @@ def prep_data(experiment_dir, scans, map, det_area1, det_area2, *args):
             os.makedirs(experiment_dir)
 
     try:
-        whitefile = map.whitefile
+        whitefile = (map.whitefile).strip()
     except:
         whitefile = None
 
     try:
-        darkfile = map.darkfile
+        darkfile = (map.darkfile).strip()
     except:
         darkfile = None
 
@@ -197,20 +204,23 @@ def prep_data(experiment_dir, scans, map, det_area1, det_area2, *args):
 
     if len(dirs) == 1:
         arr = read_scan(dirs[0], dark, white)
+        arr = fit(arr, det_area1, det_area2)
     else:
         # make the first part a reference
         part = read_scan(dirs[0], dark, white)
+        part = fit(part, det_area1, det_area2)
         slice_sum = np.abs(copy.deepcopy(part))
         refpart = sf.fftn(part)
         for i in range (1, len(dirs)):
             #this will load scans from each directory into an array part
             part = read_scan(dirs[i], dark, white)
+            part = fit(part, det_area1, det_area2)
             # add the arrays together
             part_f = sf.fftn(part)
             slice_sum = combine_part(part_f, slice_sum, refpart, part)
         arr = np.abs(slice_sum).astype(np.int32)
 
-    arr = fit(arr, det_area1, det_area2)
+    #arr = fit(arr, det_area1, det_area2)
 
     #create directory to save prepared data ,<experiment_dir>/prep
     prep_data_dir = os.path.join(experiment_dir, 'prep')
@@ -232,9 +242,9 @@ def prepare(experiment_dir, scans, conf_file, *args):
 
     scan_end = scans[len(scans)-1]
     try:
-        specfile = config_map.specfile
+        specfile = config_map.specfile.strip()
         # parse det1 and det2 parameters from spec
-        det_area1, det_area2, quad = spec.get_det_from_spec(specfile, scan_end)
+        det_area1, det_area2 = spec.get_det_from_spec(specfile, scan_end)
     except:
         try:
             det_quad = config_map.det_quad
