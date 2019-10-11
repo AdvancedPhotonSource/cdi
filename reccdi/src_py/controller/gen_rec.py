@@ -134,10 +134,10 @@ class Generation:
     def rank(self, images, errs):
         rank_property = []
 
-        samples = len(images)
+        reconstructions = len(images)
         metric = self.metrics[self.current_gen]
 
-        for i in range (samples):
+        for i in range (reconstructions):
             image = images[i]
             if metric == 'chi':
                 rank_property.append(errs[i][-1])
@@ -158,7 +158,7 @@ class Generation:
                 # metric is 'chi'
                 rank_property.append(errs[i][-1])
 
-        # ranks keeps indexes of samples from best to worst
+        # ranks keeps indexes of reconstructions from best to worst
         # for most of the metric types the minimum of the metric is best, but for
         # 'summed_phase' and 'area' it is oposite, so reversing the order
         ranks = np.argsort(rank_property).tolist()
@@ -213,11 +213,11 @@ class Generation:
         breed_mode = self.breed_modes[self.current_gen]
         if breed_mode == 'none':
             return images, None
-        samples = len(images)
+        reconstructions = len(images)
         if self.worst_remove_no is not None:
-            samples = samples - self.worst_remove_no[self.current_gen]
+            reconstructions = reconstructions - self.worst_remove_no[self.current_gen]
 
-        ims = images[0 : samples]
+        ims = images[0 : reconstructions]
         dims = len(ims[0].shape)
         ims_arr = np.stack(ims)
 
@@ -367,9 +367,9 @@ def reconstruction(generations, proc, data, conf_info, config_map, rec_id=None):
     nothing
     """
     try:
-        samples = config_map.samples
+        reconstructions = config_map.reconstructions
     except:
-        samples = 1
+        reconstructions = 1
 
     gen_obj = Generation(config_map)
 
@@ -401,13 +401,13 @@ def reconstruction(generations, proc, data, conf_info, config_map, rec_id=None):
             save_dir = os.path.join(os.getcwd(), 'results')    # save in current dir
 
     # init starting values
-    # if multiple samples configured (typical for genetic algorithm), use "reconstruction_multi" module
+    # if multiple reconstructions configured (typical for genetic algorithm), use "reconstruction_multi" module
     dfk = None
-    if samples > 1:
+    if reconstructions > 1:
         images = []
         supports = []
         cohs = []
-        for _ in range(samples):
+        for _ in range(reconstructions):
             images.append(None)
             supports.append(None)
             cohs.append(None)
