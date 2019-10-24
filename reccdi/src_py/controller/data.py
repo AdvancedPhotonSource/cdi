@@ -131,13 +131,17 @@ def prep(fname, conf_info):
         return
 
     # zero out the noise
-    prep_data = np.where(data < amp_threshold, 0, data)
+    prep_data = np.where(data <= amp_threshold, 0, data)
 
     # square root data
     prep_data = np.sqrt(prep_data)
 
     try:
         crops_pads = config_map.adjust_dimensions
+        # the adjust_dimention parameter list holds adjustment in each direction. Append 0s, if shorter
+        if len(crops_pads) < 6:
+            for _ in range (6 - len(crops_pads)):
+                crops_pads.append(0)
     except AttributeError:
         # the size still has to be adjusted to the opencl supported dimension
         crops_pads = (0, 0, 0, 0, 0, 0)

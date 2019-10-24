@@ -267,7 +267,7 @@ def prepare(experiment_dir, scans, conf_file, *args):
                 print('the detector quad can be configured as digt from 0 to 4')
                 return
         except Exception as e:
-            print('neither spec file or detector quad is configured')
+            print('spec file or scan is not configured, and detector quad is not configured')
             return
 
     try:

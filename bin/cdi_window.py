@@ -9,6 +9,7 @@ import reccdi.src_py.run_scripts.run_rec as run_rc
 import reccdi.src_py.run_scripts.run_disp as run_dp
 import reccdi.src_py.utilities.utils as ut
 import reccdi.src_py.utilities.spec as spec
+import reccdi.src_py.utilities.parse_ver as ver
 import importlib
 
 
@@ -32,12 +33,20 @@ def select_dir(start_dir):
         return None
 
 
+def msg_window(text):
+    msg = QMessageBox()
+    msg.setIcon(QMessageBox.Information)
+    msg.setText(text)
+    msg.setWindowTitle("Info")
+    msg.exec_()
+
+
 class cdi_gui(QWidget):
     def __init__(self, parent=None):
         super(cdi_gui, self).__init__(parent)
-        self.id = None
-        self.scan = None
+        self.exp_id = None
         self.experiment_dir = None
+        self.working_dir = None
         uplayout = QFormLayout()
 
         self.set_work_dir_button = QPushButton()
@@ -46,14 +55,12 @@ class cdi_gui(QWidget):
         uplayout.addRow("Experiment ID", self.Id_widget)
         self.scan_widget = QLineEdit()
         uplayout.addRow("scan(s)", self.scan_widget)
-        self.set_conf_from_button = QPushButton()
-        # self.separate_scans = QCheckBox()
-        # uplayout.addRow("separate scans", self.separate_scans)
-        # self.separate_scans.setChecked(False)
-        uplayout.addRow("Load conf from", self.set_conf_from_button)
-        self.run_button = QPushButton('run everything', self)
-        self.run_button.setStyleSheet("background-color:rgb(175,208,156)")
-        uplayout.addWidget(self.run_button)
+        # self.set_conf_from_button = QPushButton("Load conf from")
+        # self.set_conf_from_button.setStyleSheet("background-color:rgb(205,178,102)")
+        # uplayout.addRow(self.set_conf_from_button)
+        # self.create_exp_button = QPushButton('create experiment')
+        # self.create_exp_button.setStyleSheet("background-color:rgb(120,180,220)")
+        # uplayout.addRow(self.create_exp_button)
 
         vbox = QVBoxLayout()
         vbox.addLayout(uplayout)
@@ -61,15 +68,167 @@ class cdi_gui(QWidget):
         self.t = cdi_conf_tab(self)
         vbox.addWidget(self.t)
 
+        downlayout = QFormLayout()
+        self.set_conf_from_button = QPushButton("Load conf from")
+        self.set_conf_from_button.setStyleSheet("background-color:rgb(205,178,102)")
+        downlayout.addWidget(self.set_conf_from_button)
+        self.create_exp_button = QPushButton('set experiment')
+        self.create_exp_button.setStyleSheet("background-color:rgb(120,180,220)")
+        downlayout.addWidget(self.create_exp_button)
+        self.run_button = QPushButton('run everything', self)
+        self.run_button.setStyleSheet("background-color:rgb(175,208,156)")
+        downlayout.addWidget(self.run_button)
+        vbox.addLayout(downlayout)
+
         self.setLayout(vbox)
         self.setWindowTitle("CDI Reconstruction")
-        self.init_work_dir()
+#        self.init_work_dir()
 
         self.set_conf_from_button.clicked.connect(self.load_conf_dir)
         self.set_work_dir_button.clicked.connect(self.set_working_dir)
-        self.Id_widget.textChanged.connect(self.set_id)
-        self.scan_widget.textChanged.connect(self.set_scan)
         self.run_button.clicked.connect(self.run_everything)
+        self.create_exp_button.clicked.connect(self.set_experiment)
+
+
+    def run_everything(self):
+        if not self.is_exp_exists():
+            msg_window('the experiment has not been created yet')
+        elif not self.is_exp_set():
+            msg_window('the experiment has changed, pres "set experiment" button')
+        else:
+            self.t.prepare()
+            self.t.format_data()
+            self.t.reconstruction()
+            self.t.display()
+
+
+    def is_exp_exists(self):
+        if self.exp_id is None:
+            return False
+        if self.working_dir is None:
+            return False
+        exp_id = str(self.Id_widget.text()).strip()
+        scan = str(self.scan_widget.text()).strip()
+        if scan != '':
+            exp_id = exp_id + '_' + scan
+        if not os.path.exists(os.path.join(self.working_dir, exp_id)):
+            return False
+        return True
+
+
+    def is_exp_set(self):
+        if self.exp_id is None:
+            return False
+        if self.working_dir is None:
+            return False
+        if self.exp_id != str(self.Id_widget.text()).strip():
+            return False
+        if self.scan != str(self.scan_widget.text()).strip():
+            return False
+        return True
+
+
+    def load_conf_dir(self):
+        load_dir = select_dir(os.getcwd())
+        missing = 0
+        if load_dir is not None:
+            # load the experiment info only if no id is entered
+            if os.path.isfile(os.path.join(load_dir, 'config')) and str(self.Id_widget.text()).strip() == '':
+                self.load_main(load_dir)
+            else:
+                missing += 1
+            conf_prep_file = os.path.join(load_dir, 'config_prep')
+            if os.path.isfile(conf_prep_file):
+                self.t.load_prep_tab(conf_prep_file)
+            else:
+                missing += 1
+            conf_data_file = os.path.join(load_dir, 'config_data')
+            if os.path.isfile(conf_data_file):
+                self.t.load_data_tab(conf_data_file)
+            else:
+                missing += 1
+            conf_rec_file = os.path.join(load_dir, 'config_rec')
+            if os.path.isfile(conf_rec_file):
+                self.t.load_rec_tab(conf_rec_file)
+            else:
+                missing += 1
+            conf_disp_file = os.path.join(load_dir, 'config_disp')
+            if os.path.isfile(conf_disp_file):
+                self.t.load_disp_tab(conf_disp_file)
+            else:
+                missing += 1
+            if missing == 5:
+                msg_window('info: no configuration file found in load directory')
+            else:
+                self.set_conf_from_button.setStyleSheet("Text-align:left")
+                self.set_conf_from_button.setText('config loaded')
+                self.set_conf_from_button.setStyleSheet("background-color:rgb(205,178,102)")
+        else:
+            msg_window('please select valid conf directory')
+
+
+    def set_working_dir(self):
+        self.working_dir = select_dir(self.working_dir)
+        if self.working_dir is not None:
+            self.set_work_dir_button.setStyleSheet("Text-align:left")
+            self.set_work_dir_button.setText(self.working_dir)
+        else:
+            self.set_work_dir_button.setText('')
+            msg_window('please select valid working directory')
+            return
+
+
+    def load_main(self, load_dir):
+        conf = os.path.join(load_dir, 'config')
+        if not ver.ver_config(conf):
+            msg_window('please check configuration file ' + conf + '. Cannot parse, ')
+            return
+        try:
+            conf_map = ut.read_config(conf)
+        except Exception:
+            msg_window('please check configuration file ' + conf + '. Cannot parse, ')
+            return
+
+        try:
+            self.working_dir = conf_map.working_dir
+            self.set_work_dir_button.setStyleSheet("Text-align:left")
+            self.set_work_dir_button.setText(self.working_dir)
+        except:
+            pass
+        try:
+            self.scan = conf_map.scan
+            self.scan_widget.setText(self.scan)
+        except:
+            self.scan = None
+        try:
+            self.id = conf_map.experiment_id
+            self.Id_widget.setText(self.id)
+            if self.scan != None:
+                self.exp_id = self.id + '_' + self.scan
+            else:
+                self.exp_id = self.id
+            self.experiment_dir = os.path.join(self.working_dir, self.exp_id)
+        except:
+            pass
+
+        if self.experiment_dir is not None:
+            # this shows default results directory in display tab
+            self.t.results_dir = os.path.join(self.experiment_dir, 'results')
+            self.t.result_dir_button.setStyleSheet("Text-align:left")
+            self.t.result_dir_button.setText(self.t.results_dir)
+            self.update_rec_confis_choice()
+
+
+    def update_rec_confis_choice(self):
+            # this will update the configuration choices in reconstruction tab
+            # fill out the config_id choice bar by reading configuration files names
+            rec_ids = []
+            for file in os.listdir(os.path.join(self.experiment_dir, 'conf')):
+                if file.endswith('_config_rec'):
+                    rec_ids.append(file[0:len(file)-len('_config_rec')])
+            if len(rec_ids) > 0:
+                self.t.rec_id.addItems(rec_ids)
+                self.t.rec_id.show()
 
 
     def assure_experiment_dir(self):
@@ -78,356 +237,70 @@ class cdi_gui(QWidget):
         experiment_conf_dir = os.path.join(self.experiment_dir, 'conf')
         if not os.path.exists(experiment_conf_dir):
             os.makedirs(experiment_conf_dir)
-
-
-    def load_conf_dir(self):
-        # select starting directory
-        if self.experiment_dir is not None and \
-            os.path.isfile(os.path.join(self.experiment_dir, 'conf', 'config_prep')):
-                load_dir = select_dir(os.path.join(self.experiment_dir, 'conf'))
-        elif os.path.isfile(os.path.join(os.getcwd(), 'conf', 'config_prep')):
-            load_dir = select_dir(os.path.join(os.getcwd(), 'conf'))
         else:
-            load_dir = select_dir(self.working_dir)
-        if load_dir is not None:
-            if not os.path.isfile(os.path.join(load_dir, 'config_prep')):
-                self.msg_window('missing config file in load directory')
-                return
-            elif not os.path.isfile(os.path.join(load_dir, 'config_data')):
-                self.msg_window('missing config_p in load directory')
-                return
-            elif not os.path.isfile(os.path.join(load_dir, 'config_rec')):
-                self.msg_window('missing config_rec file in load directory')
-                return
-            elif not os.path.isfile(os.path.join(load_dir, 'config_disp')):
-                self.msg_window('missing config_disp file in load directory')
-                return
-            else:
-                self.set_conf_from_button.setStyleSheet("Text-align:left")
-                self.set_conf_from_button.setText('config loaded')
-                self.init_from_conf(load_dir)
-        else:
-            self.msg_window('please select valid conf directory')
+            self.update_rec_confis_choice()
 
 
-    def set_working_dir(self):
-        self.working_dir = select_dir(self.working_dir)
-        if self.working_dir is not None:
-            self.set_work_dir_button.setStyleSheet("Text-align:left")
-            self.set_work_dir_button.setText(self.working_dir)
-            self.set_experiment_dir()
-        else:
-            self.set_work_dir_button.setText('')
-            self.msg_window('please select valid working directory')
+    def set_experiment(self):
+        self.id = str(self.Id_widget.text()).strip()
+        if self.id == '' or self.working_dir is None:
+            msg_window('id and working directory must be entered')
             return
+        conf_map = {}
 
-
-    def set_id(self):
-        self.id = str(self.Id_widget.text())
-        self.set_experiment_dir()
-
-
-    def set_scan(self):
-        self.scan = str(self.scan_widget.text())
-        try:
-            numeric = self.scan.replace('-', '0')
-            numeric_test = int(numeric)
-        except:
-            self.msg_window('enter numeric values for scan range')
-            return
-        self.set_experiment_dir()
-
-
-    def set_experiment_dir(self):
-        if self.id is not None:
-            if self.scan is not None:
-                self.exp_id = self.id + '_' + self.scan
-            else:
-                self.exp_id = self.id
-            self.experiment_dir = os.path.join(self.working_dir, self.exp_id)
-
-            self.t.results_dir = os.path.join(self.experiment_dir, 'results')
-            self.t.result_dir_button.setStyleSheet("Text-align:left")
-            self.t.result_dir_button.setText(self.t.results_dir)
-
-
-    def run_everything(self):
-        self.t.prepare()
-        self.t.format_data()
-        self.t.reconstruction()
-        self.t.display()
-
-
-    def init_work_dir(self):
-        self.working_dir = os.getcwd()
-        if os.path.isdir('conf'):
-            main_conf = os.path.join('conf', 'config_prep')
-            try:
-                conf_map = ut.read_config(main_conf)
-                self.working_dir = conf_map.working_dir
-            except:
-                pass
-
-        self.set_work_dir_button.setStyleSheet("Text-align:left")
-        self.set_work_dir_button.setText(self.working_dir)
-
-
-    def init_from_conf(self, dir):
-        main_conf = os.path.join(dir, 'config_prep')
-        # if not os.path.isfile(main_conf):
-        #     dir = os.path.join(dir, 'conf')
-        #     main_conf = os.path.join(dir, 'config_prep')
-        if not os.path.isfile(main_conf):
-            self.msg_window('the directory does not contain config file, or conf/config_prep file')
-            return
-
-        # if experiment not set, get it from the load_dir
-        if self.experiment_dir is None:
-            exp_name = dir.split('/')[-2]
-            exp_name_parts = exp_name.split('_')
-            if len(exp_name_parts) == 1:
-                # the scan is optional, so in this case the experiment name has only id
-                self.id = exp_name
-            else:
-                self.scan = exp_name_parts[-1]
-                self.scan_widget.setText(self.scan)
-                self.id = exp_name[0:-len(self.scan)-1]
-            self.Id_widget.setText(self.id)
-#            self.set_experiment_dir()
-
-            # read the working directory from config_prep, update it in application
-            # the working directory gets only updated if the experiment is uploaded,
-            # not when the id is already set
-            try:
-                conf_map = ut.read_config(main_conf)
-            except Exception as e:
-                self.msg_window('please check configuration file ' + main_conf + '. Cannot parse, ' + str(e))
+        self.scan = str(self.scan_widget.text()).strip()
+        if self.scan is not '':
+            scans = self.scan.split('-')
+            if len(scans) > 2:
+                msg_window('if entering scan or scan range, please enter numeric values, separated with "-" if range')
                 return
-            try:
-                self.working_dir = conf_map.working_dir
-                self.set_work_dir_button.setStyleSheet("Text-align:left")
-                self.set_work_dir_button.setText(self.working_dir)
-            except:
-                pass
+            for sc in scans:
+                try:
+                    numeric = int(sc)
+                except:
+                    msg_window('if entering scan or scan range, please enter numeric values, separated with "-" if range')
+                    return
+            conf_map['scan'] = '"' + self.scan + '"'
+            self.exp_id = self.id + '_' + self.scan
         else:
-            try:
-                conf_map = ut.read_config(main_conf)
-            except Exception as e:
-                self.msg_window('please check configuration file ' + main_conf + '. Cannot parse, ' + str(e))
-                return
-
-        # set the experiment directory
-        self.set_experiment_dir()
-
-        # copy configuration files from chosen configuration directory
+            self.exp_id = self.id
+        self.experiment_dir = os.path.join(self.working_dir, self.exp_id)
         self.assure_experiment_dir()
-        dest = os.path.join(self.experiment_dir, 'conf')
-        if dir != dest:
-            shutil.copy(main_conf, dest)
-            conf_data = os.path.join(dir, 'config_data')
-            shutil.copy(conf_data, dest)
-            conf_rec = os.path.join(dir, 'config_rec')
-            shutil.copy(conf_rec, dest)
-            conf_rec = os.path.join(dir, 'config_disp')
-            shutil.copy(conf_rec, dest)
 
-        try:
-            separate_scans = conf_map.separate_scans
-            if separate_scans:
-                self.t.separate_scans.setChecked(True)
-        except:
-            pass
-        try:
-            self.t.data_dir = conf_map.data_dir
-            self.t.data_dir_button.setStyleSheet("Text-align:left")
-            self.t.data_dir_button.setText(self.t.data_dir)
-        except:
-            self.t.data_dir = None
-            self.t.data_dir_button.setText('')
-        try:
-            self.t.specfile = conf_map.specfile
-            self.t.spec_file_button.setStyleSheet("Text-align:left")
-            self.t.spec_file_button.setText(self.t.specfile)
-            # set specfile also in display tab
-            self.t.spec_file_button1.setStyleSheet("Text-align:left")
-            self.t.spec_file_button1.setText(self.t.specfile)
-        except:
-            self.t.specfile = None
-            self.t.spec_file_button.setText('')
-            self.t.spec_file_button1.setText('')
-        try:
-            self.t.darkfile = conf_map.darkfile
-            self.t.dark_file_button.setStyleSheet("Text-align:left")
-            self.t.dark_file_button.setText(self.t.darkfile)
-        except:
-            self.t.darkfile = None
-            self.t.dark_file_button.setText('')
-        try:
-            self.t.whitefile = conf_map.whitefile
-            self.t.white_file_button.setStyleSheet("Text-align:left")
-            self.t.white_file_button.setText(self.t.whitefile)
-        except:
-            self.t.whitefile = None
-            self.t.white_file_button.setText('')
-        try:
-            self.t.min_files.setText(str(conf_map.min_files).replace(" ", ""))
-        except:
-            pass
-        try:
-            self.t.exclude_scans.setText(str(conf_map.exclude_scans).replace(" ", ""))
-        except:
-            pass
-        try:
-            self.t.det_quad.setText(str(conf_map.det_quad).replace(" ", ""))
-        except:
-            pass
+        # read the configurations from GUI and write to experiment config files
+        # save the main config
+        conf_map['working_dir'] = '"' + str(self.working_dir).strip() + '"'
+        conf_map['experiment_id'] = '"' + self.id + '"'
+        self.write_conf(conf_map, os.path.join(self.experiment_dir, 'conf'), 'config')
 
-        # initialize "Data" tab
-        data_conf = os.path.join(dir, 'config_data')
-        if not os.path.isfile(data_conf):
-            self.msg_window('missing configuration file ' + data_conf)
-            return
-        try:
-            conf_map = ut.read_config(data_conf)
-        except Exception as e:
-            self.msg_window('please check configuration file ' + data_conf + '. Cannot parse, ' + str(e))
-            return
-        try:
-            self.t.aliens.setText(str(conf_map.aliens).replace(" ", ""))
-        except AttributeError:
-            pass
-        try:
-            self.t.amp_threshold.setText(str(conf_map.amp_threshold).replace(" ", ""))
-        except AttributeError:
-            pass
-        try:
-            self.t.binning.setText(str(conf_map.binning).replace(" ", ""))
-        except AttributeError:
-            pass
-        try:
-            self.t.center_shift.setText(str(conf_map.center_shift).replace(" ", ""))
-        except AttributeError:
-            pass
-        try:
-            self.t.adjust_dimensions.setText(str(conf_map.adjust_dimensions).replace(" ", ""))
-        except AttributeError:
-            pass
+        # save prep config
+        conf_map = self.t.get_prep_config()
+        if bool(conf_map):
+            self.write_conf(conf_map, os.path.join(self.experiment_dir, 'conf'), 'config_prep')
 
-        # initialize "Reconstruction" tab, pass True to indicate the first nit
-        self.init_rec_tab(True)
+        # save data config
+        conf_map = self.t.get_data_config()
+        if bool(conf_map):
+            self.write_conf(conf_map, os.path.join(self.experiment_dir, 'conf'), 'config_data')
 
-        # initialize "Display" tab
-        disp_conf = os.path.join(dir, 'config_disp')
-        if not os.path.isfile(disp_conf):
-            self.msg_window('missing configuration file ' + disp_conf)
-            return
-        try:
-            conf_map = ut.read_config(disp_conf)
-        except Exception as e:
-            self.msg_window('please check configuration file ' + disp_conf + '. Cannot parse, ' + str(e))
-            return
-        try:
-            self.t.crop.setText(str(conf_map.crop).replace(" ", ""))
-        except AttributeError:
-            pass
-        try:
-            self.t.energy.setText(str(conf_map.energy).replace(" ", ""))
-        except AttributeError:
-            pass
-        try:
-            self.t.delta.setText(str(conf_map.delta).replace(" ", ""))
-        except AttributeError:
-            pass
-        try:
-            self.t.gamma.setText(str(conf_map.gamma).replace(" ", ""))
-        except AttributeError:
-            pass
-        try:
-            self.t.arm.setText(str(conf_map.arm).replace(" ", ""))
-        except AttributeError:
-            pass
-        try:
-            self.t.dth.setText(str(conf_map.dth).replace(" ", ""))
-        except AttributeError:
-            pass
-        try:
-            self.t.pixel.setText(str(conf_map.pixel).replace(" ", ""))
-        except AttributeError:
-            pass
-        try:
-            specfile = conf_map.specfile
-            self.t.specfile = specfile
-            self.t.spec_file_button1.setStyleSheet("Text-align:left")
-            self.t.spec_file_button1.setText(self.t.specfile)
-            if os.path.isfile(self.t.specfile):
-                self.t.parse_spec()
-        except AttributeError:
-            pass
+        # save rec config
+        conf_map = self.t.get_rec_config()
+        if bool(conf_map):
+            self.write_conf(conf_map, os.path.join(self.experiment_dir, 'conf'), 'config_rec')
 
+        # save disp config
+        conf_map = self.t.get_disp_config()
+        if bool(conf_map):
+            self.write_conf(conf_map, os.path.join(self.experiment_dir, 'conf'), 'config_disp')
 
-    def init_rec_tab(self, first_init=False):
-        # find current configuration id and file
-        conf_dir = os.path.join(self.experiment_dir, 'conf')
-        if first_init:
-            rec_conf = os.path.join(conf_dir, 'config_rec')
-        else:
-            if self.t.old_conf_id == '':
-                rec_conf = os.path.join(conf_dir, 'config_rec')
-            else:
-                rec_conf = os.path.join(conf_dir, self.t.old_conf_id + '_config_rec')
-
-        if not os.path.isfile(rec_conf):
-            self.msg_window('missing configuration file ' + rec_conf)
-            return
-        try:
-            conf_map = ut.read_config(rec_conf)
-        except Exception as e:
-            self.msg_window('please check configuration file ' + rec_conf + '. Cannot parse, ' + str(e))
-            return
-        try:
-            self.t.device.setText(str(conf_map.device).replace(" ", ""))
-        except AttributeError:
-            pass
-        try:
-            self.t.reconstructions.setText(str(conf_map.reconstructions).replace(" ", ""))
-        except AttributeError:
-            pass
-        try:
-            self.t.gc.setText(str(conf_map.garbage_trigger).replace(" ", ""))
-        except AttributeError:
-            pass
-        try:
-            self.t.alg_seq.setText(str(conf_map.algorithm_sequence).replace(" ", ""))
-        except AttributeError:
-            pass
-        try:
-            self.t.beta.setText(str(conf_map.beta).replace(" ", ""))
-        except AttributeError:
-            pass
-
-        for feat_id in self.t.features.feature_dir:
-            self.t.features.feature_dir[feat_id].init_config(conf_map)
-
-        if first_init:
-            # fill out the config_id choice bar by reading configuration files names
-            rec_ids = []
-            for file in os.listdir(conf_dir):
-                if file.endswith('rec') and file != 'config_rec':
-                    rec_ids.append(file[0:len(file)-len('_config_rec')])
-            self.t.rec_id.addItems(rec_ids)
-            self.t.rec_id.show()
-
-
-    def msg_window(self, text):
-        msg = QMessageBox()
-        msg.setIcon(QMessageBox.Information)
-        msg.setText(text)
-        msg.setWindowTitle("Info")
-        msg.exec_()
+        # this shows default results directory in display window
+        self.t.results_dir = os.path.join(self.experiment_dir, 'results')
+        self.t.result_dir_button.setStyleSheet("Text-align:left")
+        self.t.result_dir_button.setText(self.t.results_dir)
 
 
     def write_conf(self, conf_map, dir, file):
-        # create "temp" file first and then overrite existing configuration file
+        # create "temp" file first, verify it, and if ok, copy to a configuration file
         if not os.path.exists(dir):
             os.makedirs(dir)
         conf_file = os.path.join(dir, file)
@@ -438,24 +311,35 @@ class cdi_gui(QWidget):
                 if len(value) > 0:
                     f.write(key + ' = ' + conf_map[key] + '\n')
         f.close()
-        # verify that the temporary file can be parsed
-        try:
-            ut.read_config(temp_file)
-            shutil.move(temp_file, conf_file)
-            return True
-        except:
-            if file == 'config_prep':
-                tab = 'Data Prep'
-            elif file == 'config_data':
-                tab = 'Data'
-            elif file.endswith('config_rec'):
-                tab = 'Reconstruction'
-            elif file == 'config_disp':
-                tab = 'Display'
-            self.msg_window('please check the entries in the ' + tab + ' tab. Cannot save this format')
-            os.remove(temp_file)
-            return False
 
+        if file == 'config':
+            if not ver.ver_config(temp_file):
+                os.remove(temp_file)
+                msg_window('please check the entries in the main window. Cannot save this format')
+                return False
+        elif file == 'config_prep':
+            if not ver.ver_config_prep(temp_file):
+                os.remove(temp_file)
+                msg_window('please check the entries in the Data prep tab. Cannot save this format')
+                return False
+        elif file == 'config_data':
+            if not ver.ver_config_data(temp_file):
+                os.remove(temp_file)
+                msg_window('please check the entries in the Data tab. Cannot save this format')
+                return False
+        elif file.endswith('config_rec'):
+            if not ver.ver_config_rec(temp_file):
+                os.remove(temp_file)
+                msg_window('please check the entries in the Reconstruction tab. Cannot save this format')
+                return False
+        elif file == 'config_disp':
+            if not ver.ver_config_disp(temp_file):
+                os.remove(temp_file)
+                msg_window('please check the entries in the Display tab. Cannot save this format')
+                return False
+        # copy if verified
+        shutil.move(temp_file, conf_file)
+        return True
 
 class cdi_conf_tab(QTabWidget):
     def __init__(self, main_win, parent=None):
@@ -511,9 +395,13 @@ class cdi_conf_tab(QTabWidget):
         sub_layout = QFormLayout()
         self.load_prep(sub_layout)
         layout.addRow(sub_layout)
+        self.set_prep_conf_from_button = QPushButton("Load prep conf from")
+        self.set_prep_conf_from_button.setStyleSheet("background-color:rgb(205,178,102)")
+        #layout.addWidget(self.set_prep_conf_from_button)
         self.prep_button = QPushButton('prepare', self)
         self.prep_button.setStyleSheet("background-color:rgb(175,208,156)")
-        layout.addWidget(self.prep_button)
+        #layout.addWidget(self.prep_button)
+        layout.addRow(self.set_prep_conf_from_button, self.prep_button)
         self.tab1.setLayout(layout)
 
         self.prep_button.clicked.connect(self.prepare)
@@ -523,7 +411,7 @@ class cdi_conf_tab(QTabWidget):
         self.dark_file_button.clicked.connect(self.set_dark_file)
         self.white_file_button.clicked.connect(self.set_white_file)
         self.det_quad.textChanged.connect(lambda: self.set_overriden(self.det_quad))
-        self.layout1 = layout
+        self.set_prep_conf_from_button.clicked.connect(self.load_prep_conf)
 
 
     def load_prep(self, layout):
@@ -539,10 +427,9 @@ class cdi_conf_tab(QTabWidget):
             layout.addRow("arguments (str/num)", self.args)
             self.script_button.clicked.connect(self.set_prep_script)
 
-        # elif str(self.prep.currentText()) == "34ID prep":
         elif str(self.prep.currentText()) == "copy from":
             self.ready_prep = QPushButton()
-            layout.addRow("select file", self.ready_prep)
+            layout.addRow("prep file", self.ready_prep)
             self.ready_prep.clicked.connect(self.set_prep_file)
 
 
@@ -558,14 +445,19 @@ class cdi_conf_tab(QTabWidget):
         layout.addRow("pad, crop", self.adjust_dimensions)
         self.binning = QLineEdit()
         layout.addRow("binning", self.binning)
+        self.set_data_conf_from_button = QPushButton("Load data conf from")
+        self.set_data_conf_from_button.setStyleSheet("background-color:rgb(205,178,102)")
+        #layout.addRow(self.set_data_conf_from_button)
         self.config_data_button = QPushButton('format data', self)
         self.config_data_button.setStyleSheet("background-color:rgb(175,208,156)")
-        layout.addWidget(self.config_data_button)
+        #layout.addRow(self.config_data_button)
+        layout.addRow(self.set_data_conf_from_button, self.config_data_button)
         self.tab2.setLayout(layout)
 
         # this will create config_data file and run data script
         # to generate data ready for reconstruction
         self.config_data_button.clicked.connect(self.format_data)
+        self.set_data_conf_from_button.clicked.connect(self.load_data_conf)
 
 
     def tab3UI(self):
@@ -573,7 +465,7 @@ class cdi_conf_tab(QTabWidget):
         self.old_conf_id = ''
         layout = QVBoxLayout()
         ulayout = QFormLayout()
-        llayout = QHBoxLayout()
+        mlayout = QHBoxLayout()
         self.add_conf_button = QPushButton('add configuration', self)
         ulayout.addWidget(self.add_conf_button)
         self.rec_id = QComboBox()
@@ -603,12 +495,22 @@ class cdi_conf_tab(QTabWidget):
         self.rec_default_button = QPushButton('set to defaults', self)
         ulayout.addWidget(self.rec_default_button)
 
-        layout.addLayout(ulayout)
-        layout.addLayout(llayout)
-        self.features = Features(self, llayout)
+        llayout = QFormLayout()
+        self.set_rec_conf_from_button = QPushButton("Load rec conf from")
+        self.set_rec_conf_from_button.setStyleSheet("background-color:rgb(205,178,102)")
+        #layout.addWidget(self.set_rec_conf_from_button)
+        self.features = Features(self, mlayout)
         self.config_rec_button = QPushButton('run reconstruction', self)
         self.config_rec_button.setStyleSheet("background-color:rgb(175,208,156)")
-        layout.addWidget(self.config_rec_button)
+        #layout.addWidget(self.config_rec_button)
+        llayout.addRow(self.set_rec_conf_from_button, self.config_rec_button)
+        spacer = QSpacerItem(0,3)
+        llayout.addItem(spacer)
+
+        layout.addLayout(ulayout)
+        layout.addLayout(mlayout)
+        layout.addLayout(llayout)
+
         self.tab3.setAutoFillBackground(True)
         self.tab3.setLayout(layout)
 
@@ -617,6 +519,7 @@ class cdi_conf_tab(QTabWidget):
         self.rec_default_button.clicked.connect(self.rec_default)
         self.add_conf_button.clicked.connect(self.add_rec_conf)
         self.rec_id.currentIndexChanged.connect(self.toggle_conf)
+        self.set_rec_conf_from_button.clicked.connect(self.load_rec_conf_dir)
 
 
     def toggle_cont(self, layout):
@@ -647,18 +550,31 @@ class cdi_conf_tab(QTabWidget):
         self.rec_id.setCurrentIndex(self.rec_id.count()-1)
 
 
-    def toggle_conf(self, i):
+    def toggle_conf(self):
         # save the configuration file before updating the incoming config
         if self.old_conf_id == '':
             conf_file = 'config_rec'
         else:
             conf_file = self.old_conf_id + '_config_rec'
-        # save
-        if not self.save_conf(conf_file):
-            self.msg_window('configuration was not saved')
-        self.old_conf_id = str(self.rec_id.currentText())
-        # read from base configuration and display
-        self.main_win.init_rec_tab()
+
+        conf_map = self.get_rec_config()
+        conf_dir = os.path.join(self.main_win.experiment_dir, 'conf')
+
+        if self.main_win.write_conf(conf_map, conf_dir, conf_file):
+            self.old_conf_id = str(self.rec_id.currentText())
+        else:
+            msg_window('configuration  ' + conf_file + ' was not saved')
+        # if a config file corresponding to the rec id exists, load it
+        # otherwise read from base configuration and load
+        if self.old_conf_id == '':
+            conf_file = os.path.join(conf_dir, 'config_rec')
+        else:
+            conf_file = os.path.join(conf_dir, self.old_conf_id + '_config_rec')
+
+        if os.path.isfile(conf_file):
+            self.load_rec_tab(conf_file)
+        else:
+            self.load_rec_tab(os.path.join(conf_dir, 'config_rec'))
 
 
     def tab4UI(self):
@@ -676,14 +592,18 @@ class cdi_conf_tab(QTabWidget):
         self.gamma = QLineEdit()
         layout.addRow("gamma (deg)", self.gamma)
         self.arm = QLineEdit()
-        layout.addRow("arm (m)", self.arm)
+        layout.addRow("arm (mm)", self.arm)
         self.dth = QLineEdit()
         layout.addRow("dth (deg)", self.dth)
         self.pixel = QLineEdit()
         layout.addRow("pixel", self.pixel)
+        self.set_disp_conf_from_button = QPushButton("Load disp conf from")
+        self.set_disp_conf_from_button.setStyleSheet("background-color:rgb(205,178,102)")
+        #layout.addRow(self.set_disp_conf_from_button)
         self.config_disp = QPushButton('process display', self)
         self.config_disp.setStyleSheet("background-color:rgb(175,208,156)")
-        layout.addWidget(self.config_disp)
+        #layout.addRow(self.config_disp)
+        layout.addRow(self.set_disp_conf_from_button, self.config_disp)
         self.tab4.setLayout(layout)
 
         self.result_dir_button.clicked.connect(self.set_results_dir)
@@ -695,7 +615,358 @@ class cdi_conf_tab(QTabWidget):
         self.arm.textChanged.connect(lambda: self.set_overriden(self.arm))
         self.dth.textChanged.connect(lambda: self.set_overriden(self.dth))
         self.pixel.textChanged.connect(lambda: self.set_overriden(self.pixel))
+        self.set_disp_conf_from_button.clicked.connect(self.load_disp_conf)
         self.layout4 = layout
+
+
+    def load_prep_tab(self, conf):
+        if not os.path.isfile(conf):
+            msg_window('info: the load directory does not contain config_prep file')
+            return
+        if not ver.ver_config_prep(conf):
+            msg_window('please check configuration file ' + conf + '. Cannot parse, ')
+            return
+        try:
+            conf_map = ut.read_config(conf)
+        except Exception as e:
+            msg_window('please check configuration file ' + conf + '. Cannot parse, ' + str(e))
+            return
+
+        try:
+            separate_scans = conf_map.separate_scans
+            if separate_scans:
+                self.separate_scans.setChecked(True)
+        except:
+            pass
+        try:
+            self.data_dir = conf_map.data_dir
+            self.data_dir_button.setStyleSheet("Text-align:left")
+            self.data_dir_button.setText(self.data_dir)
+        except:
+            self.data_dir = None
+            self.data_dir_button.setText('')
+        try:
+            self.specfile = conf_map.specfile
+            self.spec_file_button.setStyleSheet("Text-align:left")
+            self.spec_file_button.setText(self.specfile)
+            # set specfile also in display tab
+            self.spec_file_button1.setStyleSheet("Text-align:left")
+            self.spec_file_button1.setText(self.specfile)
+        except:
+            self.specfile = None
+            self.spec_file_button.setText('')
+            self.spec_file_button1.setText('')
+        try:
+            self.darkfile = conf_map.darkfile
+            self.dark_file_button.setStyleSheet("Text-align:left")
+            self.dark_file_button.setText(self.darkfile)
+        except:
+            self.darkfile = None
+            self.dark_file_button.setText('')
+        try:
+            self.whitefile = conf_map.whitefile
+            self.white_file_button.setStyleSheet("Text-align:left")
+            self.white_file_button.setText(self.whitefile)
+        except:
+            self.whitefile = None
+            self.white_file_button.setText('')
+        try:
+            self.min_files.setText(str(conf_map.min_files).replace(" ", ""))
+        except:
+            pass
+        try:
+            self.exclude_scans.setText(str(conf_map.exclude_scans).replace(" ", ""))
+        except:
+            pass
+        try:
+            self.det_quad.setText(str(conf_map.det_quad).replace(" ", ""))
+        except:
+            pass
+        prep_file = None
+        try:
+            prep_file = conf_map.prep_file
+        except:
+            pass
+        if prep_file is not None:
+            self.prep.setCurrentIndex(2)
+            self.ready_prep.setStyleSheet("Text-align:left")
+            self.ready_prep.setText(prep_file)
+
+
+    def load_data_tab(self, conf):
+        if not os.path.isfile(conf):
+            msg_window('info: the load directory does not contain config_data file')
+            return
+        if not ver.ver_config_data(conf):
+            msg_window('please check configuration file ' + conf + '. Cannot parse, ')
+            return
+        try:
+            conf_map = ut.read_config(conf)
+        except Exception as e:
+            msg_window('please check configuration file ' + conf + '. Cannot parse, ' + str(e))
+            return
+
+        try:
+            self.aliens.setText(str(conf_map.aliens).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.amp_threshold.setText(str(conf_map.amp_threshold).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.binning.setText(str(conf_map.binning).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.center_shift.setText(str(conf_map.center_shift).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.adjust_dimensions.setText(str(conf_map.adjust_dimensions).replace(" ", ""))
+        except AttributeError:
+            pass
+
+
+    def load_rec_tab(self, conf):
+        if not os.path.isfile(conf):
+            msg_window('info: the load directory does not contain config_rec file')
+            return
+        if not ver.ver_config_rec(conf):
+            msg_window('please check configuration file ' + conf + '. Cannot parse, ')
+            return
+        try:
+            conf_map = ut.read_config(conf)
+        except Exception as e:
+            msg_window('please check configuration file ' + conf + '. Cannot parse, ' + str(e))
+            return
+
+        try:
+            self.device.setText(str(conf_map.device).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.reconstructions.setText(str(conf_map.reconstructions).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.gc.setText(str(conf_map.garbage_trigger).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.alg_seq.setText(str(conf_map.algorithm_sequence).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.beta.setText(str(conf_map.beta).replace(" ", ""))
+        except AttributeError:
+            pass
+
+        for feat_id in self.features.feature_dir:
+            self.features.feature_dir[feat_id].init_config(conf_map)
+
+
+    def load_disp_tab(self, conf):
+        if not os.path.isfile(conf):
+            msg_window('info: the load directory does not contain config_disp file')
+            return
+        if not ver.ver_config_data(conf):
+            msg_window('please check configuration file ' + conf + '. Cannot parse, ')
+            return
+        try:
+            conf_map = ut.read_config(conf)
+        except Exception as e:
+            msg_window('please check configuration file ' + conf + '. Cannot parse, ' + str(e))
+            return
+
+        try:
+            specfile = conf_map.specfile
+            self.specfile = specfile
+            self.spec_file_button1.setStyleSheet("Text-align:left")
+            self.spec_file_button1.setText(self.specfile)
+            if os.path.isfile(self.specfile):
+                self.parse_spec()
+        except AttributeError:
+            pass
+        # if parameters are configured, override the readingsfrom spec file
+        try:
+            self.crop.setText(str(conf_map.crop).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.energy.setText(str(conf_map.energy).replace(" ", ""))
+            self.energy.setStyleSheet('color: black')
+        except AttributeError:
+            pass
+        try:
+            self.delta.setText(str(conf_map.delta).replace(" ", ""))
+            self.delta.setStyleSheet('color: black')
+        except AttributeError:
+            pass
+        try:
+            self.gamma.setText(str(conf_map.gamma).replace(" ", ""))
+            self.gamma.setStyleSheet('color: black')
+        except AttributeError:
+            pass
+        try:
+            self.arm.setText(str(conf_map.arm).replace(" ", ""))
+            self.arm.setStyleSheet('color: black')
+        except AttributeError:
+            pass
+        try:
+            self.dth.setText(str(conf_map.dth).replace(" ", ""))
+            self.dth.setStyleSheet('color: black')
+        except AttributeError:
+            pass
+        try:
+            self.pixel.setText(str(conf_map.pixel).replace(" ", ""))
+            self.pixel.setStyleSheet('color: black')
+        except AttributeError:
+            pass
+
+
+    def get_prep_config(self):
+        conf_map = {}
+        if self.data_dir is not None:
+            conf_map['data_dir'] = '"' + str(self.data_dir).strip() + '"'
+        if self.specfile is not None:
+            conf_map['specfile'] = '"' + str(self.specfile).strip() + '"'
+        if self.darkfile is not None:
+            conf_map['darkfile'] = '"' + str(self.darkfile).strip() + '"'
+        if self.whitefile is not None:
+            conf_map['whitefile'] = '"' + str(self.whitefile).strip() + '"'
+        if self.separate_scans.isChecked():
+            conf_map['separate_scans'] = 'true'
+        if len(self.min_files.text()) > 0:
+            min_files = str(self.min_files.text())
+            conf_map['min_files'] = min_files
+        if len(self.exclude_scans.text()) > 0:
+            conf_map['exclude_scans'] = str(self.exclude_scans.text()).replace('\n','')
+        if len(self.det_quad.text()) > 0:
+            det_quad = str(self.det_quad.text())
+            conf_map['det_quad'] = det_quad
+        try:
+            if str(self.ready_prep.text()) != '':
+                conf_map['prep_file'] = '"' + str(self.prep_file) + '"'
+        except:
+            pass
+
+        return conf_map
+
+
+    def get_data_config(self):
+        conf_map = {}
+        if len(self.aliens.text()) > 0:
+            conf_map['aliens'] = str(self.aliens.text()).replace('\n', '')
+        if len(self.amp_threshold.text()) > 0:
+            conf_map['amp_threshold'] = str(self.amp_threshold.text())
+        else:
+            msg_window('amplitude threshold not defined. Quiting operation.')
+            return
+        if len(self.binning.text()) > 0:
+            conf_map['binning'] = str(self.binning.text()).replace('\n', '')
+        if len(self.center_shift.text()) > 0:
+            conf_map['center_shift'] = str(self.center_shift.text()).replace('\n', '')
+        if len(self.adjust_dimensions.text()) > 0:
+            conf_map['adjust_dimensions'] = str(self.adjust_dimensions.text()).replace('\n', '')
+
+        return conf_map
+
+
+    def get_rec_config(self):
+        conf_map = {}
+        if len(self.reconstructions.text()) > 0:
+            conf_map['reconstructions'] = str(self.reconstructions.text())
+        if len(self.device.text()) > 0:
+            conf_map['device'] = str(self.device.text()).replace('\n','')
+        if len(self.gc.text()) > 0:
+            conf_map['garbage_trigger'] = str(self.gc.text()).replace('\n','')
+        if len(self.alg_seq.text()) > 0:
+            conf_map['algorithm_sequence'] = str(self.alg_seq.text()).replace('\n','')
+        if len(self.beta.text()) > 0:
+            conf_map['beta'] = str(self.beta.text())
+        if self.cont.isChecked():
+            conf_map['continue_dir'] = str(self.cont_dir.text())
+
+        for feat_id in self.features.feature_dir:
+            self.features.feature_dir[feat_id].add_config(conf_map)
+
+        return conf_map
+
+
+    def get_disp_config(self):
+        conf_map = {}
+        if self.specfile is not None:
+            conf_map['specfile'] = '"' + str(self.specfile) + '"'
+        if len(self.energy.text()) > 0:
+            conf_map['energy'] = str(self.energy.text())
+        if len(self.delta.text()) > 0:
+            conf_map['delta'] = str(self.delta.text())
+        if len(self.gamma.text()) > 0:
+            conf_map['gamma'] = str(self.gamma.text())
+        if len(self.arm.text()) > 0:
+            conf_map['arm'] = str(self.arm.text())
+        if len(self.dth.text()) > 0:
+            conf_map['dth'] = str(self.dth.text())
+        if len(self.pixel.text()) > 0:
+            conf_map['pixel'] = str(self.pixel.text()).replace('\n', '')
+        if len(self.crop.text()) > 0:
+            conf_map['crop'] = str(self.crop.text()).replace('\n', '')
+
+        return conf_map
+
+
+    def load_prep_conf(self):
+        prep_file = select_file(os.getcwd())
+        if prep_file is not None:
+            self.load_prep_tab(prep_file)
+            self.set_prep_conf_from_button.setStyleSheet("Text-align:left")
+            self.set_prep_conf_from_button.setText('config loaded')
+            self.set_prep_conf_from_button.setStyleSheet("background-color:rgb(205,178,102)")
+        else:
+            msg_window('please select valid prep config file')
+
+
+    def load_data_conf(self):
+        data_file = select_file(os.getcwd())
+        if data_file is not None:
+            self.load_data_tab(data_file)
+            self.set_data_conf_from_button.setStyleSheet("Text-align:left")
+            self.set_data_conf_from_button.setText('config loaded')
+            self.set_data_conf_from_button.setStyleSheet("background-color:rgb(205,178,102)")
+            # # save data config
+            # conf_map = self.get_data_config()
+            # self.main_win.write_conf(conf_map, os.path.join(self.main_win.experiment_dir, 'conf'), 'config_data')
+        else:
+            msg_window('please select valid data config file')
+
+    def load_rec_conf_dir(self):
+        rec_file = select_file(os.getcwd())
+        if rec_file is not None:
+            self.load_rec_tab(rec_file)
+            self.set_rec_conf_from_button.setStyleSheet("Text-align:left")
+            self.set_rec_conf_from_button.setText('config loaded')
+            self.set_rec_conf_from_button.setStyleSheet("background-color:rgb(205,178,102)")
+            # # save rec config
+            # conf_map = self.get_rec_config()
+            # self.main_win.write_conf(conf_map, os.path.join(self.main_win.experiment_dir, 'conf'), 'config_rec')
+        else:
+            msg_window('please select valid rec config file')
+
+
+    def load_disp_conf(self):
+        disp_file = select_file(os.getcwd())
+        if disp_file is not None:
+            self.load_disp_tab(disp_file)
+            self.set_disp_conf_from_button.setStyleSheet("Text-align:left")
+            self.set_disp_conf_from_button.setText('config loaded')
+            self.set_disp_conf_from_button.setStyleSheet("background-color:rgb(205,178,102)")
+            self.parse_spec()
+            # # save disp config
+            # conf_map = self.get_disp_config()
+            # self.main_win.write_conf(conf_map, os.path.join(self.main_win.experiment_dir, 'conf'), 'config_disp')
+        else:
+            msg_window('please select valid disp config file')
 
 
     def set_overriden(self, item):
@@ -763,30 +1034,14 @@ class cdi_conf_tab(QTabWidget):
 
 
     def set_prep_file(self):
-        prep_file = select_file(self.main_win.working_dir)
-        if prep_file is not None:
-            selected = str(prep_file)
+        self.prep_file = select_file(self.main_win.working_dir)
+        if self.prep_file is not None:
+            selected = str(self.prep_file)
             if not selected.endswith('tif') and not selected.endswith('tiff'):
-                self.msg_window("the file extension must be tif or tiff")
+                msg_window("the file extension must be tif or tiff")
                 return
             self.ready_prep.setStyleSheet("Text-align:left")
-            self.ready_prep.setText(prep_file)
-            # save the file as experiment prep file
-            prep_dir = os.path.join(self.main_win.experiment_dir, 'prep')
-            if not os.path.exists(prep_dir):
-                os.makedirs(prep_dir)
-            exp_prep_file = os.path.join(prep_dir, 'prep_data.tif')
-            shutil.copyfile(selected, exp_prep_file)
-            # save config_prep
-            conf_map = {}
-            if self.main_win.working_dir is not None:
-                conf_map['working_dir'] = '"' + str(self.main_win.working_dir) + '"'
-            else:
-                self.msg_window("working_dir not defined")
-                return
-            conf_dir = os.path.join(self.main_win.experiment_dir, 'conf')
-            conf_file = os.path.join(conf_dir, 'config_prep')
-            self.main_win.write_conf(conf_map, conf_dir, 'config_prep')
+            self.ready_prep.setText(self.prep_file)
         else:
             self.ready_prep.setText('')
 
@@ -804,47 +1059,24 @@ class cdi_conf_tab(QTabWidget):
 
 
     def prepare(self):
-        if self.main_win.id is None:
-            self.msg_window('enter Reconstruction ID and scan')
+        if not self.main_win.is_exp_exists():
+            msg_window('the experiment has not been created yet')
+        elif not self.main_win.is_exp_set():
+            msg_window('the experiment has changed, pres "set experiment" button')
         else:
-            # prep_dir = os.path.join(self.main_win.experiment_dir, 'prep')
-            # if not os.path.exists(prep_dir):
-            #     os.makedirs(prep_dir)
-            conf_map = {}
-            if self.main_win.working_dir is not None:
-                conf_map['working_dir'] = '"' + str(self.main_win.working_dir) + '"'
-            else:
-                self.msg_window("working_dir not defined")
-                return
-            if len(self.min_files.text()) > 0:
-                min_files = str(self.min_files.text())
-                conf_map['min_files'] = min_files
-            if len(self.exclude_scans.text()) > 0:
-                conf_map['exclude_scans'] = str(self.exclude_scans.text()).replace('\n','')
-            if len(self.det_quad.text()) > 0:
-                det_quad = str(self.det_quad.text())
-                conf_map['det_quad'] = det_quad
-            if self.separate_scans.isChecked():
-                conf_map['separate_scans'] = 'true'
+            conf_map = self.get_prep_config()
             if str(self.prep.currentText()) == "custom":
                 self.prepare_custom(conf_map)
             elif str(self.prep.currentText()) == "34ID prep":
                 self.prepare_34id(conf_map)
+            elif str(self.prep.currentText()) == "copy from":
+                self.prepare_copy(conf_map)
 
 
     def prepare_custom(self, conf_map):
-        if self.data_dir is not None:
-            conf_map['data_dir'] = '"' + str(self.data_dir) + '"'
-        if self.specfile is not None:
-            conf_map['specfile'] = '"' + str(self.specfile) + '"'
-        if self.darkfile is not None:
-            conf_map['darkfile'] = '"' + str(self.darkfile) + '"'
-        if self.whitefile is not None:
-            conf_map['whitefile'] = '"' + str(self.whitefile) + '"'
-
         # determine script directory and script name
         if self.script is None:
-            self.msg_window("script not defined")
+            msg_window("script not defined")
             return
         full_script = str(self.script)
         script_info = full_script.split('/')
@@ -853,7 +1085,7 @@ class cdi_conf_tab(QTabWidget):
         script = script[0 : -3]
         func = str(self.prep_exec.text())
         if len(func) == 0:
-            self.msg_window("function not defined")
+            msg_window("function not defined")
             return
 
         current_dir = os.getcwd()
@@ -894,7 +1126,7 @@ class cdi_conf_tab(QTabWidget):
             try:
                 prep_data = f(*args)
             except Exception as e:
-                self.msg_window('custom script failed ' + str(e))
+                msg_window('custom script failed ' + str(e))
                 return
             if prep_data is not None:
                 tif_file = os.path.join(self.main_win.experiment_dir, 'prep', 'prep_data.tif')
@@ -911,27 +1143,7 @@ class cdi_conf_tab(QTabWidget):
             for i in range(len(scan_range)):
                 scan_range[i] = int(scan_range[i])
         except:
-            self.msg_window('enter numeric values for scan range')
-            return
-
-        if  self.main_win.working_dir is None or \
-            self.main_win.id is None or\
-            scan is None or \
-            self.data_dir is None or \
-            self.specfile is None and len(self.det_quad.text()) == 0 :
-            self.msg_window('enter all parameters: working_dir, id, scan, data_dir, specfile or detector quad')
-            return
-
-        if self.data_dir is not None:
-            conf_map['data_dir'] = '"' + str(self.data_dir) + '"'
-        if self.specfile is not None:
-            conf_map['specfile'] = '"' + str(self.specfile) + '"'
-        if self.darkfile is not None:
-            conf_map['darkfile'] = '"' + str(self.darkfile) + '"'
-        if self.whitefile is not None:
-            conf_map['whitefile'] = '"' + str(self.whitefile) + '"'
-        if self.separate_scans.isChecked():
-            conf_map['separate_scans'] = 'true'
+            pass
 
         conf_dir = os.path.join(self.main_win.experiment_dir, 'conf')
         conf_file = os.path.join(conf_dir, 'config_prep')
@@ -939,92 +1151,89 @@ class cdi_conf_tab(QTabWidget):
             f = getattr(mod, 'prepare')
             f(self.main_win.experiment_dir, scan_range, conf_file)
 
-        #scripts.run_34id_prepare.prepare(self.main_win.working_dir, self.main_win.exp_id, scan_range, self.data_dir, self.specfile, self.darkfile, self.whitefile)
+
+    def prepare_copy(self, conf_map):
+        # save the file as experiment prep file
+        prep_dir = os.path.join(self.main_win.experiment_dir, 'prep')
+        if not os.path.exists(prep_dir):
+            os.makedirs(prep_dir)
+        exp_prep_file = os.path.join(prep_dir, 'prep_data.tif')
+        shutil.copyfile(self.prep_file, exp_prep_file)
+        # save config_prep
+        conf_dir = os.path.join(self.main_win.experiment_dir, 'conf')
+        self.main_win.write_conf(conf_map, conf_dir, 'config_prep')
 
 
     def format_data(self):
-        if os.path.isfile(os.path.join(self.main_win.experiment_dir, 'prep','prep_data.tif'))\
-                or self.separate_scans.isChecked():
-            conf_map = {}
-            if len(self.aliens.text()) > 0:
-                conf_map['aliens'] = str(self.aliens.text()).replace('\n','')
-            if len(self.amp_threshold.text()) > 0:
-                conf_map['amp_threshold'] = str(self.amp_threshold.text())
-            else:
-                self.msg_window('amplitude threshold not defined. Quiting operation.')
-                return
-            if len(self.binning.text()) > 0:
-                conf_map['binning'] = str(self.binning.text()).replace('\n','')
-            if len(self.center_shift.text()) > 0:
-                conf_map['center_shift'] = str(self.center_shift.text()).replace('\n','')
-            if len(self.adjust_dimensions.text()) > 0:
-                conf_map['adjust_dimensions'] = str(self.adjust_dimensions.text()).replace('\n','')
-
-            conf_dir = os.path.join(self.main_win.experiment_dir, 'conf')
-            if self.main_win.write_conf(conf_map, conf_dir, 'config_data'):
-                run_dt.data(self.main_win.experiment_dir)
+        if not self.main_win.is_exp_exists():
+            msg_window('the experiment has not been created yet')
+        elif not self.main_win.is_exp_set():
+            msg_window('the experiment has changed, pres "set experiment" button')
         else:
-            self.msg_window('Please, run data preparation in previous tab to activate this function')
-
-
-    def msg_window(self, text):
-        msg = QMessageBox()
-        msg.setIcon(QMessageBox.Information)
-        msg.setText(text)
-        msg.setWindowTitle("Info")
-        msg.exec_()
-
-
-    def save_conf(self, config_file):
-        conf_map = {}
-        conf_map['reconstructions'] = str(self.reconstructions.text())
-        conf_map['device'] = str(self.device.text()).replace('\n','')
-        conf_map['garbage_trigger'] = str(self.gc.text()).replace('\n','')
-        conf_map['algorithm_sequence'] = str(self.alg_seq.text()).replace('\n','')
-        conf_map['beta'] = str(self.beta.text())
-        if self.cont.isChecked():
-            conf_map['continue_dir'] = str(self.cont_dir.text())
-
-        for feat_id in self.features.feature_dir:
-            self.features.feature_dir[feat_id].add_config(conf_map)
-
-        #self.create_config('config_rec', conf_map)
-        conf_dir = os.path.join(self.main_win.experiment_dir, 'conf')
-        return self.main_win.write_conf(conf_map, conf_dir, config_file)
+            if os.path.isfile(os.path.join(self.main_win.experiment_dir, 'prep','prep_data.tif'))\
+                    or self.separate_scans.isChecked():
+                conf_map = self.get_data_config()
+                conf_dir = os.path.join(self.main_win.experiment_dir, 'conf')
+                if self.main_win.write_conf(conf_map, conf_dir, 'config_data'):
+                    run_dt.data(self.main_win.experiment_dir)
+            else:
+                msg_window('Please, run data preparation in previous tab to activate this function')
 
 
     def reconstruction(self):
-        if os.path.isfile(os.path.join(self.main_win.experiment_dir, 'data', 'data.tif'))\
-                or self.separate_scans.isChecked():
-            # find out which configuration should be saved
-            if self.old_conf_id == '':
-                conf_file = 'config_rec'
-                conf_id = None
-            else:
-                conf_file = self.old_conf_id + '_config_rec'
-                conf_id = self.old_conf_id
-
-            if self.save_conf(conf_file):
-                run_rc.reconstruction(str(self.proc.currentText()), self.main_win.experiment_dir, conf_id)
+        if not self.main_win.is_exp_exists():
+            msg_window('the experiment has not been created yet')
+        elif not self.main_win.is_exp_set():
+            msg_window('the experiment has changed, pres "set experiment" button')
         else:
-            self.msg_window('Please, run format data in previous tab to activate this function')
+            if os.path.isfile(os.path.join(self.main_win.experiment_dir, 'data', 'data.tif'))\
+                    or self.separate_scans.isChecked():
+                # find out which configuration should be saved
+                if self.old_conf_id == '':
+                    conf_file = 'config_rec'
+                    conf_id = None
+                else:
+                    conf_file = self.old_conf_id + '_config_rec'
+                    conf_id = self.old_conf_id
+
+                conf_map = self.get_rec_config()
+                conf_dir = os.path.join(self.main_win.experiment_dir, 'conf')
+
+                if self.main_win.write_conf(conf_map, conf_dir, conf_file):
+                    run_rc.reconstruction(str(self.proc.currentText()), self.main_win.experiment_dir, conf_id)
+            else:
+                msg_window('Please, run format data in previous tab to activate this function')
 
 
     def set_results_dir(self):
-        self.results_dir = os.path.join(self.main_win.experiment_dir, 'results')
-        self.results_dir = select_dir(self.results_dir)
-        if self.results_dir is not None:
-            if self.results_dir.endswith('results'):
-                self.result_dir_button.setStyleSheet("Text-align:left")
-                self.result_dir_button.setText(self.results_dir)
+        if self.main_win.is_exp_exists():
+            self.results_dir = os.path.join(self.main_win.experiment_dir, 'results')
+            self.results_dir = select_dir(self.results_dir)
+            if self.results_dir is not None:
+                if self.results_dir.endswith('results'):
+                    self.result_dir_button.setStyleSheet("Text-align:left")
+                    self.result_dir_button.setText(self.results_dir)
+                else:
+                    msg_window('Please, select directory ending with "results"')
+                    self.results_dir = None
             else:
-                self.msg_window('Please, select directory ending with "results"')
-                self.results_dir = None
+                self.result_dir_button.setText('')
         else:
-            self.result_dir_button.setText('')
+            msg_window('the experiment has not been created yet')
 
 
     def display(self):
+        if not self.main_win.is_exp_exists():
+            msg_window('the experiment has not been created yet')
+            return
+        if not self.main_win.is_exp_set():
+            msg_window('the experiment has changed, pres "set experiment" button')
+            return
+        # check if the results directory exists
+        res_dir = os.path.join(self.main_win.experiment_dir, 'results')
+        if not (os.path.isfile(os.path.join(res_dir, 'image.npy')) or self.separate_scans.isChecked()):
+            msg_window('Please, run reconstruction in previous tab to activate this function')
+            return
         if (self.specfile is None or not os.path.isfile(self.specfile)) and \
            (len(self.energy.text()) == 0 or \
             len(self.delta.text()) == 0 or \
@@ -1032,53 +1241,30 @@ class cdi_conf_tab(QTabWidget):
             len(self.arm.text()) == 0 or \
             len(self.dth.text()) == 0 or \
             len(self.pixel.text()) == 0):
-                self.msg_window('Please, enter spec file or all detector parameters')
+                msg_window('Please, enter spec file or all detector parameters')
                 return
 
-        res_dir = os.path.join(self.main_win.experiment_dir, 'results')
-        if os.path.isfile(os.path.join(res_dir, 'image.npy')) or \
-        os.path.isfile(os.path.join(res_dir, '0', 'image.npy')) or \
-        os.path.isfile(os.path.join(res_dir, 'g_0', '0', 'image.npy')) or \
-        self.separate_scans.isChecked():
-            conf_map = {}
-            if self.specfile is not None:
-                conf_map['specfile'] = '"' + str(self.specfile) + '"'
-            if len(self.energy.text()) > 0:
-                conf_map['energy'] = str(self.energy.text())
-            if len(self.delta.text()) > 0:
-                conf_map['delta'] = str(self.delta.text())
-            if len(self.gamma.text()) > 0:
-                conf_map['gamma'] = str(self.gamma.text())
-            if len(self.arm.text()) > 0:
-                conf_map['arm'] = str(self.arm.text())
-            if len(self.dth.text()) > 0:
-                conf_map['dth'] = str(self.dth.text())
-            if len(self.pixel.text()) > 0:
-                conf_map['pixel'] = str(self.pixel.text()).replace('\n','')
-            if len(self.crop.text()) > 0:
-                conf_map['crop'] = str(self.crop.text()).replace('\n','')
+        conf_map = self.get_disp_config()
 
-            conf_dir = os.path.join(self.main_win.experiment_dir, 'conf')
-            if self.main_win.write_conf(conf_map, conf_dir, 'config_disp'):
-                if self.results_dir is None:
+        conf_dir = os.path.join(self.main_win.experiment_dir, 'conf')
+        if self.main_win.write_conf(conf_map, conf_dir, 'config_disp'):
+            if self.results_dir is None:
+                run_dp.to_vtk(self.main_win.experiment_dir)
+            else:
+                dir = str(self.results_dir).split('/')[-1]
+                if dir == 'results':
                     run_dp.to_vtk(self.main_win.experiment_dir)
                 else:
-                    dir = str(self.results_dir).split('/')[-1]
-                    if dir == 'results':
-                        run_dp.to_vtk(self.main_win.experiment_dir)
-                    else:
-                        run_dp.to_vtk(self.main_win.experiment_dir, dir[0:-len('_results')])
-        else:
-            self.msg_window('Please, run reconstruction in previous tab to activate this function')
+                    run_dp.to_vtk(self.main_win.experiment_dir, dir[0:-len('_results')])
 
 
     def rec_default(self):
         if  self.main_win.working_dir is None or self.main_win.id is None or \
             len(self.main_win.working_dir) == 0 or len(self.main_win.id) == 0:
-            self.msg_window('Working Directory or Reconstruction ID not configured')
+            msg_window('Working Directory or Reconstruction ID not configured')
         else:
             self.reconstructions.setText('1')
-            self.device.setText('(3)')
+            self.device.setText('(0,1)')
             self.gc.setText('(1000)')
             self.alg_seq.setText('((3,("ER",20),("HIO",180)),(1,("ER",20)))')
             self.beta.setText('.9')

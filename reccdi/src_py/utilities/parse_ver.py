@@ -17,7 +17,7 @@ import os
 
 
 def ver_list_int(param_name, param_value):
-    if type(param_value) != list:
+    if not issubclass(type(param_value), list):
         print (param_name + ' is not a list')
         return False
     for e in param_value:
@@ -28,13 +28,76 @@ def ver_list_int(param_name, param_value):
 
 
 def ver_list_float(param_name, param_value):
-    if type(param_value) != list:
+    if not issubclass(type(param_value), list):
         print (param_name + ' is not a list')
         return False
     for e in param_value:
         if type(e) != float:
             print (param_name + ' should be list of float values')
             return False
+    return True
+
+
+def ver_config(fname):
+
+    """
+    This function verifies config file
+
+    Parameters
+    ----------
+    conf_info : str
+        configuration file
+
+    Returns
+    -------
+        True if configuration is correct, False otherwise
+    """
+    if not os.path.isfile(fname):
+        print ('no configuration file ' + fname + ' found')
+        return False
+
+    try:
+        config_map = ut.read_config(fname)
+        if config_map is None:
+            print ("can't read configuration file")
+            return False
+    except:
+        print ('Cannot parse ' + fname + ' configuration file. Check paranthesis and quotations.')
+        return False
+
+    try:
+        working_dir = config_map.working_dir
+        if type(working_dir) != str:
+            print('working_dir parameter should be string')
+            return False
+    except AttributeError:
+        pass
+    except:
+        print ('working_dir parameter parsing error')
+        return False
+
+    try:
+        experiment_id = config_map.experiment_id
+        if type(experiment_id) != str:
+            print('experiment_id parameter should be string')
+            return False
+    except AttributeError:
+        pass
+    except:
+        print ('experiment_id parameter parsing error')
+        return False
+
+    try:
+        scan = config_map.scan
+        if type(scan) != str:
+            print('scan parameter should be string')
+            return False
+    except AttributeError:
+        pass
+    except:
+        print ('scan parameter parsing error')
+        return False
+
     return True
 
 
@@ -141,7 +204,7 @@ def ver_config_rec(fname):
 
     try:
         algorithm_sequence = config_map.algorithm_sequence
-        if type(algorithm_sequence) != list:
+        if not issubclass(type(algorithm_sequence), list):
             print ('algorithm_sequence should be a list')
             return False
         for s in algorithm_sequence:
@@ -151,7 +214,7 @@ def ver_config_rec(fname):
                     print ('algorithm_sequence configuration error, the repeat factor should be int')
                     return False
                 if i > 0:
-                    if type(s[i]) != list:
+                    if not issubclass(type(s[i]), list):
                         print ('algorithm_sequence configuration error, the sequence element should be a list')
                         return False
                     algorithm = s[i][0]
@@ -191,7 +254,7 @@ def ver_config_rec(fname):
             return False
         try:
             ga_metrics = config_map.ga_metrics
-            if type(ga_metrics) != list:
+            if not issubclass(type(ga_metrics), list):
                 print (ga_metrics + ' is not a list')
                 return False
             metrics_options = ['chi', 'sharpness', 'summed_phase', 'area']
@@ -206,7 +269,7 @@ def ver_config_rec(fname):
 
         try:
             ga_breed_modes = config_map.ga_breed_modes
-            if type(ga_breed_modes) != list:
+            if not issubclass(type(ga_breed_modes), list):
                 print (ga_breed_modes + ' is not a list')
                 return False
             breed_options = ['sqrt_ab', 'max_all', 'Dhalf', 'Dhalf-best', 'dsqrt', 'pixel_switch',\
@@ -279,7 +342,7 @@ def ver_config_rec(fname):
         else:
             try:
                 twin_halves = config_map.twin_halves
-                if not ver_list_float('twin_halves', twin_halves):
+                if not ver_list_int('twin_halves', twin_halves):
                     return False
             except AttributeError:
                 pass
@@ -332,7 +395,7 @@ def ver_config_rec(fname):
 
             try:
                 support_area = config_map.support_area
-                if type(support_area) != list:
+                if not issubclass(type(support_area), list):
                     print('support_area should be list')
                     return False
                 for e in support_area:
@@ -462,7 +525,13 @@ def ver_config_rec(fname):
             return False
     except AttributeError:
         pass
-    
+
+    try:
+        if not ver_list_int('progress_trigger', config_map.progress_trigger):
+            return False
+    except AttributeError:
+        pass
+
     return True
 
 
@@ -505,7 +574,7 @@ def ver_config_data(fname):
         return False
 
     try:
-        if not ver_list_int('adjust_dimensions', config_map.adjust_dimensions):
+        if not ver_list_int('pad_crop', config_map.adjust_dimensions):
             return False
     except AttributeError:
         pass
@@ -522,7 +591,7 @@ def ver_config_data(fname):
 
     try:
         amp_threshold = config_map.amp_threshold
-        if type(amp_threshold) != float:
+        if type(amp_threshold) != float and type(amp_threshold) != int:
             print('amp_threshold should be float')
             return False
     except AttributeError:
@@ -533,12 +602,17 @@ def ver_config_data(fname):
 
     try:
         aliens = config_map.aliens
-        if type(aliens) != list:
-            print('aliens should be a list')
+        if not issubclass(type(aliens), list):
+            print('aliens should be a list of aliens(lists)')
             return False
         for a in aliens:
+            if not issubclass(type(a), list):
+                print ('aliens should be a list of aliens(lists)')
+                return False
             if not ver_list_int('aliens', a):
                 return False
+            if (len(a) < 6):
+                print('each alien is defined by list of six int')
     except AttributeError:
         pass
     except:
@@ -573,18 +647,6 @@ def ver_config_prep(fname):
             return False
     except:
         print ('Cannot parse ' + fname + ' configuration file. Check paranthesis and quotations.')
-        return False
-
-    try:
-        working_dir = config_map.working_dir
-        if type(working_dir) != str:
-            print('working_dir parameter should be string')
-            return False
-    except AttributeError:
-        print ('missing mandatory working_dir parameter')
-        return False
-    except:
-        print ('working_dir parameter parsing error')
         return False
 
     try:
@@ -703,7 +765,7 @@ def ver_config_disp(fname):
 
     try:
         crop = config_map.crop
-        if type(crop) != list:
+        if not issubclass(type(crop), list):
             print('crop should be list')
             return False
         for e in crop:
@@ -722,78 +784,78 @@ def ver_config_disp(fname):
             print('specfile parameter should be string')
             return False
     except AttributeError:
-        # if spec file not configured, the parameters will come from config
-        try:
-            energy = config_map.energy
-            if type(energy) != float:
-                print('energy should be float')
-                return False
-        except AttributeError:
-            pass
-        except:
-            print('energy parameter parsing error')
-            return False
-
-        try:
-            delta = config_map.delta
-            if type(delta) != float:
-                print('delta should be float')
-                return False
-        except AttributeError:
-            pass
-        except:
-            print('delta parameter parsing error')
-            return False
-
-        try:
-            gamma = config_map.gamma
-            if type(gamma) != float:
-                print('gamma should be float')
-                return False
-        except AttributeError:
-            pass
-        except:
-            print('gamma parameter parsing error')
-            return False
-
-        try:
-            arm = config_map.arm
-            if type(arm) != float:
-                print('arm should be float')
-                return False
-        except AttributeError:
-            pass
-        except:
-            print('arm parameter parsing error')
-            return False
-
-        try:
-            dth = config_map.dth
-            if type(dth) != float:
-                print('dth should be float')
-                return False
-        except AttributeError:
-            pass
-        except:
-            print('dth parameter parsing error')
-            return False
-
-        try:
-            pixel = config_map.pixel
-            if type(pixel) != tuple and type(pixel) != list:
-                print('pixel should be tuple or list')
-                return False
-            if type(pixel[0]) != float or type(pixel[1]) != float:
-                print('pixel values should be float')
-                return False
-        except AttributeError:
-            pass
-        except:
-            print('pixel parameter parsing error')
-            return False
-
+        pass
     except:
         print ('specfile parameter parsing error')
+        return False
+
+    try:
+        energy = config_map.energy
+        if type(energy) != float:
+            print('energy should be float')
+            return False
+    except AttributeError:
+        pass
+    except:
+        print('energy parameter parsing error')
+        return False
+
+    try:
+        delta = config_map.delta
+        if type(delta) != float:
+            print('delta should be float')
+            return False
+    except AttributeError:
+        pass
+    except:
+        print('delta parameter parsing error')
+        return False
+
+    try:
+        gamma = config_map.gamma
+        if type(gamma) != float:
+            print('gamma should be float')
+            return False
+    except AttributeError:
+        pass
+    except:
+        print('gamma parameter parsing error')
+        return False
+
+    try:
+        arm = config_map.arm
+        if type(arm) != float:
+            print('arm should be float')
+            return False
+    except AttributeError:
+        pass
+    except:
+        print('arm parameter parsing error')
+        return False
+
+    try:
+        dth = config_map.dth
+        if type(dth) != float:
+            print('dth should be float')
+            return False
+    except AttributeError:
+        pass
+    except:
+        print('dth parameter parsing error')
+        return False
+
+    try:
+        pixel = config_map.pixel
+        if not issubclass(type(pixel), list):
+            print('pixel should be a list')
+            return False
+        if type(pixel[0]) != float or type(pixel[1]) != float:
+            print('pixel values should be float')
+            return False
+    except AttributeError:
+        pass
+    except:
+        print('pixel parameter parsing error')
         return False
 
     return True

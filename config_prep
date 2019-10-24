@@ -12,13 +12,13 @@ darkfile = "/net/s34data/export/34idc-work/2019/dark.tif"
 whitefile = "/net/s34data/export/34idc-work/2019/CelaWhiteField.tif"
                                             // white file taken at the time of experiment
 
-exclude_scans = [78,81]
+exclude_scans = (78,81)
                                             // a list containing scan indexes that will be excluded from preparation
 
 min_files = 80
                                             // only scans containing minimum of .tif files will be included
 
-det_quad = 1
+// det_quad = 1
                                             // defines which detector quad was used during experiment.
                                             // 0: all four quads
                                             // 1: lower left
@@ -27,9 +27,13 @@ det_quad = 1
                                             // 4: top right
                                             // this information is typically read from spec file,
                                             // is required if not included in spec file or no spec file is given
-separate_scans = true
+separate_scans = false
                                             // in typical scenario the data from all scans in experiment are
                                             // combined.
                                             // if specified as separate scans, each scan will be processed separately
                                             // and will have sub-experiment name containing scan index
                                             // ex. "scan_9", where 9 is scan index
+
+// prep_file = "/net/s34data/export/34idc-work/2019/test/a_9/prep/prep_data.tiff"
+                                            // tif file that has been already read (prepared)
+                                            // this parameter is relevant when using GUI

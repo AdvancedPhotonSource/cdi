@@ -54,32 +54,33 @@ class DispalyParams:
             pixel = pixel.split(',')
             pixel[0], pixel[1] = float(pixel[0]), float(pixel[1])
         except Exception as e:
-            # print (str(e))
-            try:
-                energy = config_map.energy
-                self.lamda = 12.398 / energy / 10
-            except AttributeError:
-                print ('lamda not defined')
-            try:
-                self.delta = config_map.delta * deg2rad
-            except AttributeError:
-                print ('delta not defined')
-            try:
-                self.gamma = config_map.gamma * deg2rad
-            except AttributeError:
-                print ('gamma not defined')
-            try:
-                self.dth = config_map.dth * deg2rad
-            except AttributeError:
-                print ('dth not defined')
-            try:
-                self.arm = config_map.arm / 1000
-            except AttributeError:
-                print ('arm not defined')
-            try:
-                pixel = config_map.pixel
-            except AttributeError:
-                print ('pixel not defined')
+            pass
+        # override the parsed parameters with entries in config file
+        try:
+            energy = config_map.energy
+            self.lamda = 12.398 / energy / 10
+        except AttributeError:
+            pass
+        try:
+            self.delta = config_map.delta * deg2rad
+        except AttributeError:
+            pass
+        try:
+            self.gamma = config_map.gamma * deg2rad
+        except AttributeError:
+            pass
+        try:
+            self.dth = config_map.dth * deg2rad
+        except AttributeError:
+            pass
+        try:
+            self.arm = config_map.arm / 1000
+        except AttributeError:
+            pass
+        try:
+            pixel = config_map.pixel
+        except AttributeError:
+            pass
 
         try:
             self.binning = []

@@ -5,5 +5,5 @@ working_dir = "/local/bfrosik/cdi/test"
 experiment_id = ab
                                             // a string id
 
-scans = 2-7
+scan = 2-7
                                             // a single number or a range defining scans, optional

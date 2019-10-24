@@ -15,6 +15,7 @@ This module is a suite of utility mehods.
 import tifffile as tf
 import pylibconfig2 as cfg
 import numpy as np
+import scipy.fftpack as sf
 import os
 import logging
 import stat
@@ -63,8 +64,10 @@ def read_tif(filename):
 
 
 def save_tif(arr, tif_file):
+    # arr = np.swapaxes(arr, 0, 2)
+    # arr = np.swapaxes(arr, 1, 2)
+    arr = np.swapaxes(arr, 0, 1)
     arr = np.swapaxes(arr, 0, 2)
-    arr = np.swapaxes(arr, 1, 2)
     tf.imsave(tif_file, arr.astype(np.int32))
 
 
@@ -125,41 +128,6 @@ def get_good_dim(dim):
         new_dim += 1
     while not is_correct(new_dim):
         new_dim += 2
-    return new_dim
-
-
-def get_opencl_dim1(dim, step):
-    """
-    This function calculates the dimension supported by opencl library (i.e. is multiplier of 2,3, or 5) and is closest to the
-    given starting dimension, and spaced by the given step.
-    If the dimension is not supported the function adds step value and verifies the new dimension. It iterates until it finds
-    supported value.
-    Parameters
-    ----------
-    dim : int
-        a dimension that needs to be tranformed to one that is supported by the opencl library, if it is not already
-
-    step : int
-        a delta to increase the dimension
-    Returns
-    -------
-    dim : int
-        a dimension that is supported by the opencl library, and closest to the original dimension by n*step
-    """
-
-    def is_correct(x):
-        sub = x
-        while sub % 2 == 0:
-            sub = sub / 2
-        while sub % 3 == 0:
-            sub = sub / 3
-        while sub % 5 == 0:
-            sub = sub / 5
-        return sub == 1
-
-    new_dim = dim
-    while not is_correct(new_dim):
-        new_dim += step
     return new_dim
 
 
@@ -413,12 +381,12 @@ def gaussian(shape, sigmas, alpha=1):
 
 def gauss_conv_fft(arr, sigmas):
     arr_sum = np.sum(abs(arr))
-    arr_f = np.fft.ifftshift(np.fft.fftn(np.fft.ifftshift(arr)))
+    arr_f = sf.ifftshift(sf.fftn(sf.ifftshift(arr)))
     shape = list(arr.shape)
     for i in range(len(sigmas)):
         sigmas[i] = shape[i] / 2.0 / np.pi / sigmas[i]
     convag = arr_f * gaussian(shape, sigmas)
-    convag = np.fft.ifftshift(np.fft.ifftn(np.fft.ifftshift(convag)))
+    convag = np.fft.ifftshift(sf.ifftn(np.fft.ifftshift(convag)))
     convag = convag.real
     convag = np.clip(convag, 0, None)
     correction = arr_sum / np.sum(convag)
@@ -427,6 +395,7 @@ def gauss_conv_fft(arr, sigmas):
 
 
 def shrink_wrap(arr, threshold, sigma, type='gauss'):
+    print ('in shrink wrap')
     sigmas = [sigma] * len(arr.shape)
     if type == 'gauss':
         convag = gauss_conv_fft(abs(arr), sigmas)
@@ -551,14 +520,14 @@ def save_multiple_results(samples, images, supports, cohs, errs, reciprocals, fl
 
 def sub_pixel_shift(arr, row_shift, col_shift, z_shift):
     # arr is 3D
-    buf2ft = np.fft.fftn(arr)
+    buf2ft = sf.fftn(arr)
     shape = arr.shape
     Nr = np.fft.ifftshift(np.array(list(range(-int(np.floor(shape[0] / 2)), shape[0] - int(np.floor(shape[0] / 2))))))
     Nc = np.fft.ifftshift(np.array(list(range(-int(np.floor(shape[1] / 2)), shape[1] - int(np.floor(shape[1] / 2))))))
     Nz = np.fft.ifftshift(np.array(list(range(-int(np.floor(shape[2] / 2)), shape[2] - int(np.floor(shape[2] / 2))))))
     [Nc, Nr, Nz] = np.meshgrid(Nc, Nr, Nz)
     Greg = buf2ft * np.exp(1j * 2 * np.pi * (-row_shift * Nr / shape[0] - col_shift * Nc / shape[1] - z_shift * Nz / shape[2]))
-    return np.fft.ifftn(Greg)
+    return sf.ifftn(Greg)
 
 
 def arr_property(arr):
@@ -566,3 +535,4 @@ def arr_property(arr):
     print ('norm', np.sum(pow(abs(arr),2)))
     max_coordinates = list(np.unravel_index(np.argmax(arr1), arr.shape))
     print ('max coords, value', max_coordinates, arr[max_coordinates[0], max_coordinates[1],max_coordinates[2]])
+

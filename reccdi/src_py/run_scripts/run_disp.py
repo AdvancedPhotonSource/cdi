@@ -13,7 +13,7 @@ def save_vtk(res_dir, conf, last_scan):
         imagefile = os.path.join(res_dir, 'image.npy')
         image = np.load(imagefile)
     except:
-        print ('no "image.npy" file in the results directory')
+        # print ('no "image.npy" file in the results directory')
         return
 
     try:
@@ -44,10 +44,9 @@ def save_vtk(res_dir, conf, last_scan):
 
 
 def save_dir_tree(save_dir, conf, last_scan):
-    save_vtk(save_dir, conf, last_scan)
+    if os.path.isfile(os.path.join(save_dir, 'image.npy')) :
+        save_vtk(save_dir, conf, last_scan)
     for sub in os.listdir(save_dir):
-        if not sub.endswith('results'):
-            continue
         subdir = os.path.join(save_dir, sub)
         if os.path.isdir(subdir):
             save_vtk(subdir, conf, last_scan)
@@ -65,42 +64,15 @@ def to_vtk(experiment_dir, conf_id=None):
             dirs.append(os.path.join(dir, 'results'))
         return dirs
 
-    if os.path.isdir(experiment_dir):
-        #first check if the experiment name contains scan
-        if len(experiment_dir.split('_')) == 1:
-            # no scan in the name
-            last_scan = None
-        else:
-            scan = experiment_dir.split("-")[-1]
-            try:
-                last_scan = int(scan)
-            except:
-                last_scan = int(scan.split("_")[-1])
-        conf = os.path.join(experiment_dir, 'conf', 'config_disp')
-
-        # verify configuration file
-        if not ver.ver_config_disp(conf):
-            return
-
-        if not os.path.isfile(conf):
-            # try to get spec file from experiment's prep phase
-            main_conf = os.path.join(experiment_dir, 'conf', 'config')
-            if os.path.isfile(main_conf):
-                main_config_map = ut.read_config(main_conf)
-                try:
-                    specfile = main_config_map.specfile
-                    # create config_disp with specfile definition
-                    f = open(conf, 'r+')
-                    f.write('specfile = "' + specfile + '"')
-                    f.close()
-                except:
-                    print ("Missing config_disp file and can't find spec file in experiment config")
-                    return
-            else:
-                print ("Missing config_disp file and can't find spec file in experiment config")
-                return
-    else:
+    if not os.path.isdir(experiment_dir):
         print("Please provide a valid experiment directory")
+        return
+
+    conf_dir = os.path.join(experiment_dir, 'conf')
+    conf = os.path.join(conf_dir, 'config_disp')
+
+    # verify configuration file
+    if not ver.ver_config_disp(conf):
         return
 
     try:
@@ -123,7 +95,7 @@ def to_vtk(experiment_dir, conf_id=None):
         f.close()
 
     # read binning info from config_data file in the conf directory
-    conf_data = os.path.join(experiment_dir, 'conf', 'config_data')
+    conf_data = os.path.join(conf_dir, 'config_data')
     binning_info = None
     with open(conf_data, 'r') as f:
         lines = f.readlines()
@@ -143,6 +115,16 @@ def to_vtk(experiment_dir, conf_id=None):
         save_dir = config_map.save_dir
         res_dirs.append(save_dir)
     except AttributeError:
+        pass
+
+    # get last scan from main config file
+    last_scan = None
+    try:
+        exp_conf_map = ut.read_config(os.path.join(conf_dir, 'config'))
+        scan = exp_conf_map.scan
+        last_scan = scan.split('-')[-1]
+        last_scan = int(last_scan)
+    except:
         pass
 
     for dir in os.listdir(experiment_dir):
