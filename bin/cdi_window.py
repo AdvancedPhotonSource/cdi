@@ -121,8 +121,6 @@ class cdi_gui(QWidget):
             return False
         if self.working_dir is None:
             return False
-        if self.id != str(self.Id_widget.text()).strip():
-            return False
         if self.scan != str(self.scan_widget.text()).strip():
             return False
         return True
