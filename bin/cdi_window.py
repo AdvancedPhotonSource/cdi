@@ -1229,9 +1229,14 @@ class cdi_conf_tab(QTabWidget):
         if not self.main_win.is_exp_set():
             msg_window('the experiment has changed, pres "set experiment" button')
             return
-        # check if the results directory exists
-        res_dir = os.path.join(self.main_win.experiment_dir, 'results')
-        if not (os.path.isfile(os.path.join(res_dir, 'image.npy')) or self.separate_scans.isChecked()):
+        # check if the results exist
+        is_result = False
+        for (dirpath, dirnames, filenames) in os.walk(self.main_win.experiment_dir):
+            for file in filenames:
+                if file.endswith('image.npy'):
+                    is_result = True
+                    break
+        if not is_result:
             msg_window('Please, run reconstruction in previous tab to activate this function')
             return
         if (self.specfile is None or not os.path.isfile(self.specfile)) and \
