@@ -4,7 +4,6 @@
 # See LICENSE file.                                                       #
 # #########################################################################
 
-import pylibconfig2 as cfg
 import os
 import traits.api as tr
 from tvtk.api import tvtk
@@ -25,7 +24,7 @@ class DispalyParams:
     construction
     """
 
-    def __init__(self, config, last_scan):
+    def __init__(self, config):
         """
         The constructor gets config file and fills out the class members.
 
@@ -38,13 +37,10 @@ class DispalyParams:
         -------
         none
         """
-        if os.path.isfile(config):
-            with open(config, 'r') as f:
-                config_map = cfg.Config(f.read())
-
         deg2rad = np.pi / 180.0
         try:
-            specfile = config_map.specfile
+            specfile = config['specfile']
+            last_scan = config['last_scan']
             self.lamda, delta, gamma, dth, arm, pixel = sput.parse_spec(specfile, last_scan)
             self.delta = delta * deg2rad
             self.gamma = gamma * deg2rad
@@ -57,34 +53,34 @@ class DispalyParams:
             pass
         # override the parsed parameters with entries in config file
         try:
-            energy = config_map.energy
+            energy = config['energy']
             self.lamda = 12.398 / energy / 10
         except AttributeError:
             pass
         try:
-            self.delta = config_map.delta * deg2rad
+            self.delta = config['delta'] * deg2rad
         except AttributeError:
             pass
         try:
-            self.gamma = config_map.gamma * deg2rad
+            self.gamma = config['gamma'] * deg2rad
         except AttributeError:
             pass
         try:
-            self.dth = config_map.dth * deg2rad
+            self.dth = config['dth'] * deg2rad
         except AttributeError:
             pass
         try:
-            self.arm = config_map.arm / 1000
+            self.arm = config['arm'] / 1000
         except AttributeError:
             pass
         try:
-            pixel = config_map.pixel
+            pixel = config['pixel']
         except AttributeError:
             pass
 
         try:
             self.binning = []
-            binning = config_map.binning
+            binning = config['binning']
             for i in range(len(binning)):
                 self.binning.append(binning[i])
             for _ in range(3 - len(self.binning)):
@@ -95,7 +91,7 @@ class DispalyParams:
         self.dpy = pixel[1] * self.binning[1] / self.arm / self.binning[2]
         try:
             self.crop = []
-            crop = config_map.crop
+            crop = config['crop']
             for i in range(len(crop)):
                 self.crop.append(crop[i])
             for _ in range(3 - len(self.crop)):
@@ -349,13 +345,13 @@ def get_crop(params, shape):
     return crop
 
 
-def save_CX(conf, image, support, coh, save_dir, last_scan):
+def save_CX(conf, image, support, coh, save_dir):
     image = np.swapaxes(image, 1,2)
     image = np.swapaxes(image, 0,1)
     support = np.swapaxes(support, 1,2)
     support = np.swapaxes(support, 0,1)
     image, support = center(image, support)
-    params = DispalyParams(conf, last_scan)
+    params = DispalyParams(conf)
     image = remove_ramp(image)
     viz = CXDViz()
     viz.set_array(image)

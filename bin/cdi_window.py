@@ -354,6 +354,7 @@ class cdi_conf_tab(QTabWidget):
         self.specfile = None
         self.darkfile = None
         self.whitefile = None
+        self.binning = None
         self.results_dir = None
         self.addTab(self.tab1, "Data prep")
         self.addTab(self.tab2, "Data")
@@ -764,6 +765,9 @@ class cdi_conf_tab(QTabWidget):
 
         for feat_id in self.features.feature_dir:
             self.features.feature_dir[feat_id].init_config(conf_map)
+
+        # set the results_dir in display tab
+        self.init_results_dir()
 
 
     def load_disp_tab(self, conf):
@@ -1201,21 +1205,37 @@ class cdi_conf_tab(QTabWidget):
 
                 if self.main_win.write_conf(conf_map, conf_dir, conf_file):
                     run_rc.reconstruction(str(self.proc.currentText()), self.main_win.experiment_dir, conf_id)
+
+                    # set the results_dir in display tab.
+                    self.init_results_dir()
             else:
                 msg_window('Please, run format data in previous tab to activate this function')
 
 
+    def init_results_dir(self):
+        # set the results_dir in display tab. If GA, set it to the best results dir, if separate scans
+        # set to experiment
+        ga_feat = self.features.feature_dir['GA']
+        if ga_feat.active.isChecked() and int(ga_feat.generations.text()) > 1:
+            generations = int(ga_feat.generations.text())
+            self.results_dir = os.path.join(self.main_win.experiment_dir, 'results',
+                                            'g_' + str(generations-1), '0')
+        else:
+            self.results_dir = os.path.join(self.main_win.experiment_dir, 'results')
+        if self.separate_scans.isChecked():
+            self.results_dir = self.main_win.experiment_dir
+        self.result_dir_button.setStyleSheet("Text-align:left")
+        self.result_dir_button.setText(self.results_dir)
+
+
     def set_results_dir(self):
         if self.main_win.is_exp_exists():
+
             self.results_dir = os.path.join(self.main_win.experiment_dir, 'results')
             self.results_dir = select_dir(self.results_dir)
             if self.results_dir is not None:
-                if self.results_dir.endswith('results'):
-                    self.result_dir_button.setStyleSheet("Text-align:left")
-                    self.result_dir_button.setText(self.results_dir)
-                else:
-                    msg_window('Please, select directory ending with "results"')
-                    self.results_dir = None
+                self.result_dir_button.setStyleSheet("Text-align:left")
+                self.result_dir_button.setText(self.results_dir)
             else:
                 self.result_dir_button.setText('')
         else:
@@ -1230,14 +1250,18 @@ class cdi_conf_tab(QTabWidget):
             msg_window('the experiment has changed, pres "set experiment" button')
             return
         # check if the results exist
+        if self.results_dir is None:
+            self.results_dir = self.main_win.experiment_dir
         is_result = False
-        for (dirpath, dirnames, filenames) in os.walk(self.main_win.experiment_dir):
+        for (dirpath, dirnames, filenames) in os.walk(self.results_dir):
             for file in filenames:
                 if file.endswith('image.npy'):
                     is_result = True
                     break
+            if is_result:
+                break
         if not is_result:
-            msg_window('Please, run reconstruction in previous tab to activate this function')
+            msg_window('No image files found in the results directory tree. Please, run reconstruction in previous tab to activate this function')
             return
         if (self.specfile is None or not os.path.isfile(self.specfile)) and \
            (len(self.energy.text()) == 0 or \
@@ -1246,21 +1270,14 @@ class cdi_conf_tab(QTabWidget):
             len(self.arm.text()) == 0 or \
             len(self.dth.text()) == 0 or \
             len(self.pixel.text()) == 0):
-                msg_window('Please, enter spec file or all detector parameters')
+                msg_window('Please, enter valid spec file or all detector parameters')
                 return
 
         conf_map = self.get_disp_config()
 
         conf_dir = os.path.join(self.main_win.experiment_dir, 'conf')
         if self.main_win.write_conf(conf_map, conf_dir, 'config_disp'):
-            if self.results_dir is None:
-                run_dp.to_vtk(self.main_win.experiment_dir)
-            else:
-                dir = str(self.results_dir).split('/')[-1]
-                if dir == 'results':
-                    run_dp.to_vtk(self.main_win.experiment_dir)
-                else:
-                    run_dp.to_vtk(self.main_win.experiment_dir, dir[0:-len('_results')])
+            run_dp.to_vtk(self.main_win.experiment_dir, self.results_dir)
 
 
     def rec_default(self):

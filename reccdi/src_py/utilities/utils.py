@@ -395,7 +395,6 @@ def gauss_conv_fft(arr, sigmas):
 
 
 def shrink_wrap(arr, threshold, sigma, type='gauss'):
-    print ('in shrink wrap')
     sigmas = [sigma] * len(arr.shape)
     if type == 'gauss':
         convag = gauss_conv_fft(abs(arr), sigmas)

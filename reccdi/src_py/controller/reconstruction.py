@@ -76,6 +76,7 @@ def rec(proc, data, conf, config_map, image, support, coh):
         devices = config_map.device
     except:
         devices = [-1]
+    print ('device', devices[0])
 
     try:
         coh_dims = tuple(config_map.partial_coherence_roi)
@@ -87,7 +88,7 @@ def rec(proc, data, conf, config_map, image, support, coh):
     return image, support, coh, er, reciprocal, flow, iter_array
 
 
-def reconstruction(proc, data, conf_info, config_map, rec_id=None):
+def reconstruction(proc, data, conf_info, config_map, index, rec_id=None):
     """
     This function starts the reconstruction. It checks whether it is continuation of reconstruction defined by
     configuration. If continuation, the arrays of image, support, coherence are read from cont_directory,

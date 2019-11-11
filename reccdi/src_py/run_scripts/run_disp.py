@@ -1,153 +1,130 @@
 import reccdi.src_py.utilities.CXDVizNX as cx
+import reccdi.src_py.utilities.utils as ut
+import reccdi.src_py.utilities.parse_ver as ver
 import argparse
 import sys
 import os
-import reccdi.src_py.utilities.utils as ut
-import reccdi.src_py.utilities.parse_ver as ver
 import numpy as np
-from multiprocessing import Process
+from multiprocessing import Pool
 
 
-def save_vtk(res_dir, conf, last_scan):
+def save_vtk(res_dir_conf):
+    (res_dir, conf) = res_dir_conf
     try:
         imagefile = os.path.join(res_dir, 'image.npy')
         image = np.load(imagefile)
     except:
-        # print ('no "image.npy" file in the results directory')
+        print ('cannot load "image.npy" file')
         return
 
     try:
         supportfile = os.path.join(res_dir, 'support.npy')
         support = np.load(supportfile)
     except:
-        print ('support file ' + supportfile + ' is missing')
+        print ('support file is missing in ' + res_dir + ' directory')
         return
 
-    reciprocalfile = os.path.join(res_dir, 'reciprocal.npy')
-    reciprocal = np.load(reciprocalfile)
-    # reciprocal is saved as tif file, so no need to pass it to cx module
-    # saving amp, phase, and square of modulus in tif format
-    reciprocal_amp = np.absolute(reciprocal)
-    reciprocal_phase = np.angle(reciprocal)
-    reciprocal_sq_mod = np.power(reciprocal_amp, 2)
+    try:
+        reciprocalfile = os.path.join(res_dir, 'reciprocal.npy')
+        reciprocal = np.load(reciprocalfile)
+        # reciprocal is saved as tif file, so no need to pass it to cx module
+        # saving amp, phase, and square of modulus in tif format
+        reciprocal_amp = np.absolute(reciprocal)
+        reciprocal_phase = np.angle(reciprocal)
+        reciprocal_sq_mod = np.power(reciprocal_amp, 2)
 
-    ut.save_tif(reciprocal_amp, os.path.join(res_dir, 'reciprocal_amp.tif'))
-    ut.save_tif(reciprocal_phase, os.path.join(res_dir, 'reciprocal_phase.tif'))
-    ut.save_tif(reciprocal_sq_mod, os.path.join(res_dir, 'reciprocal_sq_mod.tif'))
+        ut.save_tif(reciprocal_amp, os.path.join(res_dir, 'reciprocal_amp.tif'))
+        ut.save_tif(reciprocal_phase, os.path.join(res_dir, 'reciprocal_phase.tif'))
+        ut.save_tif(reciprocal_sq_mod, os.path.join(res_dir, 'reciprocal_sq_mod.tif'))
+    except:
+        print ('info: cannot save reciprocal space')
 
     cohfile = os.path.join(res_dir, 'coherence.npy')
     if os.path.isfile(cohfile):
         coh = np.load(cohfile)
-        cx.save_CX(conf, image, support, coh, res_dir, last_scan)
+        cx.save_CX(conf, image, support, coh, res_dir)
     else:
-        cx.save_CX(conf, image, support, None, res_dir, last_scan)
+        cx.save_CX(conf, image, support, None, res_dir)
 
 
-def save_dir_tree(save_dir, conf, last_scan):
-    if os.path.isfile(os.path.join(save_dir, 'image.npy')) :
-        save_vtk(save_dir, conf, last_scan)
-    for sub in os.listdir(save_dir):
-        subdir = os.path.join(save_dir, sub)
-        if os.path.isdir(subdir):
-            save_vtk(subdir, conf, last_scan)
-            for sub_sub in os.listdir(subdir):
-                sub_sub = os.path.join(subdir, sub_sub)
-                if os.path.isdir(sub_sub):
-                    save_vtk(sub_sub, conf, last_scan)
-
-
-def to_vtk(experiment_dir, conf_id=None):
-    def add_res_dirs(dir, dirs):
-        if conf_id is not None:
-            dirs.append(os.path.join(dir, conf_id + '_results'))
-        else:
-            dirs.append(os.path.join(dir, 'results'))
-        return dirs
-
+def to_vtk(experiment_dir, results_dir=None):
     if not os.path.isdir(experiment_dir):
         print("Please provide a valid experiment directory")
         return
-
     conf_dir = os.path.join(experiment_dir, 'conf')
     conf = os.path.join(conf_dir, 'config_disp')
-
     # verify configuration file
     if not ver.ver_config_disp(conf):
+        print ('incorrect configuration file ' + conf +', cannot parse')
         return
 
+    # parse the conf once here and save it in dictionary, it will apply to all images in the directory tree
+    conf_dict = {}
     try:
-        config_map = ut.read_config(conf)
-        if config_map is None:
-            print ("can't read " + conf + " configuration file")
-            return
+        conf_map = ut.read_config(conf)
+        items = conf_map.items()
+        for item in items:
+            conf_dict[item[0]] = item[1]
     except:
-        print ('Please check configuration file ' + conf + '. Cannot parse')
+        print('cannot parse configuration file ' + conf)
         return
 
-    # remove the binning if found
-    with open(conf, 'r+') as f:
-        lines = f.readlines()
-        f.seek(0)
-        for line in lines:
-            if not line.startswith('binning'):
-                f.write(line)
-        f.truncate()
-        f.close()
-
-    # read binning info from config_data file in the conf directory
-    conf_data = os.path.join(conf_dir, 'config_data')
-    binning_info = None
-    with open(conf_data, 'r') as f:
-        lines = f.readlines()
-    for line in lines:
-        if line.startswith("binning"):
-            binning_info = line + '\n'
-            break
-    # write the binning line into 'config_disp' file
-    if binning_info is not None:
-        with open(conf, "a") as f:
-            f.write(binning_info)
-
-    # find all directories with results, this will include results directories in "scan" directories, and
-    # <rec_id>_results directories.
-    res_dirs = []
-    try:
-        save_dir = config_map.save_dir
-        res_dirs.append(save_dir)
-    except AttributeError:
-        pass
-
-    # get last scan from main config file
+    # get last scan from the config file and add it to conf_dict
     last_scan = None
-    try:
-        exp_conf_map = ut.read_config(os.path.join(conf_dir, 'config'))
-        scan = exp_conf_map.scan
-        last_scan = scan.split('-')[-1]
-        last_scan = int(last_scan)
-    except:
-        pass
+    main_conf = os.path.join(conf_dir, 'config')
+    if os.path.isfile(main_conf):
+        try:
+            config_map = ut.read_config(main_conf)
+            scan = config_map.scan
+            last_scan = scan.split('-')[-1]
+            conf_dict['last_scan'] = int(last_scan)
+        except:
+            print ("info: scan not determined, can't read " + conf + " configuration file")
 
-    for dir in os.listdir(experiment_dir):
-        if dir.startswith('scan'):
-            res_dirs = add_res_dirs(os.path.join(experiment_dir, dir), res_dirs)
+    # get binning from the config_data file and add it to conf_dict
+    binning = None
+    data_conf = os.path.join(conf_dir, 'config_data')
+    if os.path.isfile(data_conf):
+        try:
+            conf_map = ut.read_config(data_conf)
+            conf_dict['binning'] = conf_map.binning
+        except:
+            pass
 
-    if len(res_dirs) == 0:
-        res_dirs = add_res_dirs(experiment_dir, res_dirs)
+    no_gpus = 1
+    rec_conf = os.path.join(conf_dir, 'config_rec')
+    if os.path.isfile(rec_conf):
+        try:
+            conf_map = ut.read_config(rec_conf)
+            device = conf_map.device
+            no_gpus = len(device)
+        except:
+            pass
 
-    for save_dir in res_dirs:
-        p = Process(target = save_dir_tree, args = (save_dir, conf, last_scan,))
-        p.start()
+    if results_dir is None:
+        results_dir = experiment_dir
+    # find directories with image.npy file
+    dirs = []
+    for (dirpath, dirnames, filenames) in os.walk(results_dir):
+        for file in filenames:
+            if file.endswith('image.npy'):
+                dirs.append((dirpath, conf_dict))
+
+    with Pool(processes = no_gpus) as pool:
+        pool.map_async(save_vtk, dirs)
+        pool.close()
+        pool.join()
 
 
 def main(arg):
     print ('preparing display')
     parser = argparse.ArgumentParser()
     parser.add_argument("experiment_dir", help="experiment directory")
-    parser.add_argument("--rec_id", help="prefix to '_results' directory")
+    parser.add_argument("--results_dir", help="directory in experiment that has a tree (or leaf) with reconstruction results which will be visualized")
     args = parser.parse_args()
     experiment_dir = args.experiment_dir
-    if args.rec_id:
-        to_vtk(experiment_dir, args.rec_id)
+    if args.results_dir:
+        to_vtk(experiment_dir, args.results_dir)
     else:
         to_vtk(experiment_dir)
 

@@ -46,11 +46,6 @@ def run_rec(datafile, config_map, proc, exp_dir, index, rec_id=None):
     data = np.swapaxes(data, 0, 1)
 
     try:
-        devices = config_map.device
-    except:
-        devices = (-1)
-
-    try:
         generations = config_map.generations
     except:
         generations = 1
@@ -58,7 +53,7 @@ def run_rec(datafile, config_map, proc, exp_dir, index, rec_id=None):
         gen_rec.reconstruction(generations, proc, data, exp_dir, config_map, rec_id)
     else:
 
-        rec.reconstruction(proc, data, exp_dir, config_map, rec_id)
+        rec.reconstruction(proc, data, exp_dir, config_map, index, rec_id)
 
 
 def reconstruction(proc, experiment_dir, rec_id=None):
