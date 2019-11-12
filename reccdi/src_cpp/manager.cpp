@@ -38,7 +38,7 @@ void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vect
     af::array data = abs(real_d);
 
     af::array guess;
-    af::randomEngine r(AF_RANDOM_ENGINE_MERSENNE, (uint)time(0));
+    af::randomEngine r(AF_RANDOM_ENGINE_MERSENNE, (uint)(device * 100));
     d_type test1 = 0;
     double test2 = 0;
     if (typeid(test1) == typeid(test2))

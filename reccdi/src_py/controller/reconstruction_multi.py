@@ -105,10 +105,6 @@ def run_fast_module(proc, conf, data, coh_dims, prev):
     error : list containing errors for iterations
     """
     i, device, prev_image, prev_support, prev_coh = prev
-    # if this is initial reconstruction (i.e. first generation) add some random delay. Without the delay
-    # the multiple guesses might be the same. The value 2*i aws selected after several tries.
-    if prev_image is None:
-        time.sleep(i*2)
     image, support, coherence, errors, reciprocal, flow, iter_array = calc.fast_module_reconstruction(proc, device, conf, data, coh_dims,
                                                                        prev_image, prev_support, prev_coh)
     return image, support, coherence, errors, reciprocal, flow, iter_array
