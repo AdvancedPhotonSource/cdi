@@ -18,10 +18,11 @@ visualization.
 """
 
 import os
+import numpy as np
 import reccdi.src_py.utilities.utils as ut
 import reccdi.src_py.controller.fast_module as calc
 import time
-from multiprocessing import Pool
+from multiprocessing import Pool, Queue
 from functools import partial
 
 __author__ = "Barbara Frosik"
@@ -31,38 +32,7 @@ __all__ = ['read_config',
            'reconstruction']
 
 
-def assign_devices(devices, reconstructions):
-    """
-    This function pairs device id with reconstruction run. When running multiple reconstructions, it should be
-    distributed between available gpus. The GPUs might be configured. If not, it is left to Parsl logic how
-    the GPUs are utilized.
-
-    Parameters
-    ----------
-    devices : list
-        list containing ids of devices
-
-    reconstructions : int
-        number of reconstructions (each in own reconstruction)
-
-    Returns
-    -------
-    dev : list
-        list containing devices allocated subsequently to reconstructions. If the device was not configured, it will
-        be set to -1, which leaves the allocation to Parsl
-    """
-
-    dev_no = len(devices)
-    dev = []
-    for reconstruction in range(reconstructions):
-        if reconstruction < dev_no:
-            dev.append(devices[reconstruction])
-        else:
-            dev.append(devices[reconstruction % len(devices)])
-    return dev
-
-
-def run_fast_module(proc, conf, data, coh_dims, prev):
+def single_rec_process(proc, conf, data, coh_dims, prev):
     """
     This function runs in the reconstruction palarellized by Parsl.
 
@@ -104,47 +74,20 @@ def run_fast_module(proc, conf, data, coh_dims, prev):
 
     error : list containing errors for iterations
     """
-    i, device, prev_image, prev_support, prev_coh = prev
-    image, support, coherence, errors, reciprocal, flow, iter_array = calc.fast_module_reconstruction(proc, device, conf, data, coh_dims,
+    prev_image, prev_support, prev_coh = prev
+    image, support, coherence, errors, reciprocal, flow, iter_array = calc.fast_module_reconstruction(proc, gpu, conf, data, coh_dims,
                                                                        prev_image, prev_support, prev_coh)
     return image, support, coherence, errors, reciprocal, flow, iter_array
 
 
-def read_results(read_dir):
-    """
-    This function retrieves results of multiple reconstructions from read_dir sub-directories and
-    loads them into lists.
-
-    Parameters
-    ----------
-    read_dir : str
-        directory that contains results of reconstructions
-
-    Returns
-    -------
-    images : list
-        list of numpy arrays containing reconstructed images
-
-    supports : list
-        list of numpy arrays containing support of reconstructed images
-
-    cohs : list
-        list of numpy arrays containing coherence of reconstructed images
-    """
-    images = []
-    supports = []
-    cohs = []
-
-    for sub in os.listdir(read_dir):
-        image, support, coh = ut.read_results(os.path.join(read_dir, sub)+'/')
-        images.append(image)
-        supports.append(support)
-        cohs.append(coh)
-
-    return images, supports, cohs
+def assign_gpu(*args):
+   q = args[0]
+   global gpu
+   gpu = q.get()
 
 
-def rec(proc, data, conf, config_map, prev_images, prev_supports, prev_cohs=None):
+def multi_rec(proc, data, conf, config_map, devices, prev_images, prev_supports, prev_cohs=None):
+
     """
     This function controls the multiple reconstructions. It invokes a loop to execute parallel resconstructions,
     wait for all reconstructions to deliver results, and store te results.
@@ -203,15 +146,7 @@ def rec(proc, data, conf, config_map, prev_images, prev_supports, prev_cohs=None
             flows.append(r[5])
             iter_arrs.append(r[6])
 
-
-    try:
-        devices = config_map.device
-    except:
-        devices = [-1]
-
-    # assign device for each reconstruction
     reconstructions = config_map.reconstructions
-    devices = assign_devices(devices, reconstructions)
 
     try:
         coh_dims = tuple(config_map.partial_coherence_roi)
@@ -224,10 +159,13 @@ def rec(proc, data, conf, config_map, prev_images, prev_supports, prev_cohs=None
             coh = None
         else:
             coh = prev_cohs[i]
-        iterable.append((i, devices[i], prev_images[i], prev_supports[i], coh))
+        iterable.append((prev_images[i], prev_supports[i], coh))
 
-    func = partial(run_fast_module, proc, conf, data, coh_dims)
-    with Pool(processes = reconstructions) as pool:
+    func = partial(single_rec_process, proc, conf, data, coh_dims)
+    q = Queue()
+    for device in devices:
+        q.put(device)
+    with Pool(processes = len(devices),initializer=assign_gpu, initargs=(q,)) as pool:
         pool.map_async(func, iterable, callback=collect_result)
         pool.close()
         pool.join()
@@ -236,7 +174,8 @@ def rec(proc, data, conf, config_map, prev_images, prev_supports, prev_cohs=None
     return images, supports, cohs, errs, recips, flows, iter_arrs
 
 
-def reconstruction(reconstructions, proc, data, conf_info, config_map):
+def reconstruction(proc, datafile, dir, conf_file, devices):
+#    proc, datafile, dir, conf_file, devices
     """
     This function starts the reconstruction. It checks whether it is continuation of reconstruction defined by
     configuration. If continuation, the lists contaning arrays of images, supports, coherence for multiple reconstructions
@@ -266,24 +205,41 @@ def reconstruction(reconstructions, proc, data, conf_info, config_map):
     -------
     nothing
     """
+    data = ut.read_tif(datafile)
+    print ('data shape', data.shape)
+    data = np.swapaxes(data, 0, 2)
+    data = np.swapaxes(data, 0, 1)
 
-    cont = False
+    try:
+        config_map = ut.read_config(conf_file)
+        if config_map is None:
+            print("can't read configuration file " + conf_file)
+            return
+    except:
+        print('Cannot parse configuration file ' + conf_file + ' , check for matching parenthesis and quotations')
+        return
+
+    try:
+        reconstructions = config_map.reconstructions
+    except:
+        reconstructions = 1
+
+    images = []
+    supports = []
+    cohs = []
     try:
         if config_map.cont:
             try:
                 continue_dir = config_map.continue_dir
-                images, supports, cohs = read_results(continue_dir)
-                cont = True
+                for sub in os.listdir(continue_dir):
+                    image, support, coh = ut.read_results(os.path.join(continue_dir, sub) + '/')
+                    images.append(image)
+                    supports.append(support)
+                    cohs.append(coh)
             except:
                 print("continue_dir not configured")
                 return None
     except:
-        pass
-
-    if not cont:
-        images = []
-        supports = []
-        cohs = []
         for _ in range(reconstructions):
             images.append(None)
             supports.append(None)
@@ -291,19 +247,7 @@ def reconstruction(reconstructions, proc, data, conf_info, config_map):
 
     start = time.time()
 
-    if os.path.isdir(conf_info):
-        # if conf_info is directory, look for subdir "conf" and "config_rec" in it
-        experiment_dir = conf_info
-        conf = os.path.join(experiment_dir, 'conf', 'config_rec')
-        if not os.path.isfile(conf):
-            base_dir = os.path.abspath(os.path.join(experiment_dir, os.pardir))
-            conf = os.path.join(base_dir, 'conf', 'config_rec')
-    else:
-        # assuming it's a file
-        conf = conf_info
-        experiment_dir = None
-
-    new_images, new_supports, new_cohs, errs, recips, flows, iter_arrs = rec(proc, data, conf, config_map, images, supports, cohs)
+    new_images, new_supports, new_cohs, errs, recips, flows, iter_arrs = multi_rec(proc, data, conf_file, config_map, devices, images, supports, cohs)
     stop = time.time()
     t = stop - start
     print ('run in ' + str(t) + ' sec')
@@ -311,10 +255,7 @@ def reconstruction(reconstructions, proc, data, conf_info, config_map):
     try:
         save_dir = config_map.save_dir
     except AttributeError:
-        save_dir = 'results'
-        if experiment_dir is not None:
-            save_dir = os.path.join(experiment_dir, save_dir)
-        else:
-            save_dir = os.path.join(os.getcwd(), 'results')    # save in current dir
+        filename = conf_file.split('/')[-1]
+        save_dir = os.path.join(dir, filename.replace('config_rec', 'results'))
 
     ut.save_multiple_results(reconstructions, new_images, new_supports, new_cohs, errs, recips, flows, iter_arrs, save_dir)

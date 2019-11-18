@@ -31,7 +31,8 @@ __all__ = ['read_config',
            'reconstruction']
 
 
-def rec(proc, data, conf, config_map, image, support, coh):
+def single_rec(proc, data, conf, config_map, dev, image, support, coh):
+
     """
     This function starts and returns results of reconstruction. The parameters must be initialized.
 
@@ -73,22 +74,16 @@ def rec(proc, data, conf, config_map, image, support, coh):
         list of errors (should we take the last error?)
     """
     try:
-        devices = config_map.device
-    except:
-        devices = [-1]
-    print ('device', devices[0])
-
-    try:
         coh_dims = tuple(config_map.partial_coherence_roi)
     except:
         coh_dims = None
-    image, support, coh, er, reciprocal, flow, iter_array = calc.fast_module_reconstruction(proc, devices[0], conf, data, coh_dims, image, support, coh)
+    image, support, coh, er, reciprocal, flow, iter_array = calc.fast_module_reconstruction(proc, dev, conf, data, coh_dims, image, support, coh)
 
     # errs contain errors for each iteration
     return image, support, coh, er, reciprocal, flow, iter_array
 
 
-def reconstruction(proc, data, conf_info, config_map, index, rec_id=None):
+def reconstruction(proc, datafile, dir, conf_file, dev):
     """
     This function starts the reconstruction. It checks whether it is continuation of reconstruction defined by
     configuration. If continuation, the arrays of image, support, coherence are read from cont_directory,
@@ -114,61 +109,44 @@ def reconstruction(proc, data, conf_info, config_map, index, rec_id=None):
     -------
     nothing
     """
+    data = ut.read_tif(datafile)
+    print ('data shape', data.shape)
+    data = np.swapaxes(data, 0, 2)
+    data = np.swapaxes(data, 0, 1)
 
-    # how many reconstructions to start
     try:
-        reconstructions = config_map.reconstructions
+        config_map = ut.read_config(conf_file)
+        if config_map is None:
+            print("can't read configuration file " + conf_file)
+            return
     except:
-        reconstructions = 1
+        print('Cannot parse configuration file ' + conf_file + ' , check for matching parenthesis and quotations')
+        return
 
-    if reconstructions > 1:
-        multi.reconstruction(reconstructions, proc, data, conf_info, config_map)
-    else:
-        cont = False
-        try:
-            if config_map.cont:
-                try:
-                    continue_dir = config_map.continue_dir
-                    image, support, coh = ut.read_results(continue_dir)
-                    cont = True
-                except:
-                    print("continue_dir not configured")
-                    return None
-        except:
-            pass
+    cont = False
+    try:
+        if config_map.cont:
+            try:
+                continue_dir = config_map.continue_dir
+                image, support, coh = ut.read_results(continue_dir)
+                cont = True
+            except:
+                print("continue_dir not configured")
+                return None
+    except:
+        pass
 
-        if not cont:
-            image = None
-            support = None
-            coh = None
+    if not cont:
+        image = None
+        support = None
+        coh = None
 
-        if rec_id is None:
-            conf_file = 'config_rec'
-        else:
-            conf_file = rec_id + '_config_rec'
+    image, support, coh, errs, recips, flow, iter_array = single_rec(proc, data, conf_file, config_map, dev, image, support, coh)
 
-        if os.path.isdir(conf_info):
-            experiment_dir = conf_info
-            conf = os.path.join(experiment_dir, 'conf', conf_file)
-            if not os.path.isfile(conf):
-                base_dir = os.path.abspath(os.path.join(experiment_dir, os.pardir))
-                conf = os.path.join(base_dir, 'conf', conf_file)
-        else:
-            # assuming it's a file
-            conf = conf_info
-            experiment_dir = None
+    try:
+        save_dir = config_map.save_dir
+    except AttributeError:
+        filename = conf_file.split('/')[-1]
+        save_dir = os.path.join(dir, filename.replace('config_rec', 'results'))
 
-        image, support, coh, errs, recips, flow, iter_array = rec(proc, data, conf, config_map, image, support, coh)
-
-        try:
-            save_dir = config_map.save_dir
-        except AttributeError:
-            save_dir = 'results'
-            if rec_id is not None:
-                save_dir = rec_id + '_' + save_dir
-            if experiment_dir is not None:
-                save_dir = os.path.join(experiment_dir, save_dir)
-            else:
-                save_dir = os.path.join(os.getcwd(), 'results')    # save in current dir
-
-        ut.save_results(image, support, coh, np.asarray(errs), recips, flow, iter_array, save_dir)
+    ut.save_results(image, support, coh, np.asarray(errs), recips, flow, iter_array, save_dir)

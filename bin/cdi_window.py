@@ -216,10 +216,10 @@ class cdi_gui(QWidget):
             self.t.results_dir = os.path.join(self.experiment_dir, 'results')
             self.t.result_dir_button.setStyleSheet("Text-align:left")
             self.t.result_dir_button.setText(self.t.results_dir)
-            self.update_rec_confis_choice()
+            self.update_rec_configs_choice()
 
 
-    def update_rec_confis_choice(self):
+    def update_rec_configs_choice(self):
             # this will update the configuration choices in reconstruction tab
             # fill out the config_id choice bar by reading configuration files names
             rec_ids = []
@@ -238,7 +238,7 @@ class cdi_gui(QWidget):
         if not os.path.exists(experiment_conf_dir):
             os.makedirs(experiment_conf_dir)
         else:
-            self.update_rec_confis_choice()
+            self.update_rec_configs_choice()
 
 
     def set_experiment(self):
@@ -338,7 +338,8 @@ class cdi_gui(QWidget):
                 msg_window('please check the entries in the Display tab. Cannot save this format')
                 return False
         # copy if verified
-        shutil.move(temp_file, conf_file)
+        shutil.copy(temp_file, conf_file)
+        os.remove(temp_file)
         return True
 
 class cdi_conf_tab(QTabWidget):
@@ -475,9 +476,9 @@ class cdi_conf_tab(QTabWidget):
         ulayout.addWidget(self.rec_id)
         self.rec_id.hide()
         self.proc = QComboBox()
+        self.proc.addItem("cuda")
         self.proc.addItem("opencl")
         self.proc.addItem("cpu")
-        self.proc.addItem("cuda")
         ulayout.addRow("processor type", self.proc)
         self.cont = QCheckBox()
         ulayout.addRow("continuation", self.cont)
@@ -1154,6 +1155,10 @@ class cdi_conf_tab(QTabWidget):
         if self.main_win.write_conf(conf_map, conf_dir, 'config_prep'):
             f = getattr(mod, 'prepare')
             f(self.main_win.experiment_dir, scan_range, conf_file)
+        if self.separate_scans.isChecked():
+            self.results_dir = self.main_win.experiment_dir
+        self.result_dir_button.setStyleSheet("Text-align:left")
+        self.result_dir_button.setText(self.results_dir)
 
 
     def prepare_copy(self, conf_map):
@@ -1204,7 +1209,7 @@ class cdi_conf_tab(QTabWidget):
                 conf_dir = os.path.join(self.main_win.experiment_dir, 'conf')
 
                 if self.main_win.write_conf(conf_map, conf_dir, conf_file):
-                    run_rc.reconstruction(str(self.proc.currentText()), self.main_win.experiment_dir, conf_id)
+                    run_rc.manage_reconstruction(str(self.proc.currentText()), self.main_win.experiment_dir, conf_id)
 
                     # set the results_dir in display tab.
                     self.init_results_dir()
@@ -1213,15 +1218,26 @@ class cdi_conf_tab(QTabWidget):
 
 
     def init_results_dir(self):
+        # if alternate configuration was chosen in reconstruction tab, use it in results_dir
+        if self.old_conf_id == '':
+            res_file = 'results'
+        else:
+            res_file = self.old_conf_id + '_results'
         # set the results_dir in display tab. If GA, set it to the best results dir, if separate scans
         # set to experiment
         ga_feat = self.features.feature_dir['GA']
         if ga_feat.active.isChecked() and int(ga_feat.generations.text()) > 1:
             generations = int(ga_feat.generations.text())
-            self.results_dir = os.path.join(self.main_win.experiment_dir, 'results',
-                                            'g_' + str(generations-1), '0')
+            # if only one reconstruction, it will be saved in gen dir, otherwise,
+            # the directories will be enumerated
+            if int(self.reconstructions.text()) > 1:
+                self.results_dir = os.path.join(self.main_win.experiment_dir, res_file,
+                                                'g_' + str(generations-1), '0')
+            else:
+                self.results_dir = os.path.join(self.main_win.experiment_dir, res_file,
+                                                'g_' + str(generations-1))
         else:
-            self.results_dir = os.path.join(self.main_win.experiment_dir, 'results')
+            self.results_dir = os.path.join(self.main_win.experiment_dir, res_file)
         if self.separate_scans.isChecked():
             self.results_dir = self.main_win.experiment_dir
         self.result_dir_button.setStyleSheet("Text-align:left")

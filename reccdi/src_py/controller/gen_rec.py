@@ -340,7 +340,7 @@ class Generation:
         return child_images, child_supports
 
 
-def reconstruction(generations, proc, data, conf_info, config_map, rec_id=None):
+def reconstruction(proc, datafile, dir, conf_file, devices):
     """
     This function controls reconstruction utilizing genetic algorithm.
 
@@ -366,42 +366,45 @@ def reconstruction(generations, proc, data, conf_info, config_map, rec_id=None):
     -------
     nothing
     """
+    data = ut.read_tif(datafile)
+    print ('data shape', data.shape)
+    data = np.swapaxes(data, 0, 2)
+    data = np.swapaxes(data, 0, 1)
+
+    try:
+        config_map = ut.read_config(conf_file)
+        if config_map is None:
+            print("can't read configuration file " + conf_file)
+            return
+    except:
+        print('Cannot parse configuration file ' + conf_file + ' , check for matching parenthesis and quotations')
+        return
     try:
         reconstructions = config_map.reconstructions
     except:
         reconstructions = 1
 
     gen_obj = Generation(config_map)
-    if rec_id is None:
-        conf_file = 'config_rec'
-    else:
-        conf_file = rec_id + '_config_rec'
-
-    if os.path.isdir(conf_info):
-        experiment_dir = conf_info
-        conf = os.path.join(experiment_dir, 'conf', conf_file)
-        if not os.path.isfile(conf):
-            base_dir = os.path.abspath(os.path.join(experiment_dir, os.pardir))
-            conf = os.path.join(base_dir, 'conf', conf_file)
-    else:
-        # assuming it's a file
-        conf = conf_info
-        experiment_dir = None
 
     try:
         save_dir = config_map.save_dir
     except AttributeError:
-        save_dir = 'results'
-        if rec_id is not None:
-            save_dir = rec_id + '_' + save_dir
-        if experiment_dir is not None:
-            save_dir = os.path.join(experiment_dir, save_dir)
-        else:
-            save_dir = os.path.join(os.getcwd(), 'results')    # save in current dir
+        filename = conf_file.split('/')[-1]
+        save_dir = os.path.join(dir, filename.replace('config_rec', 'results'))
+
+    try:
+        devices = config_map.device
+    except:
+        devices = [-1]
+
+    try:
+        generations = config_map.generations
+    except:
+        print ('generations not configured')
+        return
 
     # init starting values
     # if multiple reconstructions configured (typical for genetic algorithm), use "reconstruction_multi" module
-    dfk = None
     if reconstructions > 1:
         images = []
         supports = []
@@ -412,14 +415,9 @@ def reconstruction(generations, proc, data, conf_info, config_map, rec_id=None):
             cohs.append(None)
         rec = multi
         # load parls configuration
-        try:
-            devices = config_map.device
-        except:
-            devices = [-1]
-
         for g in range(generations):
             gen_data = gen_obj.get_data(data)
-            images, supports, cohs, errs, recips, flows, iter_arrs = rec.rec(proc, gen_data, conf, config_map, images, supports, cohs)
+            images, supports, cohs, errs, recips, flows, iter_arrs = rec.multi_rec(proc, gen_data, conf_file, config_map, devices, images, supports, cohs)
             images, supports, cohs, errs, recips = gen_obj.order(images, supports, cohs, errs, recips)
             metrics = gen_obj.get_metrics(images, errs)
             # save the generation results
@@ -438,15 +436,14 @@ def reconstruction(generations, proc, data, conf_info, config_map, rec_id=None):
         rec = single
 
         for g in range(generations):
+            print ('gen', g)
             gen_data = gen_obj.get_data(data)
-            image, support, coh, err, recip, flows, iter_arrs = rec.rec(proc, gen_data, conf, config_map, image, support, coh)
+            image, support, coh, err, recip, flows, iter_arrs = rec.single_rec(proc, gen_data, conf_file, config_map, devices[0], image, support, coh)
             # save the generation results
             gen_save_dir = os.path.join(save_dir, 'g_' + str(g))
+            print ('gen save dir', gen_save_dir)
             ut.save_results(image, support, coh, err, recip, flows, iter_arrs, gen_save_dir)
             gen_obj.next_gen()
-
-    if dfk is not None:
-        rec.clear(dfk)
 
     print ('done gen')
 

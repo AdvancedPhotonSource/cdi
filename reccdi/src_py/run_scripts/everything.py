@@ -20,7 +20,7 @@ def main(arg):
 
     experiment_dir = prep.parse_and_prepare(prefix, scans, conf_dir)
     run_dt.data(experiment_dir)
-    run_rc.reconstruction(dev, experiment_dir)
+    run_rc.manage_reconstruction(dev, experiment_dir)
     run_dp.to_vtk(experiment_dir)
 
 
