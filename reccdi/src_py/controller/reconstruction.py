@@ -83,7 +83,7 @@ def single_rec(proc, data, conf, config_map, dev, image, support, coh):
     return image, support, coh, er, reciprocal, flow, iter_array
 
 
-def reconstruction(proc, datafile, dir, conf_file, dev):
+def reconstruction(proc, conf_file, datafile, dir, dev):
     """
     This function starts the reconstruction. It checks whether it is continuation of reconstruction defined by
     configuration. If continuation, the arrays of image, support, coherence are read from cont_directory,
@@ -141,7 +141,9 @@ def reconstruction(proc, datafile, dir, conf_file, dev):
         support = None
         coh = None
 
-    image, support, coh, errs, recips, flow, iter_array = single_rec(proc, data, conf_file, config_map, dev, image, support, coh)
+    image, support, coh, errs, recips, flow, iter_array = single_rec(proc, data, conf_file, config_map, dev[0], image, support, coh)
+    if image is None:
+        return
 
     try:
         save_dir = config_map.save_dir

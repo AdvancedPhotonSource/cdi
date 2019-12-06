@@ -74,6 +74,7 @@ std::vector<int> PartialCoherence::GetRoi()
 
 af::array PartialCoherence::ApplyPartialCoherence(af::array abs_amplitudes)
 {
+try{
     // apply coherence
     af::array abs_amplitudes_2 = pow(abs_amplitudes, 2);
     af::array converged_2 = af::fftConvolve(abs_amplitudes_2, kernel_array);
@@ -83,10 +84,18 @@ af::array PartialCoherence::ApplyPartialCoherence(af::array abs_amplitudes)
     //printf("coherence norm %f\n", sum<d_type>(pow(abs(kernel_array), 2)));
     //printf("converged norm %f\n", sum<d_type>(pow(abs(converged), 2)));
     return converged;
+
+}
+catch(af::exception& e) {
+        fprintf(stderr, "%s\n", e.what());
+        printf("ApplyPartialCoherence\n");
+        throw;
+    }
 }
 
 void PartialCoherence::UpdatePartialCoherence(af::array abs_amplitudes)
 {
+try{
     af::array abs_amplitudes_centered = shift(abs_amplitudes, dims[0]/2, dims[1]/2, dims[2]/2, dims[3]/2);
     af::array roi_abs_amplitudes = Utils::CropCenter(abs_amplitudes_centered, roi_dims).copy();
 
@@ -95,9 +104,16 @@ void PartialCoherence::UpdatePartialCoherence(af::array abs_amplitudes)
     //printf("Updating coherence\n");
 
 }
+catch(af::exception& e) {
+        fprintf(stderr, "%s\n", e.what());
+        printf("UpdatePartialCoherence\n");
+        throw;
+    }
+}
 
 void PartialCoherence::OnTrigger(af::array arr)
 {
+try{
     // assume calculating coherence across all three dimensions
     af::array amplitudes = arr;
     // if symmetrize data, recalculate roi_array and roi_data - not doing it now, since default to false
@@ -125,9 +141,16 @@ void PartialCoherence::OnTrigger(af::array arr)
         //prinf("only LUCY algorithm is currently supported");
     }
 }
+catch(af::exception& e) {
+        fprintf(stderr, "%s\n", e.what());
+        printf("OnTrigger\n");
+        throw;
+    }
+}
 
 af::array PartialCoherence::fftConvolve(af::array arr, af::array kernel)
-{  
+{
+try{
     af::dim4 dims_input = arr.dims();
     af::dim4 dims_kernel = kernel.dims();    
 
@@ -144,11 +167,18 @@ af::array PartialCoherence::fftConvolve(af::array arr, af::array kernel)
     
     af::array coh_padded = real( Utils::ifft( Utils::fft(arr) * Utils::fft(kernel_padded) ) ); 
     return coh_padded;
+}
+catch(af::exception& e) {
+        fprintf(stderr, "%s\n", e.what());
+        printf("fftConvolve\n");
+        throw;
+    }
 
 }
 
 void PartialCoherence::DeconvLucy(af::array amplitudes, af::array data, int iterations)
 {
+try{
     // implementation based on Python code: https://github.com/scikit-image/scikit-image/blob/master/skimage/restoration/deconvolution.py
     //set it to the last coherence instead
     af::array coherence = kernel_array;
@@ -167,6 +197,12 @@ void PartialCoherence::DeconvLucy(af::array amplitudes, af::array data, int iter
     coherence = abs(coherence)/coh_sum;    
     //printf("coherence norm ,  %f\n", sum<d_type>(pow(abs(coherence), 2)));
     kernel_array = coherence;
+}
+catch(af::exception& e) {
+        fprintf(stderr, "%s\n", e.what());
+        printf("DeconvLucy\n");
+        throw e;
+    }
 }
 
 

@@ -138,6 +138,8 @@ def multi_rec(proc, data, conf, config_map, devices, prev_images, prev_supports,
     iter_arrs = []
     def collect_result(result):
         for r in result:
+            if r[0] is None:
+                continue
             images.append(r[0])
             supports.append(r[1])
             cohs.append(r[2])
@@ -169,12 +171,13 @@ def multi_rec(proc, data, conf, config_map, devices, prev_images, prev_supports,
         pool.map_async(func, iterable, callback=collect_result)
         pool.close()
         pool.join()
+        pool.terminate()
 
     # return only error from last iteration for each reconstruction
     return images, supports, cohs, errs, recips, flows, iter_arrs
 
 
-def reconstruction(proc, datafile, dir, conf_file, devices):
+def reconstruction(proc, conf_file, datafile, dir, devices):
 #    proc, datafile, dir, conf_file, devices
     """
     This function starts the reconstruction. It checks whether it is continuation of reconstruction defined by
@@ -245,12 +248,7 @@ def reconstruction(proc, datafile, dir, conf_file, devices):
             supports.append(None)
             cohs.append(None)
 
-    start = time.time()
-
     new_images, new_supports, new_cohs, errs, recips, flows, iter_arrs = multi_rec(proc, data, conf_file, config_map, devices, images, supports, cohs)
-    stop = time.time()
-    t = stop - start
-    print ('run in ' + str(t) + ' sec')
 
     try:
         save_dir = config_map.save_dir
@@ -258,4 +256,4 @@ def reconstruction(proc, datafile, dir, conf_file, devices):
         filename = conf_file.split('/')[-1]
         save_dir = os.path.join(dir, filename.replace('config_rec', 'results'))
 
-    ut.save_multiple_results(reconstructions, new_images, new_supports, new_cohs, errs, recips, flows, iter_arrs, save_dir)
+    ut.save_multiple_results(len(new_images), new_images, new_supports, new_cohs, errs, recips, flows, iter_arrs, save_dir)

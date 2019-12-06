@@ -35,9 +35,9 @@ def parse_and_prepare(prefix, scan, conf_dir):
         print ('configured directory ' + conf_dir + ' does not exist')
         return
 
-    main_conf = os.path.join(conf_dir, 'config_prep')
+    main_conf = os.path.join(conf_dir, 'config')
     if not os.path.isfile(main_conf):
-        print ('the configuration directory does not contain "config_prep" file')
+        print ('the configuration directory does not contain "config" file')
         return
 
     try:
@@ -63,7 +63,6 @@ def parse_and_prepare(prefix, scan, conf_dir):
     try:
         working_dir = config_map.working_dir.strip()
     except:
-        print ('config file does not have "working_dir" entry, defaulting to current directory')
         working_dir = os.getcwd()
 
     experiment_dir = os.path.join(working_dir, id)
@@ -73,9 +72,32 @@ def parse_and_prepare(prefix, scan, conf_dir):
     experiment_conf_dir = os.path.join(experiment_dir, 'conf')
     if not os.path.exists(experiment_conf_dir):
         os.makedirs(experiment_conf_dir)
-    copy_conf(conf_dir, experiment_conf_dir)
 
-    prep.prepare(experiment_dir, scan_num, main_conf)
+    experiment_main_config = os.path.join(experiment_conf_dir, 'config')
+    conf_map = {}
+    conf_map['working_dir'] = '"' + working_dir + '"'
+    conf_map['experiment_id'] = '"' + prefix + '"'
+    conf_map['scan'] = '"' + scan + '"'
+    temp_file = os.path.join(experiment_conf_dir, 'temp')
+    with open(temp_file, 'a') as f:
+        for key in conf_map:
+            value = conf_map[key]
+            if len(value) > 0:
+                f.write(key + ' = ' + conf_map[key] + '\n')
+    f.close()
+    if not ver.ver_config(temp_file):
+#        os.remove(temp_file)
+        print('please check the entered parameters. Cannot save this format')
+    else:
+        shutil.copy(temp_file, experiment_main_config)
+        os.remove(temp_file)
+
+    copy_conf(conf_dir, experiment_conf_dir)
+    prep_conf = os.path.join(experiment_conf_dir, 'config_prep')
+    if os.path.isfile(prep_conf):
+        prep.prepare(experiment_dir, scan_num, prep_conf)
+    else:
+        print ('missing ' + prep_conf + ' file')
 
     return experiment_dir
 

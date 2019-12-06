@@ -129,10 +129,14 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
         fast_module.start_calc_with_guess_support_coh(device, data_l, image.real.tolist(), image.imag.tolist(), support.tolist(), dims1, coherence.tolist(), coh_dims1, conf)
 
     er = copy.deepcopy(fast_module.get_errors())
+    if len(er) == 1 and er[0] == -1:
+        # run into Nan during reconstruction
+        fast_module.cleanup()
+        return None, None, None, None, None, None, None
     image_r = copy.deepcopy(np.asarray(fast_module.get_image_r()))
     image_i = copy.deepcopy(np.asarray(fast_module.get_image_i()))
     image = image_r + 1j*image_i
-    #print ('image norm in fast module',  sum(abs(image)**2))
+
     # normalize image
     mx = max(np.absolute(image).ravel().tolist())
     image = image/mx

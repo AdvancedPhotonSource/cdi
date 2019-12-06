@@ -132,6 +132,7 @@ class Generation:
 
 
     def rank(self, images, errs):
+        print ('ranking generation ', self.current_gen)
         rank_property = []
 
         reconstructions = len(images)
@@ -208,6 +209,7 @@ class Generation:
         child_cohs : list
             list of child coherence, set to None
         """
+        print ('breeding generation ', (self.current_gen + 1))
         sigma = self.ga_support_sigmas[self.current_gen]
         threshold = self.ga_support_thresholds[self.current_gen]
         breed_mode = self.breed_modes[self.current_gen]
@@ -340,7 +342,7 @@ class Generation:
         return child_images, child_supports
 
 
-def reconstruction(proc, datafile, dir, conf_file, devices):
+def reconstruction(proc, conf_file, datafile, dir, devices):
     """
     This function controls reconstruction utilizing genetic algorithm.
 
@@ -393,11 +395,6 @@ def reconstruction(proc, datafile, dir, conf_file, devices):
         save_dir = os.path.join(dir, filename.replace('config_rec', 'results'))
 
     try:
-        devices = config_map.device
-    except:
-        devices = [-1]
-
-    try:
         generations = config_map.generations
     except:
         print ('generations not configured')
@@ -423,7 +420,7 @@ def reconstruction(proc, datafile, dir, conf_file, devices):
             # save the generation results
             gen_save_dir = os.path.join(save_dir, 'g_' + str(g))
             ut.save_multiple_results(len(images), images, supports, cohs, errs, recips, flows, iter_arrs, gen_save_dir, metrics)
-
+            print ('g, generations, images no', g, generations, len(images))
             if g < generations - 1 and len(images) > 1:
                 images, shrink_supports = gen_obj.breed(images)
                 if shrink_supports is not None:
@@ -439,6 +436,8 @@ def reconstruction(proc, datafile, dir, conf_file, devices):
             print ('gen', g)
             gen_data = gen_obj.get_data(data)
             image, support, coh, err, recip, flows, iter_arrs = rec.single_rec(proc, gen_data, conf_file, config_map, devices[0], image, support, coh)
+            if image is None:
+                return
             # save the generation results
             gen_save_dir = os.path.join(save_dir, 'g_' + str(g))
             print ('gen save dir', gen_save_dir)

@@ -12,9 +12,15 @@ See LICENSE file.
 #include "util.hpp"
 #include "parameters.hpp"
 #include "common.h"
-
+#include "unistd.h"
 
 using namespace af;
+
+Manager::Manager()
+{
+    good_reconstruction = true;
+}
+
 
 Manager::~Manager()
 {
@@ -28,7 +34,13 @@ void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vect
     
     if (device >= 0)
     {
-        setDevice(device);
+        try{
+            setDevice(device);
+        }
+        catch (...)
+        {// leave to the os to assign device
+            printf("can't select gpu %d\n", device);
+        }
         info();
     }
     
@@ -38,7 +50,7 @@ void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vect
     af::array data = abs(real_d);
 
     af::array guess;
-    af::randomEngine r(AF_RANDOM_ENGINE_MERSENNE, (uint)(device * 100));
+    af::randomEngine r(AF_RANDOM_ENGINE_MERSENNE, (uint)(getpid() * 100));
     d_type test1 = 0;
     double test2 = 0;
     if (typeid(test1) == typeid(test2))
@@ -56,8 +68,15 @@ void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vect
     printf("initialized\n");
 
     timer::start();
-    rec->Iterate();
-    printf("iterate function took %g seconds\n", timer::stop());
+    int ret = rec->Iterate();
+    if (ret > 0)
+    {
+        good_reconstruction = false;
+    }
+    else
+    {
+        printf("iterate function took %g seconds\n", timer::stop());
+    }
 }
 
 void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vector<d_type> guess_buffer_r, std::vector<d_type> guess_buffer_i, std::vector<int> dim, const std::string & config)
@@ -67,10 +86,18 @@ void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vect
     
     if (device >= 0)
     {
-        setDevice(device);
+        try{
+            setDevice(device);
+        }
+        catch (...)
+        {// leave to the os to assign device
+            printf("can't select gpu %d, can be not updated cache, try restart\n", device);
+            good_reconstruction = false;
+            return;
+        }
         info();
     }
-    
+
     dim4 af_dims = Utils::Int2Dim4(dim);
     af::array real_d(af_dims, &data_buffer_r[0]);
     //saving abs(data)
@@ -87,8 +114,15 @@ void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vect
     printf("initialized\n");
 
     timer::start();
-    rec->Iterate();
-    printf("iterate function took %g seconds\n", timer::stop());
+    int ret = rec->Iterate();
+    if (ret > 0)
+    {
+        good_reconstruction = false;
+    }
+    else
+    {
+        printf("iterate function took %g seconds\n", timer::stop());
+    }
 }
 
 void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vector<d_type> guess_buffer_r, std::vector<d_type> guess_buffer_i, std::vector<int> support_vector, std::vector<int> dim, const std::string & config)
@@ -98,7 +132,15 @@ void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vect
     
     if (device >= 0)
     {
-        setDevice(device);
+        try{
+            setDevice(device);
+        }
+        catch (...)
+        {// leave to the os to assign device
+            printf("can't select gpu %d, can be not updated cache, try restart\n", device);
+            good_reconstruction = false;
+            return;
+        }
         info();
     }
     
@@ -119,8 +161,15 @@ void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vect
     printf("initialized\n");
 
     timer::start();
-    rec->Iterate();
-    printf("iterate function took %g seconds\n", timer::stop());
+    int ret = rec->Iterate();
+    if (ret > 0)
+    {
+        good_reconstruction = false;
+    }
+    else
+    {
+        printf("iterate function took %g seconds\n", timer::stop());
+    }
 }
 
 void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vector<d_type> guess_buffer_r, std::vector<d_type> guess_buffer_i, std::vector<int> support_vector, std::vector<int> dim, std::vector<d_type> coh_vector, std::vector<int> coh_dim, const std::string & config)
@@ -130,7 +179,15 @@ void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vect
     
     if (device >= 0)
     {
-        setDevice(device);
+        try{
+            printf("can't select gpu %d, can be not updated cache, try restart\n", device);
+            good_reconstruction = false;
+            return;
+        }
+        catch (...)
+        {// leave to the os to assign device
+            printf("can't select gpu %d\n", device);
+        }
         info();
     }
     
@@ -150,8 +207,15 @@ void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vect
     printf("initialized\n");
 
     timer::start();
-    rec->Iterate();
-    printf("iterate function took %g seconds\n", timer::stop());
+    int ret = rec->Iterate();
+    if (ret > 0)
+    {
+        good_reconstruction = false;
+    }
+    else
+    {
+        printf("iterate function took %g seconds\n", timer::stop());
+    }
 }
 
 std::vector<d_type> Manager::GetImageR()
@@ -178,6 +242,12 @@ std::vector<d_type> Manager::GetImageI()
 
 std::vector<d_type> Manager::GetErrors()
 {
+    if (! good_reconstruction)
+    {
+        std::vector<d_type> errors;
+        errors.push_back(-1.0);
+        return errors;
+    }
     return rec->GetErrors();
 }
 

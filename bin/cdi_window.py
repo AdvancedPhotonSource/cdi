@@ -439,8 +439,8 @@ class cdi_conf_tab(QTabWidget):
         layout = QFormLayout()
         self.aliens = QLineEdit()
         layout.addRow("aliens", self.aliens)
-        self.amp_threshold = QLineEdit()
-        layout.addRow("amp_threshold", self.amp_threshold)
+        self.amp_intensity = QLineEdit()
+        layout.addRow("amp intensity", self.amp_intensity)
         self.center_shift = QLineEdit()
         layout.addRow("center_shift", self.center_shift)
         self.adjust_dimensions = QLineEdit()
@@ -713,7 +713,7 @@ class cdi_conf_tab(QTabWidget):
         except AttributeError:
             pass
         try:
-            self.amp_threshold.setText(str(conf_map.amp_threshold).replace(" ", ""))
+            self.amp_intensity.setText(str(conf_map.amp_threshold).replace(" ", ""))
         except AttributeError:
             pass
         try:
@@ -863,10 +863,10 @@ class cdi_conf_tab(QTabWidget):
         conf_map = {}
         if len(self.aliens.text()) > 0:
             conf_map['aliens'] = str(self.aliens.text()).replace('\n', '')
-        if len(self.amp_threshold.text()) > 0:
-            conf_map['amp_threshold'] = str(self.amp_threshold.text())
+        if len(self.amp_intensity.text()) > 0:
+            conf_map['amp_threshold'] = str(self.amp_intensity.text())
         else:
-            msg_window('amplitude threshold not defined. Quiting operation.')
+            # msg_window('amplitude threshold not defined. Quiting operation.')
             return
         if len(self.binning.text()) > 0:
             conf_map['binning'] = str(self.binning.text()).replace('\n', '')
@@ -1237,6 +1237,7 @@ class cdi_conf_tab(QTabWidget):
                 self.results_dir = os.path.join(self.main_win.experiment_dir, res_file,
                                                 'g_' + str(generations-1))
         else:
+            print ('self.main_win.experiment_dir, res_file', self.main_win.experiment_dir, res_file)
             self.results_dir = os.path.join(self.main_win.experiment_dir, res_file)
         if self.separate_scans.isChecked():
             self.results_dir = self.main_win.experiment_dir

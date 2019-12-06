@@ -19,6 +19,8 @@ import scipy.fftpack as sf
 import os
 import logging
 import stat
+from functools import reduce
+import GPUtil
 
 __author__ = "Barbara Frosik"
 __copyright__ = "Copyright (c) 2016, UChicago Argonne, LLC."
@@ -535,3 +537,36 @@ def arr_property(arr):
     max_coordinates = list(np.unravel_index(np.argmax(arr1), arr.shape))
     print ('max coords, value', max_coordinates, arr[max_coordinates[0], max_coordinates[1],max_coordinates[2]])
 
+
+def get_gpu_load(mem_size, ids):
+    gpus = GPUtil.getGPUs()
+    total_avail = 0
+    available_dir = {}
+    for gpu in gpus:
+        if gpu.id in ids:
+            free_mem = gpu.memoryFree
+            avail_runs = int(free_mem / mem_size)
+            if avail_runs > 0:
+                total_avail += avail_runs
+                available_dir[gpu.id] = avail_runs
+    available = []
+    for id in ids:
+        try:
+            avail_runs = available_dir[id]
+        except:
+            avail_runs = 0
+        available.append(avail_runs)
+    return available
+
+
+def get_gpu_distribution(runs, available):
+    all_avail = reduce((lambda x,y: x+y), available)
+    while runs < all_avail:
+       # balance distribution
+       for i in range(len(available)):
+          if available[i] > 0:
+             available[i] -= 1
+             all_avail -= 1
+             if all_avail == runs:
+                break
+    return available

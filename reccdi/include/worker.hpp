@@ -96,6 +96,12 @@ private:
     void Twin();
     void Average();
 
+    // Runs one iteration of ER algorithm.
+    void ModulusConstrainEr();
+
+    // Runs one iteration of HIO algorithm.
+    void ModulusConstrainHio();
+
 public:
     // The class constructor takes data array, an image guess array in reciprocal space, and configuration file. The image guess
     // is typically generated as an complex random array. This image can be also the best outcome of previous calculations. The
@@ -116,13 +122,7 @@ public:
     // First it calls Next() on State, which determines which algorithm should be run in this state. It also determines whether the
     // algorithms should be modified by applying convolution or updating support. This method returns false if all iterations have
     // been completed (i.e. the code reached last state), and true otherwise. Typically this method will be run in a while loop.
-    void Iterate();
-
-    // Runs one iteration of ER algorithm.
-    void ModulusConstrainEr();
-
-    // Runs one iteration of HIO algorithm. 
-    void ModulusConstrainHio();
+    int Iterate();
 
     af::array GetImage();
     af::array GetSupportArray();
