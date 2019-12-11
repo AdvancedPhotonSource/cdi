@@ -6,10 +6,10 @@
 
 
 # distutils: language = c++
-# distutils: include_dirs = ['reccdi/include', 'AF_DIR/include', 'LC_DIR/include',]
+# distutils: include_dirs = ['reccdi/include', 'lib/arrayfire/include', 'lib/libconfig/include',]
 # distutils: sources = ['reccdi/src_cpp/bridge.cpp', 'reccdi/src_cpp/manager.cpp', 'reccdi/src_cpp/parameters.cpp', 'reccdi/src_cpp/pcdi.cpp', 'reccdi/src_cpp/resolution.cpp', 'reccdi/src_cpp/state.cpp', 'reccdi/src_cpp/support.cpp', 'reccdi/src_cpp/util.cpp', 'reccdi/src_cpp/worker.cpp']
 # distutils: libraries = ['afcpu',  'config++',]
-# distutils: library_dirs = ['AF_DIR/lib64', 'LC_DIR/lib',]
+# distutils: library_dirs = ['lib/arrayfire/lib64', 'lib/libconfig/lib',]
 
 from libcpp.vector cimport vector
 from libcpp.string cimport string
