@@ -11,22 +11,22 @@ read lc_dir
 LC='LC_DIR'
 sed -i 's?'$LC'?'$lc_dir'?g' reccdi/src_py/cyth/*.pyx
 
-echo -n "enter cuda installation directory > "
-read cuda_dir
+#echo -n "enter cuda installation directory > "
+#read cuda_dir
 
-export LD_LIBRARY_PATH=$lc_dir/lib:/usr/local/lib:$af_dir/lib64:$cuda_dir/lib64:$cuda_dir/nvvm/lib64
+export LD_LIBRARY_PATH=$lc_dir/lib:/usr/local/lib:$af_dir/lib64
 
 lib_path='LIB_PATH'
-sed -i 's?'$lib_path'?'$lc_dir/lib:/usr/local/lib:$af_dir/lib64:$cuda_dir/lib64:$cuda_dir/nvvm/lib64'?g' bin/everything.sh
-sed -i 's?'$lib_path'?'$lc_dir/lib:/usr/local/lib:$af_dir/lib64:$cuda_dir/lib64:$cuda_dir/nvvm/lib64'?g' bin/run_rec.sh
-sed -i 's?'$lib_path'?'$lc_dir/lib:/usr/local/lib:$af_dir/lib64:$cuda_dir/lib64:$cuda_dir/nvvm/lib64'?g' bin/cdi_window.sh
+sed -i 's?'$lib_path'?'$lc_dir/lib:/usr/local/lib:$af_dir/lib64'?g' bin/everything.sh
+sed -i 's?'$lib_path'?'$lc_dir/lib:/usr/local/lib:$af_dir/lib64'?g' bin/run_rec.sh
+sed -i 's?'$lib_path'?'$lc_dir/lib:/usr/local/lib:$af_dir/lib64'?g' bin/cdi_window.sh
 
-echo -n "enter data type (float/double) > "
-read data_type
+#echo -n "enter data type (float/double) > "
+#read data_type
 
-def='def_type'
-sed -i 's?'$def'?'$data_type'?g' reccdi/src_py/cyth/*.pyx
-sed -i 's?'$def'?'$data_type'?g' reccdi/include/common.h
+#def='def_type'
+#sed -i 's?'$def'?'$data_type'?g' reccdi/src_py/cyth/*.pyx
+#sed -i 's?'$def'?'$data_type'?g' reccdi/include/common.h
 
 
 python setup.py build_ext --inplace

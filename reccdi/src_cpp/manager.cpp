@@ -38,8 +38,10 @@ void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vect
             setDevice(device);
         }
         catch (...)
-        {// leave to the os to assign device
+        {
             printf("can't select gpu %d\n", device);
+            good_reconstruction = false;
+            return;
         }
         info();
     }
@@ -90,8 +92,8 @@ void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vect
             setDevice(device);
         }
         catch (...)
-        {// leave to the os to assign device
-            printf("can't select gpu %d, can be not updated cache, try restart\n", device);
+        {
+            printf("can't select gpu %d\n", device);
             good_reconstruction = false;
             return;
         }
@@ -137,7 +139,7 @@ void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vect
         }
         catch (...)
         {// leave to the os to assign device
-            printf("can't select gpu %d, can be not updated cache, try restart\n", device);
+            printf("can't select gpu %d\n", device);
             good_reconstruction = false;
             return;
         }
@@ -180,13 +182,13 @@ void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vect
     if (device >= 0)
     {
         try{
-            printf("can't select gpu %d, can be not updated cache, try restart\n", device);
-            good_reconstruction = false;
-            return;
+            setDevice(device);
         }
         catch (...)
-        {// leave to the os to assign device
+        {
             printf("can't select gpu %d\n", device);
+            good_reconstruction = false;
+            return;
         }
         info();
     }

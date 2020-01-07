@@ -22,7 +22,7 @@ Pre-requisites
 - Python packages installation:
   - pip install tifffile
   - pip install pylibconfig2
-  - python3 -m pip install parsl
+  - pip install GPUtil
   - pip install traits
   - pip install mayavi
   - pip install xrayutilities (for parsing spec file if using 34Id prep)
@@ -52,11 +52,6 @@ How to install
   at the promt enter the following:
   - enter ArrayFire installation directory > (absolute path to ArrayFire installation dir)
   - enter LibConfig installation directory > (absolute path to LibConfig installation dir)
-  - enter cuda installation directory > (absolute path to cuda installation dir)
-  - enter data type (float/double) > double
-- run installation:
-  - python setup.py build_ext --inplace
-  - python setup.py install
  
 How to run
 ----------

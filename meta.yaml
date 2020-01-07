@@ -1,9 +1,9 @@
 package:
   name: reccdi
-  version: "1.0"
+  version: 1.0
 
 source:
-  path: reccdi
+  path: .
 
 build:
   script_env:
