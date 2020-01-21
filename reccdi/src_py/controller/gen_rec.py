@@ -16,7 +16,9 @@ import reccdi.src_py.controller.reconstruction as single
 import reccdi.src_py.controller.reconstruction_multi as multi
 import reccdi.src_py.utilities.utils as ut
 import reccdi.src_py.utilities.utils_ga as gut
-
+import multiprocessing as mp
+from functools import partial
+import time
 
 __author__ = "Barbara Frosik"
 __copyright__ = "Copyright (c) 2016, UChicago Argonne, LLC."
@@ -149,12 +151,6 @@ class Generation:
             elif metric == 'area':
                 support = ut.shrink_wrap(image, .2, .5)
                 rank_property.append(sum(sum(sum(support))))
-            # elif metric == 'TV':
-            #     gradients = np.gradient(image)
-            #     TV = np.zeros(image.shape)
-            #     for gr in gradients:
-            #         TV += abs(gr)
-            #     rank_property.append(TV)
             else:
                 # metric is 'chi'
                 rank_property.append(errs[i][-1])
@@ -169,6 +165,7 @@ class Generation:
 
 
     def order(self, images, supports, cohs, errs, recips):
+        start = time.time()
         ranks = self.rank(images, errs)
         ordered_images = []
         ordered_supports = []
@@ -182,8 +179,70 @@ class Generation:
             ordered_errs.append(errs[ranks[i]])
             ordered_recips.append(recips[ranks[i]])
 
+        stop = time.time()
+        # print ('rank and order time', (stop - start))
         return ordered_images, ordered_supports, ordered_cohs, ordered_errs, ordered_recips
 
+
+    def breed_one(self, alpha, breed_mode, beta):
+        beta = gut.zero_phase(beta, 0)
+        alpha = gut.check_get_conj_reflect(beta, alpha)
+        alpha_s = gut.align_arrays(beta, alpha)
+        alpha_s = gut.zero_phase(alpha_s, 0)
+        ph_alpha = np.angle(alpha_s)
+        beta = gut.zero_phase_cc(beta, alpha_s)
+        ph_beta = np.angle(beta)
+        if breed_mode == 'sqrt_ab':
+            beta = np.sqrt(abs(alpha_s) * abs(beta)) * np.exp(0.5j * (ph_beta + ph_alpha))
+
+        elif breed_mode == 'dsqrt':
+            amp = pow(abs(beta), .5)
+            beta = amp * np.exp(1j * ph_beta)
+
+        elif breed_mode == 'pixel_switch':
+            cond = np.random.random_sample(beta.shape)
+            beta = np.where((cond > 0.5), beta, alpha_s)
+
+        elif breed_mode == 'b_pa':
+            beta = abs(beta) * np.exp(1j * (ph_alpha))
+
+        elif breed_mode == '2ab_a_b':
+            beta = 2 * (beta * alpha_s) / (beta + alpha_s)
+
+        elif breed_mode == '2a_b_pa':
+            beta = (2 * abs(alpha_s) - abs(beta)) * np.exp(1j * ph_alpha)
+
+        elif breed_mode == 'sqrt_ab_pa':
+            beta = np.sqrt(abs(alpha_s) * abs(beta)) * np.exp(1j * ph_alpha)
+
+        elif breed_mode == 'sqrt_ab_pa_recip':
+            temp1 = np.fft.fftshift(np.fft.fftn(np.fft.fftshift(beta)))
+            temp2 = np.fft.fftshift(np.fft.fftn(np.fft.fftshift(alpha_s)))
+            temp = np.sqrt(abs(temp1) * abs(temp2)) * np.exp(1j * np.angle(temp2))
+            beta = np.fft.fftshift(np.fft.ifftn(np.fft.fftshift(temp)))
+
+        elif breed_mode == 'sqrt_ab_recip':
+            temp1 = np.fft.fftshift(np.fft.fftn(np.fft.fftshift(beta)))
+            temp2 = np.fft.fftshift(np.fft.fftn(np.fft.fftshift(alpha_s)))
+            temp = np.sqrt(abs(temp1) * abs(temp2)) * np.exp(.5j * np.angle(temp1)) * np.exp(.5j * np.angle(temp2))
+            beta = np.fft.fftshift(np.fft.ifftn(np.fft.fftshift(temp)))
+
+        elif breed_mode == 'max_ab':
+            beta = np.maximum(abs(alpha_s), abs(beta)) * np.exp(.5j * (ph_beta + ph_alpha))
+
+        elif breed_mode == 'max_ab_pa':
+            beta = np.maximum(abs(alpha_s), abs(beta)) * np.exp(1j * ph_alpha)
+
+        elif breed_mode == 'min_ab_pa':
+            beta = np.minimum(abs(alpha_s), abs(beta)) * np.exp(1j * ph_alpha)
+
+        elif breed_mode == 'avg_ab':
+            beta = 0.5 * (alpha_s + beta)
+
+        elif breed_mode == 'avg_ab_pa':
+            beta = 0.5 * (abs(alpha_s) + abs(beta)) * np.exp(1j * (ph_alpha))
+
+        return beta
 
     def breed(self, images):
         """
@@ -210,135 +269,43 @@ class Generation:
             list of child coherence, set to None
         """
         print ('breeding generation ', (self.current_gen + 1))
+        start = time.time()
+        child_images = []
+        child_supports = []
+        def collect_result(result):
+            for r in result:
+                if r is None:
+                    continue
+                child_images.append(r)
+                child_supports.append(ut.shrink_wrap(r, threshold, sigma))
+
         sigma = self.ga_support_sigmas[self.current_gen]
         threshold = self.ga_support_thresholds[self.current_gen]
         breed_mode = self.breed_modes[self.current_gen]
-        if breed_mode == 'none':
-            return images, None
         reconstructions = len(images)
         if self.worst_remove_no is not None:
             reconstructions = reconstructions - self.worst_remove_no[self.current_gen]
+        if breed_mode == 'none':
+            return images, None
 
-        ims = images[0 : reconstructions]
-        dims = len(ims[0].shape)
-        ims_arr = np.stack(ims)
-
-        alpha = ims[0]
+        alpha = images[0]
         alpha = gut.zero_phase(alpha, 0)
+        ims = images[1 : reconstructions]
 
         # put the best into the bred population
-        child_images = [alpha]
-        child_supports = [ut.shrink_wrap(alpha, threshold, sigma)]
+        child_images.append(alpha)
+        child_supports.append(ut.shrink_wrap(alpha, threshold, sigma))
 
-        for ind in range(1, len(ims)):
-            beta = ims[ind]
-            beta = gut.zero_phase(beta, 0)
-            alpha = gut.check_get_conj_reflect(beta, alpha)
-            alpha_s = gut.align_arrays(beta, alpha)
-            alpha_s = gut.zero_phase(alpha_s, 0)
-            ph_alpha = np.angle(alpha_s)
-            beta = gut.zero_phase_cc(beta, alpha_s)
-            ph_beta = np.angle(beta)
+        no_processes = min(len(ims), mp.cpu_count())
+        func = partial(self.breed_one, alpha, breed_mode)
+        with mp.Pool(processes = no_processes) as pool:
+            pool.map_async(func, ims, callback=collect_result)
+            pool.close()
+            pool.join()
+            pool.terminate()
 
-            if breed_mode == 'sqrt_ab':
-                beta = np.sqrt(abs(alpha_s) * abs(beta)) * np.exp(0.5j * (ph_beta + ph_alpha))
-
-            elif breed_mode == 'max_all':
-                amp = np.amax(abs(ims_arr), axis=0)
-                beta = amp * np.exp(1j * ph_beta)
-
-            elif breed_mode == 'Dhalf':
-                nhalf = round(len(ims)/2)
-                delta = nhalf * ims[ind] - np.sum(np.stack(ims[:nhalf]), axis=0)
-                beta = beta + delta
-
-            elif breed_mode == 'dsqrt':
-                amp = pow(abs(beta), .5)
-                beta = amp * np.exp(1j * ph_beta)
-
-            elif breed_mode == 'pixel_switch':
-                cond = np.random.random_sample(beta.shape)
-                beta = np.where((cond > 0.5), beta, alpha_s)
-
-            elif breed_mode == 'b_pa':
-                beta = abs(beta) * np.exp(1j * (ph_alpha))
-
-            elif breed_mode == '2ab_a_b':
-                beta = 2*(beta * alpha_s) / (beta + alpha_s)
-
-            elif breed_mode == '2a_b_pa':
-                beta = (2*abs(alpha_s)-abs(beta)) * np.exp(1j *ph_alpha)
-
-            elif breed_mode == 'sqrt_ab_pa':
-                beta = np.sqrt(abs(alpha_s) * abs(beta)) * np.exp(1j * ph_alpha)
-
-            elif breed_mode == 'sqrt_ab_pa_recip':
-                temp1 = np.fft.fftshift(np.fft.fftn(np.fft.fftshift(beta)))
-                temp2 = np.fft.fftshift(np.fft.fftn(np.fft.fftshift(alpha_s)))
-                temp = np.sqrt(abs(temp1) * abs(temp2)) * np.exp(1j * np.angle(temp2))
-                beta = np.fft.fftshift(np.fft.ifftn(np.fft.fftshift(temp)))
-
-            elif breed_mode == 'sqrt_ab_recip':
-                temp1 = np.fft.fftshift(np.fft.fftn(np.fft.fftshift(beta)))
-                temp2 = np.fft.fftshift(np.fft.fftn(np.fft.fftshift(alpha_s)))
-                temp = np.sqrt(abs(temp1) *abs(temp2)) *np.exp(.5j *np.angle(temp1)) *np.exp(.5j *np.angle(temp2))
-                beta = np.fft.fftshift(np.fft.ifftn(np.fft.fftshift(temp)))
-
-            elif breed_mode == 'max_ab':
-                beta = np.maximum(abs(alpha_s), abs(beta)) * np.exp(.5j *(ph_beta + ph_alpha))
-
-            elif breed_mode == 'max_ab_pa':
-                beta = np.maximum(abs(alpha_s), abs(beta)) * np.exp(1j *ph_alpha)
-
-            elif breed_mode == 'min_ab_pa':
-                beta = np.minimum(abs(alpha_s), abs(beta)) * np.exp(1j *ph_alpha)
-
-            elif breed_mode == 'avg_ab':
-                beta = 0.5 *(alpha_s + beta)
-
-            elif breed_mode == 'avg_ab_pa':
-                beta = 0.5 *(abs(alpha_s) + abs(beta)) * np.exp(1j *(ph_alpha))
-            else:
-                # The following modes include gamma; gamma is in index 1
-                # gamma = zero_phase(gamma, val);
-                # ph_gamma = atan2(imag(gamma), real(gamma));
-
-                gamma = ims[1]
-                gamma = gut.zero_phase(gamma, 0)
-                if ind > 1:
-                    gamma = gut.check_get_conj_reflect(beta, gamma)
-                    gamma_s = gut.align_arrays(abs(beta), abs(gamma))
-                    gamma_s = gut.zero_phase(gamma_s, 0)
-                    ph_gamma = np.angle(gamma_s)
-                else:
-                    gamma_s = gamma
-                    ph_gamma = np.arctan2(gamma.imag, gamma.real)
-
-                if breed_mode == 'sqrt_abg':
-                    beta = pow((abs(alpha_s) *abs(beta) *abs(gamma_s)), (1/3)) *np.exp(1j *(ph_beta+ph_alpha+ph_gamma)/3.0)
-
-                elif breed_mode == 'sqrt_abg_pa':
-                    beta = pow((abs(alpha_s) *abs(beta) *abs(gamma_s)), (1/3)) *np.exp(1j *ph_alpha)
-
-                elif breed_mode == 'max_abg':
-                    beta = np.maximum(np.maximum(abs(alpha_s), abs(beta)), abs(gamma_s)) *np.exp(1j *(ph_beta+ph_alpha+ph_gamma)/3.0)
-
-                elif breed_mode == 'max_abg_pa':
-                    beta = np.maximum(np.maximum(abs(alpha_s), abs(beta)),abs(gamma_s)) *np.exp(1j *ph_alpha)
-
-                elif breed_mode == 'avg_abg':
-                    beta = (1/3)*(alpha_s+beta+gamma_s)
-
-                elif breed_mode == 'avg_abg_pa':
-                    beta = (1/3)*(abs(alpha_s)+abs(beta)+abs(gamma_s)) *np.exp(1j *ph_alpha)
-
-                elif breed_mode == 'avg_sqrt':
-                    amp=( pow(abs(beta), 1/3)+pow(abs(alpha_s), 1/3)+pow(abs(gamma_s), 1/3))/3
-                    beta = pow(amp, 3) * np.exp(1j *ph_beta)
-
-            child_images.append(beta)
-            child_supports.append(ut.shrink_wrap(beta, threshold, sigma))
-
+        stop = time.time()
+        # print ('breeding time', (stop - start))
         return child_images, child_supports
 
 
@@ -420,7 +387,6 @@ def reconstruction(proc, conf_file, datafile, dir, devices):
             # save the generation results
             gen_save_dir = os.path.join(save_dir, 'g_' + str(g))
             ut.save_multiple_results(len(images), images, supports, cohs, errs, recips, flows, iter_arrs, gen_save_dir, metrics)
-            print ('g, generations, images no', g, generations, len(images))
             if g < generations - 1 and len(images) > 1:
                 images, shrink_supports = gen_obj.breed(images)
                 if shrink_supports is not None:
@@ -433,14 +399,12 @@ def reconstruction(proc, conf_file, datafile, dir, devices):
         rec = single
 
         for g in range(generations):
-            print ('gen', g)
             gen_data = gen_obj.get_data(data)
             image, support, coh, err, recip, flows, iter_arrs = rec.single_rec(proc, gen_data, conf_file, config_map, devices[0], image, support, coh)
             if image is None:
                 return
             # save the generation results
             gen_save_dir = os.path.join(save_dir, 'g_' + str(g))
-            print ('gen save dir', gen_save_dir)
             ut.save_results(image, support, coh, err, recip, flows, iter_arrs, gen_save_dir)
             gen_obj.next_gen()
 

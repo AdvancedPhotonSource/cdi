@@ -1423,7 +1423,7 @@ class GA(Feature):
     def rec_default(self):
         self.generations.setText('5')
         self.metrics.setText('("chi","chi","area","chi","sharpness")')
-        self.breed_modes.setText('("sqrt_ab","sqrt_ab","max_all","Dhalf","sqrt_ab")')
+        self.breed_modes.setText('("sqrt_ab","sqrt_ab","avg_ab","max_ab_pa","sqrt_ab")')
         self.removes.setText('(2,2,1)')
         self.ga_support_thresholds.setText('(.1,.1,.1,.1,.1)')
         self.ga_support_sigmas.setText('(1.0,1.0,1.0,1.0)')
