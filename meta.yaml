@@ -1,6 +1,6 @@
 package:
   name: reccdi
-  version: 1.0
+  version: "v1.1"
 
 source:
   path: .
@@ -21,9 +21,9 @@ requirements:
     - cython
 
   run:
-    - python
     - tifffile
     - pylibconfig2
+    - gputil
     - xrayutilities
     - traits
     - mayavi
@@ -34,3 +34,4 @@ about:
   license: BSD
   license_file: LICENSE
   summary: Implement and parallelize genetic algorithms and phase retrieval methods for Bragg CDI techniques.
+

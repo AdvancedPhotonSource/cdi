@@ -72,21 +72,21 @@ typedef struct flow_item_def { char* item_name;
 // 2. Update the flow_seq_len below.
 // 3. Add the new function to the worker.hh and worker.cc, and add the pair (func_name, fp) to the flow_ptr_map in worker.cpp.
 const flow_item_def flow_def[] = {
-  flow_item_def("next",                  NOT_TRIGGER,          "NextIter"),
-  flow_item_def("resolution_trigger",    FIRST_RUN_ONLY,       "ResolutionTrigger"),
-  flow_item_def("amp_support_trigger",   MODIFIED_AFTER_FIRST, "SupportTrigger"),
-  flow_item_def("phase_support_trigger", FIRST_RUN_ONLY,       "PhaseTrigger"),
-  flow_item_def("to_reciprocal_space",   NOT_TRIGGER,          "ToReciprocal"),
-  flow_item_def("pcdi_trigger",          MODIFIED_AFTER_FIRST, "PcdiTrigger"),
-  flow_item_def("pcdi",                  CUSTOM,               "Pcdi"),
-  flow_item_def("no_pcdi",               CUSTOM,               "NoPcdi"),
-  flow_item_def("garbage_trigger",       FOR_ALL_RUNS,         "Gc"),
-  flow_item_def("set_prev_pcdi_trigger", CUSTOM,               "SetPcdiPrevious"),
-  flow_item_def("to_direct_space",       NOT_TRIGGER,          "ToDirect"),
-  flow_item_def("algorithm",             CUSTOM,               "RunAlg"),
-  flow_item_def("twin_trigger",          FIRST_RUN_ONLY,       "Twin"),
-  flow_item_def("average_trigger",       FOR_ALL_RUNS,         "Average"),
-  flow_item_def("progress_trigger",      FOR_ALL_RUNS,         "Prog")
+  flow_item_def((char *)"next",                  NOT_TRIGGER,          (char *)"NextIter"),
+  flow_item_def((char *)"resolution_trigger",    FIRST_RUN_ONLY,       (char *)"ResolutionTrigger"),
+  flow_item_def((char *)"amp_support_trigger",   MODIFIED_AFTER_FIRST, (char *)"SupportTrigger"),
+  flow_item_def((char *)"phase_support_trigger", FIRST_RUN_ONLY,       (char *)"PhaseTrigger"),
+  flow_item_def((char *)"to_reciprocal_space",   NOT_TRIGGER,          (char *)"ToReciprocal"),
+  flow_item_def((char *)"pcdi_trigger",          MODIFIED_AFTER_FIRST, (char *)"PcdiTrigger"),
+  flow_item_def((char *)"pcdi",                  CUSTOM,               (char *)"Pcdi"),
+  flow_item_def((char *)"no_pcdi",               CUSTOM,               (char *)"NoPcdi"),
+  flow_item_def((char *)"garbage_trigger",       FOR_ALL_RUNS,         (char *)"Gc"),
+  flow_item_def((char *)"set_prev_pcdi_trigger", CUSTOM,               (char *)"SetPcdiPrevious"),
+  flow_item_def((char *)"to_direct_space",       NOT_TRIGGER,          (char *)"ToDirect"),
+  flow_item_def((char *)"algorithm",             CUSTOM,               (char *)"RunAlg"),
+  flow_item_def((char *)"twin_trigger",          FIRST_RUN_ONLY,       (char *)"Twin"),
+  flow_item_def((char *)"average_trigger",       FOR_ALL_RUNS,         (char *)"Average"),
+  flow_item_def((char *)"progress_trigger",      FOR_ALL_RUNS,         (char *)"Prog")
 };
 
 const int flow_seq_len = 15;

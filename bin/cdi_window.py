@@ -6,9 +6,9 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 import reccdi.src_py.run_scripts.run_data as run_dt
 import reccdi.src_py.run_scripts.run_rec as run_rc
-import reccdi.src_py.run_scripts.run_disp as run_dp
+import run_disp_tvtk as run_dp
 import reccdi.src_py.utilities.utils as ut
-import reccdi.src_py.utilities.spec as spec
+import reccdi.src_py.beamlines.aps_34id.spec as spec
 import reccdi.src_py.utilities.parse_ver as ver
 import importlib
 
@@ -585,6 +585,8 @@ class cdi_conf_tab(QTabWidget):
         layout.addRow("results directory", self.result_dir_button)
         self.crop = QLineEdit()
         layout.addRow("crop", self.crop)
+        self.rampups = QLineEdit()
+        layout.addRow("ramp upscale", self.rampups)
         self.spec_file_button1 = QPushButton()
         layout.addRow("spec file", self.spec_file_button1)
         self.energy = QLineEdit()
@@ -793,9 +795,13 @@ class cdi_conf_tab(QTabWidget):
                 self.parse_spec()
         except AttributeError:
             pass
-        # if parameters are configured, override the readingsfrom spec file
+        # if parameters are configured, override the readings from spec file
         try:
             self.crop.setText(str(conf_map.crop).replace(" ", ""))
+        except AttributeError:
+            pass
+        try:
+            self.rampups.setText(str(conf_map.rampups).replace(" ", ""))
         except AttributeError:
             pass
         try:
@@ -828,6 +834,28 @@ class cdi_conf_tab(QTabWidget):
             self.pixel.setStyleSheet('color: black')
         except AttributeError:
             pass
+        # add parameters from config file that are not displayed 
+        try:
+            self.diffractometer = '"' + str(conf_map.diffractometer).replace(" ", "") + '"'
+        except AttributeError:
+            self.diffractometer = '"34idc"'
+        print ('self.diffractometer', self.diffractometer, type(self.diffractometer))
+        try:
+            self.sampleaxes_name = str(conf_map.sampleaxes_name).replace(" ", "")
+        except AttributeError:
+            self.sampleaxes_name = None
+        try:
+            self.detectoraxes_name = str(conf_map.detectoraxes_name).replace(" ", "")
+        except AttributeError:
+            self.detectoraxes_name = None
+        try:
+            self.sampleaxes = str(conf_map.sampleaxes).replace(" ", "")
+        except AttributeError:
+            self.sampleaxes = None
+        try:
+            self.detectoraxes = str(conf_map.detectoraxes).replace(" ", "")
+        except AttributeError:
+            self.detectoraxes = None
 
 
     def get_prep_config(self):
@@ -917,6 +945,20 @@ class cdi_conf_tab(QTabWidget):
             conf_map['pixel'] = str(self.pixel.text()).replace('\n', '')
         if len(self.crop.text()) > 0:
             conf_map['crop'] = str(self.crop.text()).replace('\n', '')
+        if len(self.rampups.text()) > 0:
+            conf_map['rampups'] = str(self.rampups.text()).replace('\n', '')
+        # The following attributes are read from config file, not from GUI
+        if self.diffractometer is not None:
+            conf_map['diffractometer'] =  self.diffractometer
+            print ('in gui diffr', conf_map['diffractometer'])
+        if self.sampleaxes_name is not None:
+            conf_map['sampleaxes_name'] =  self.sampleaxes_name
+        if self.detectoraxes_name is not None:
+            conf_map['detectoraxes_name'] = self.detectoraxes_name
+        if self.sampleaxes is not None:
+            conf_map['sampleaxes'] = self.sampleaxes
+        if self.detectoraxes is not None:
+            conf_map['detectoraxes'] = self.detectoraxes
 
         return conf_map
 
@@ -1237,7 +1279,6 @@ class cdi_conf_tab(QTabWidget):
                 self.results_dir = os.path.join(self.main_win.experiment_dir, res_file,
                                                 'g_' + str(generations-1))
         else:
-            print ('self.main_win.experiment_dir, res_file', self.main_win.experiment_dir, res_file)
             self.results_dir = os.path.join(self.main_win.experiment_dir, res_file)
         if self.separate_scans.isChecked():
             self.results_dir = self.main_win.experiment_dir

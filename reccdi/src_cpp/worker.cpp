@@ -99,28 +99,27 @@ void Reconstruction::Init()
     CreateAlgorithmMap();
 
     std::map<char*, fp> flow_ptr_map;
-    flow_ptr_map["NextIter"] = &Reconstruction::NextIter;
-    flow_ptr_map["ResolutionTrigger"] =  &Reconstruction::ResolutionTrigger;
-    flow_ptr_map["SupportTrigger"] = &Reconstruction::SupportTrigger;
-    flow_ptr_map["PhaseTrigger"] = &Reconstruction::PhaseTrigger;
-    flow_ptr_map["ToReciprocal"] = &Reconstruction::ToReciprocal;
-    flow_ptr_map["PcdiTrigger"] = &Reconstruction::PcdiTrigger;
-    flow_ptr_map["Pcdi"] = &Reconstruction::Pcdi;
-    flow_ptr_map["NoPcdi"] = &Reconstruction::NoPcdi;
-    flow_ptr_map["Gc"] = &Reconstruction::Gc;
-    flow_ptr_map["SetPcdiPrevious"] = &Reconstruction::SetPcdiPrevious;
-    flow_ptr_map["ToDirect"] = &Reconstruction::ToDirect;
-    flow_ptr_map["RunAlg"] = &Reconstruction::ModulusConstrainEr;  //This will be replaced by configured algorithm method
-    flow_ptr_map["Twin"] = &Reconstruction::Twin;
-    flow_ptr_map["Average"] = &Reconstruction::Average;
-    flow_ptr_map["Prog"] = &Reconstruction::Progress;
-
+    flow_ptr_map[(char *)"NextIter"] = &Reconstruction::NextIter;
+    flow_ptr_map[(char *)"ResolutionTrigger"] =  &Reconstruction::ResolutionTrigger;
+    flow_ptr_map[(char *)"SupportTrigger"] = &Reconstruction::SupportTrigger;
+    flow_ptr_map[(char *)"PhaseTrigger"] = &Reconstruction::PhaseTrigger;
+    flow_ptr_map[(char *)"ToReciprocal"] = &Reconstruction::ToReciprocal;
+    flow_ptr_map[(char *)"PcdiTrigger"] = &Reconstruction::PcdiTrigger;
+    flow_ptr_map[(char *)"Pcdi"] = &Reconstruction::Pcdi;
+    flow_ptr_map[(char *)"NoPcdi"] = &Reconstruction::NoPcdi;
+    flow_ptr_map[(char *)"Gc"] = &Reconstruction::Gc;
+    flow_ptr_map[(char *)"SetPcdiPrevious"] = &Reconstruction::SetPcdiPrevious;
+    flow_ptr_map[(char *)"ToDirect"] = &Reconstruction::ToDirect;
+    flow_ptr_map[(char *)"RunAlg"] = &Reconstruction::ModulusConstrainEr;  //This will be replaced by configured algorithm method
+    flow_ptr_map[(char *)"Twin"] = &Reconstruction::Twin;
+    flow_ptr_map[(char *)"Average"] = &Reconstruction::Average;
+    flow_ptr_map[(char *)"Prog"] = &Reconstruction::Progress;
 
     std::vector<int> used_flow_seq = params->GetUsedFlowSeq();
     std::vector<int> flow_array = params->GetFlowArray();
     int num_iter = params->GetNumberIterations();
 
-    for (int i = 0; i < used_flow_seq.size(); i++)
+    for (uint i = 0; i < used_flow_seq.size(); i++)
     {
         int func_order = used_flow_seq[i];
         int offset = i * num_iter;
@@ -185,7 +184,7 @@ int Reconstruction::Iterate()
             printf("the image array has NaN element, quiting this reconstruction process\n");
             return (uint)(getpid());
         }
-        for (int i=0; i<iter_flow[current_iteration].size(); i++ )
+        for (uint i=0; i<iter_flow[current_iteration].size(); i++ )
         {
             (this->*iter_flow[current_iteration][i])();
         }
@@ -307,14 +306,14 @@ void Reconstruction::Average()
     std::vector<d_type> v(image_v, image_v + ds_image.elements());
     if (aver_v.size() == 0)
     {
-        for (int i = 0; i < v.size(); i++)
+        for (uint i = 0; i < v.size(); i++)
         {
             aver_v.push_back(v[i]);
         }
     }
     else
     {
-        for (int i = 0; i < v.size(); i++)
+        for (uint i = 0; i < v.size(); i++)
         {
             aver_v[i] += v[i];
         }

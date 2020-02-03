@@ -92,7 +92,6 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
     {
         printf("No 'algorithm_sequence' parameter in configuration file.\n");
     }
-
     // process triggers
     // find which triggers are configured, add the index of the flow_seq item to used_flow_seq vwctor if this item
     // is used
@@ -106,7 +105,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
         {
             used_flow_seq.push_back(i);
         }
-        else if (flow_item == "pcdi_trigger")
+        else if (flow_item == (char *)"pcdi_trigger")
         {
             if (root.exists(flow_item))
             {
@@ -123,11 +122,11 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
         {
             if (type == CUSTOM)
             {
-                if (flow_item == "algorithm")
+                if (flow_item == (char *)"algorithm")
                 {
                     used_flow_seq.push_back(i);
                 }
-                else if (flow_item == "no_pcdi")
+                else if (flow_item == (char *)"no_pcdi")
                 {
                     if (!is_pcdi || first)
                     {
@@ -174,8 +173,8 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
         }
         else if (type == CUSTOM)
         {
-            if (flow_item == "algorithm")
-            {
+            if (flow_item == (char *)"algorithm")
+           {
                 int alg_start = 0;
                 for (int k=0; k < alg_switches.size(); k++)
                 {
@@ -183,7 +182,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
                     alg_start += alg_switches[k].iterations;
                 }
             }
-            else if (flow_item == "pcdi")
+            else if (flow_item == (char *)"pcdi")
             {
                 int start_pcdi = first ? pcdi_tr_iter[0] : 0;
                 for (int i = start_pcdi; i < number_iterations; i ++)
@@ -191,7 +190,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
                     flow[offset + i] = 1;
                 }
             }
-            else if (flow_item == "no_pcdi")
+            else if (flow_item == (char *)"no_pcdi")
             {
                 int stop_pcdi = is_pcdi ? pcdi_tr_iter[0] : number_iterations;
                 for (int i = 0; i < stop_pcdi; i ++)
@@ -199,7 +198,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
                     flow[offset + i] = 1;
                 }
             }
-            else if (flow_item == "set_prev_pcdi_trigger")
+            else if (flow_item == (char *)"set_prev_pcdi_trigger")
             {
                 for (int i = 0; i < pcdi_tr_iter.size(); i ++)
                 {
@@ -220,7 +219,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
                         // the line below handler negative number
                         ind = (ind + number_iterations) % number_iterations;
                         flow[offset + ind] = 1;
-                        if (flow_item == "pcdi_trigger")
+                        if (flow_item == (char *)"pcdi_trigger")
                         {
                             pcdi_tr_iter.push_back(ind);
                         }
@@ -252,7 +251,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
                     for (int i = start_iter; i < stop_iter; i += step)
                     {
                         flow[offset + i] = 1;
-                        if (flow_item == "pcdi_trigger")
+                        if (flow_item == (char *)"pcdi_trigger")
                         {
                             pcdi_tr_iter.push_back(i);
                         }
@@ -271,7 +270,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
                             // the line below handler negative number
                             ind = (ind + number_iterations) % number_iterations;
                             flow[offset + ind] = 1;
-                            if (flow_item == "pcdi_trigger")
+                            if (flow_item == (char *)"pcdi_trigger")
                             {
                                 pcdi_tr_iter.push_back(ind);
                             }
@@ -302,7 +301,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
                         for (int i = start_iter; i < stop_iter; i += step)
                         {
                             flow[offset + i] = 1;
-                            if (flow_item == "pcdi_trigger")
+                            if (flow_item == (char *)"pcdi_trigger")
                             {
                                 pcdi_tr_iter.push_back(i);
                             }
@@ -520,11 +519,11 @@ Params::~Params()
 void Params::BuildAlgorithmMap()
 {
     // hardcoded
-    algorithm_id_map.insert(std::pair<char*,int>("ER", ALGORITHM_ER));
-    algorithm_id_map.insert(std::pair<char*,int>("HIO", ALGORITHM_HIO));
-    algorithm_id_map.insert(std::pair<char*,int>("LUCY", ALGORITHM_LUCY));
-    algorithm_id_map.insert(std::pair<char*,int>("LUCY_PREV", ALGORITHM_LUCY_PREV));
-    algorithm_id_map.insert(std::pair<char*,int>("GAUSS", ALGORITHM_GAUSS));
+    algorithm_id_map.insert(std::pair<char*,int>((char *)"ER", ALGORITHM_ER));
+    algorithm_id_map.insert(std::pair<char*,int>((char *)"HIO", ALGORITHM_HIO));
+    algorithm_id_map.insert(std::pair<char*,int>((char *)"LUCY", ALGORITHM_LUCY));
+    algorithm_id_map.insert(std::pair<char*,int>((char *)"LUCY_PREV", ALGORITHM_LUCY_PREV));
+    algorithm_id_map.insert(std::pair<char*,int>((char *)"GAUSS", ALGORITHM_GAUSS));
 }
 
 int Params::GetNumberIterations()

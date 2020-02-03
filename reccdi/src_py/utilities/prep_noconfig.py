@@ -1,33 +1,11 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-# #########################################################################
-# Copyright (c) , UChicago Argonne, LLC. All rights reserved.             #
-#                                                                         #
-# See LICENSE file.                                                       #
-# #########################################################################
-
-__author__ = "Ross Harder"
-__docformat__ = 'restructuredtext en'
-__all__ = ['get_dir_list',
-           'get_dark_white',
-           'get_normalized_slice',
-           'read_scan',
-           'shift',
-           'combine_part',
-           'fit',
-           'prep_data',
-           'prepare']
-
-import pylibconfig2 as cfg
 import numpy as np
 import copy
 import scipy.fftpack as sf
 import os
 import glob
 import tifffile as tif
-import reccdi.src_py.beamlines.aps_34id.spec as spec
-import reccdi.src_py.utilities.utils as ut
+#import reccdi.src_py.utilities.spec as spec
+#import reccdi.src_py.utilities.utils as ut
 
 
 def get_dir_list(scans, map):
@@ -48,10 +26,9 @@ def get_dir_list(scans, map):
     except:
         exclude_scans = []
     try:
-        data_dir = map.data_dir.strip()
+        data_dir = map.data_dir
     except:
         print ('please provide data_dir')
-        return
 
     dirs = []
     for name in os.listdir(data_dir):
@@ -74,7 +51,7 @@ def get_dark_white(darkfile, whitefile, det_area1, det_area2):
         # find the darkfield array
         dark_full = tif.imread(darkfile).astype(float)
         # crop the corresponding quad or use the whole array, depending on what info was parsed from spec file
-        dark = dark_full[slice(det_area1[0], det_area1[0] + det_area1[1]), slice(det_area2[0], det_area2[0] + det_area2[1])]
+        dark = dark_full[slice(det_area1[0], det_area1[1]), slice(det_area2[0], det_area2[1])]
     else:
         dark = None
 
@@ -82,7 +59,7 @@ def get_dark_white(darkfile, whitefile, det_area1, det_area2):
         # find the whitefield array
         white_full = tif.imread(whitefile).astype(float)
         # crop the corresponding quad or use the whole array, depending on what info was parsed from spec file
-        white = white_full[slice(det_area1[0], det_area1[0] + det_area1[1]), slice(det_area2[0], det_area2[0] + det_area2[1])]
+        white = white_full[slice(det_area1[0], det_area1[1]), slice(det_area2[0], det_area2[1])]
         # set the bad pixels to some large value
         white = np.where(white<5000, 1e20, white) #Some large value
     else:
@@ -129,15 +106,16 @@ def read_scan(dir, dark, white):
 
     # look at slice0 to find out shape
     n = 0
-    slice0 = get_normalized_slice(files[n], dark, white)
+    slice0 = get_normalized_slice(files[n], dark, white).transpose()
     shape = (slice0.shape[0], slice0.shape[1], len(files))
     arr = np.zeros(shape, dtype=slice0.dtype)
     arr[:,:,0] = slice0
+    print("slice shape",slice0.shape)
 
     #for i in range (1, len(files)):
     for file in files[1:]:
         n = n + 1
-        slice = get_normalized_slice(file, dark, white)
+        slice = get_normalized_slice(file, dark, white).transpose()
         arr[:,:,n] = slice
     return arr
 
@@ -155,8 +133,8 @@ def shift(arr, shifty):
     for d in range(len(dims)):
         ftarr *= np.exp(-1j*2*np.pi*shifty[d]*sf.fftshift(idxgrid[d])/float(dims[d]))
 
-    shifted_arr = sf.ifftn(ftarr)
-    return shifted_arr
+    shiftedarr = sf.ifftn(ftarr)
+    return shiftedarr
 
 
 def combine_part(part_f, slice_sum, refpart, part):
@@ -171,24 +149,17 @@ def combine_part(part_f, slice_sum, refpart, part):
 
 
 def fit(arr, det_area1, det_area2):
-    # The det_area parameters hold the [beginning of image, size] in both dimensions.
-    # the beginning of image is relative to the full sensor image 512 x 512.
     # if the full sensor was used for the image (i.e. the data size is 512x512)
-    # or if the image overleaps multiple quads,
     # the quadrants need to be shifted
-    # check whether the image was taken with a single quad, then no shift is needed
-    if (det_area1[0] + det_area1[1] <= 256) and (det_area2[0] + det_area2[1] <= 256):
-       return arr
+    if det_area1[0] == 0 and det_area1[1] == 512 and det_area1[0] == 0 and det_area2[1] == 512:
+        b = np.zeros((arr.shape[0],517,516),float)
+        b[:,:256,:256] = arr[:,:256,:256] #Quad top left unchanged
+        b[:,:256,260:] = arr[:,:256,256:] #Quad top right moved 4 right
+        b[:,261:,:256] = arr[:,256:,:256] #Quad bot left moved 6 down
+        b[:,261:,260:] = arr[:,256:,256:] #Quad bot right
     else:
-        b = np.zeros((517,516,arr.shape[2]),float)
-        tmp = np.zeros((512,512,arr.shape[2]),float)
-        tmp[det_area1[0]:det_area1[0]+det_area1[1],det_area2[0]:det_area2[0]+det_area2[1],:] = arr
-        b[:256,:256,:] = tmp[:256,:256,:] #Quad top left unchanged
-        b[:256,260:,:] = tmp[:256,256:,:] #Quad top right moved 4 right
-        b[261:,:256,:] = tmp[256:,:256,:] #Quad bot left moved 6 down
-        b[261:,260:,:] = tmp[256:,256:,:] #Quad bot right
-
-        return b[det_area1[0]:det_area1[0]+det_area1[1],det_area2[0]:det_area2[0]+det_area2[1],:]
+        b = arr
+    return b
 
 
 def prep_data(experiment_dir, scans, map, det_area1, det_area2, *args):
@@ -200,20 +171,14 @@ def prep_data(experiment_dir, scans, map, det_area1, det_area2, *args):
     if len(scans) == 1:
         scans.append(scans[0])
     dirs = get_dir_list(scans, map)
-    if len(dirs) == 0:
-        print ('no data directories found')
-        return
-    else:
-        if not os.path.exists(experiment_dir):
-            os.makedirs(experiment_dir)
 
     try:
-        whitefile = (map.whitefile).strip()
+        whitefile = map.whitefile
     except:
         whitefile = None
 
     try:
-        darkfile = (map.darkfile).strip()
+        darkfile = map.darkfile
     except:
         darkfile = None
 
@@ -225,23 +190,20 @@ def prep_data(experiment_dir, scans, map, det_area1, det_area2, *args):
 
     if len(dirs) == 1:
         arr = read_scan(dirs[0], dark, white)
-        arr = fit(arr, det_area1, det_area2)
     else:
         # make the first part a reference
         part = read_scan(dirs[0], dark, white)
-        part = fit(part, det_area1, det_area2)
         slice_sum = np.abs(copy.deepcopy(part))
         refpart = sf.fftn(part)
         for i in range (1, len(dirs)):
             #this will load scans from each directory into an array part
             part = read_scan(dirs[i], dark, white)
-            part = fit(part, det_area1, det_area2)
             # add the arrays together
             part_f = sf.fftn(part)
             slice_sum = combine_part(part_f, slice_sum, refpart, part)
         arr = np.abs(slice_sum).astype(np.int32)
 
-    #arr = fit(arr, det_area1, det_area2)
+    arr = fit(arr, det_area1, det_area2)
 
     #create directory to save prepared data ,<experiment_dir>/prep
     prep_data_dir = os.path.join(experiment_dir, 'prep')
@@ -251,59 +213,4 @@ def prep_data(experiment_dir, scans, map, det_area1, det_area2, *args):
 
     ut.save_tif(arr, data_file)
     print ('done with prep, shape:', arr.shape)
-
-
-def prepare(experiment_dir, scans, conf_file, *args):
-    try:
-        with open(conf_file, 'r') as f:
-            config_map = cfg.Config(f.read())
-    except Exception as e:
-        print('Please check the configuration file ' + conf_file + '. Cannot parse ' + str(e))
-        return
-
-    scan_end = scans[len(scans)-1]
-    try:
-        specfile = config_map.specfile.strip()
-        # parse det1 and det2 parameters from spec
-        det_area1, det_area2 = spec.get_det_from_spec(specfile, scan_end)
-    except:
-        try:
-            det_quad = config_map.det_quad
-            if det_quad == 0:
-                det_area1 = (0, 512)
-                det_area2 = (0, 512)
-            elif det_quad == 1:
-                det_area1 = (0, 256)
-                det_area2 = (0, 256)
-            elif det_quad == 2:
-                det_area1 = (0, 256)
-                det_area2 = (256, 512)
-            elif det_quad == 3:
-                det_area1 = (256, 512)
-                det_area2 = (0, 256)
-            elif det_quad == 4:
-                det_area1 = (256, 512)
-                det_area2 = (256, 512)
-            else:
-                print('the detector quad can be configured as digt from 0 to 4')
-                return
-        except Exception as e:
-            print('spec file or scan is not configured, and detector quad is not configured')
-            return
-
-    try:
-        separate_scans = config_map.separate_scans
-    except:
-        separate_scans = False
-
-    # data prep
-    # if separate scans, prepare data in each scan separately in subdirectory
-    if separate_scans and len(scans) > 1:
-        for scan in range (scans[0], scans[1]+1):
-            single_scan = [scan]
-            scan_exp_dir = os.path.join(experiment_dir, 'scan_' + str(scan))
-            prep_data(scan_exp_dir, single_scan, config_map, det_area1, det_area2, args)
-    else:
-        prep_data(experiment_dir, scans, config_map, det_area1, det_area2, args)
-
 

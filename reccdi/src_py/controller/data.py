@@ -192,9 +192,6 @@ def prep(fname, conf_info):
 
     # save data
     data_file = os.path.join(data_dir, 'data.tif')
-    # np.save(data_file, prep_data)
     ut.save_tif(prep_data, data_file)
     print ('data ready for reconstruction, data dims:', prep_data.shape)
 
-
-#prep('/local/bfrosik/CDI/S149/Staff14-3_S0149.tif', 'config_data')

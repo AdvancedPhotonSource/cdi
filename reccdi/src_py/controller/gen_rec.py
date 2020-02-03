@@ -315,21 +315,20 @@ def reconstruction(proc, conf_file, datafile, dir, devices):
 
     Parameters
     ----------
-    generation : int
-        number of generations
-
     proc : str
         processor to run on (cpu, opencl, or cuda)
 
-    data : numpy array
-        initial data
+    conf_file : str
+        configuration file
 
-    conf_info : str
-        experiment directory or configuration file. If it is directory, the "conf/config_rec" will be
-        appended to determine configuration file
+    data : str
+        name of the file with initial data
 
-    conf_map : dict
-        a dictionary from parsed configuration file
+    dir : str
+        a directory 
+
+    devices : list
+        list of GPUs
 
     Returns
     -------
@@ -337,8 +336,6 @@ def reconstruction(proc, conf_file, datafile, dir, devices):
     """
     data = ut.read_tif(datafile)
     print ('data shape', data.shape)
-    data = np.swapaxes(data, 0, 2)
-    data = np.swapaxes(data, 0, 1)
 
     try:
         config_map = ut.read_config(conf_file)
@@ -409,5 +406,4 @@ def reconstruction(proc, conf_file, datafile, dir, devices):
             gen_obj.next_gen()
 
     print ('done gen')
-
 

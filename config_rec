@@ -57,7 +57,7 @@ ga_metrics = ("chi", "sharpness")
                              // defines which metric should be used to rank the reconstruction results
                              // supported: 'chi', 'sharpness', 'summed_phase', 'area', ('TV')
 
-ga_breed_modes = ("sqrt_ab", "Dhalf")
+ga_breed_modes = ("sqrt_ab", "dsqrt")
                              // defines which breeding mode to use to populate new generation. If "none"
                              // there is no breeding
                              // supported: 'sqrt_ab', 'dsqrt', 'pixel_switch', 'b_pa', '2ab_a_b',

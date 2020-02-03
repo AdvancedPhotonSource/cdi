@@ -111,8 +111,6 @@ def reconstruction(proc, conf_file, datafile, dir, dev):
     """
     data = ut.read_tif(datafile)
     print ('data shape', data.shape)
-    data = np.swapaxes(data, 0, 2)
-    data = np.swapaxes(data, 0, 1)
 
     try:
         config_map = ut.read_config(conf_file)

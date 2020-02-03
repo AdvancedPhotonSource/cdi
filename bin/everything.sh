@@ -6,8 +6,7 @@ p=${p//"anaconda2"/"anaconda3"}
 p=${p//"CXDUSER/anaconda"/"CXDUSER/CDI/anaconda"}
 export PATH=$p
 
-export LD_LIBRARY_PATH=LIB_PATH
-
+export LD_LIBRARY_PATH=/local/libconfig/lib:/local/arrayfire/lib64
 dev=$1
 prefix=$2
 scans=$3

@@ -18,5 +18,5 @@ arm=0.6350;
 dth=0.000174532925199;
 // detector pixel size
 pixel = (55.0e-6, 55.0e-6);
-
+rampups = 1
 

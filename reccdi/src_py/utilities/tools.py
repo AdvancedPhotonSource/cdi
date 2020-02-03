@@ -13,14 +13,10 @@ This module is a suite of utility mehods.
 """
 
 import tifffile as tf
-import pylibconfig2 as cfg
 import numpy as np
-import scipy.fftpack as sf
 import os
 import logging
 import stat
-from functools import reduce
-import GPUtil
 
 __author__ = "Barbara Frosik"
 __copyright__ = "Copyright (c) 2016, UChicago Argonne, LLC."
@@ -59,34 +55,16 @@ def read_tif(filename):
         an array containing the experiment data
     """
 
-
-    ar = tf.imread(filename).transpose()
+    ar = tf.imread(filename)
+    ar = np.swapaxes(ar, 0, 2)
+#    ar = np.swapaxes(ar, 0, 1)
     return ar
 
 
 def save_tif(arr, tif_file):
-    tf.imsave(tif_file, arr.transpose().astype(np.float32))
-
-
-def read_config(config):
-    """
-    This function gets configuration file. It checks if the file exists and parses it into a map.
-    Parameters
-    ----------
-    config : str
-        configuration file name, including path
-    Returns
-    -------
-    config_map : dict
-        a map containing parsed configuration, None if the given file does not exist
-    """
-
-    if os.path.isfile(config):
-        with open(config, 'r') as f:
-            config_map = cfg.Config(f.read())
-            return config_map;
-    else:
-        return None
+    arr = np.swapaxes(arr, 0, 2)
+    arr = np.swapaxes(arr, 1, 2)
+    tf.imsave(tif_file, arr.astype(np.int32))
 
 
 def get_good_dim(dim):
@@ -125,6 +103,41 @@ def get_good_dim(dim):
         new_dim += 1
     while not is_correct(new_dim):
         new_dim += 2
+    return new_dim
+
+
+def get_opencl_dim1(dim, step):
+    """
+    This function calculates the dimension supported by opencl library (i.e. is multiplier of 2,3, or 5) and is closest to the
+    given starting dimension, and spaced by the given step.
+    If the dimension is not supported the function adds step value and verifies the new dimension. It iterates until it finds
+    supported value.
+    Parameters
+    ----------
+    dim : int
+        a dimension that needs to be tranformed to one that is supported by the opencl library, if it is not already
+
+    step : int
+        a delta to increase the dimension
+    Returns
+    -------
+    dim : int
+        a dimension that is supported by the opencl library, and closest to the original dimension by n*step
+    """
+
+    def is_correct(x):
+        sub = x
+        while sub % 2 == 0:
+            sub = sub / 2
+        while sub % 3 == 0:
+            sub = sub / 3
+        while sub % 5 == 0:
+            sub = sub / 5
+        return sub == 1
+
+    new_dim = dim
+    while not is_correct(new_dim):
+        new_dim += step
     return new_dim
 
 
@@ -378,12 +391,12 @@ def gaussian(shape, sigmas, alpha=1):
 
 def gauss_conv_fft(arr, sigmas):
     arr_sum = np.sum(abs(arr))
-    arr_f = sf.ifftshift(sf.fftn(sf.ifftshift(arr)))
+    arr_f = np.fft.ifftshift(np.fft.fftn(np.fft.ifftshift(arr)))
     shape = list(arr.shape)
     for i in range(len(sigmas)):
         sigmas[i] = shape[i] / 2.0 / np.pi / sigmas[i]
     convag = arr_f * gaussian(shape, sigmas)
-    convag = np.fft.ifftshift(sf.ifftn(np.fft.ifftshift(convag)))
+    convag = np.fft.ifftshift(np.fft.ifftn(np.fft.ifftshift(convag)))
     convag = convag.real
     convag = np.clip(convag, 0, None)
     correction = arr_sum / np.sum(convag)
@@ -456,18 +469,14 @@ def write_plot_errors(save_dir):
     os.chmod(plot_file, st.st_mode | stat.S_IEXEC)
 
 
-def save_results(image, support, coh, errs, reciprocal, flow, iter_array, save_dir, metrics=None):
+def save_results(image, support, coh, errs, reciprocal, save_dir, metrics=None):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
-    print("image shape", image.shape)
 
     image_file = os.path.join(save_dir, 'image')
     np.save(image_file, image)
-    save_tif(np.abs(image), image_file+".tif")
     support_file = os.path.join(save_dir, 'support')
     np.save(support_file, support)
-    save_tif(np.abs(support), support_file+".tif")
-
     errs_file = os.path.join(save_dir, 'errors')
     np.save(errs_file, errs)
     if not coh is None:
@@ -476,22 +485,13 @@ def save_results(image, support, coh, errs, reciprocal, flow, iter_array, save_d
     reciprocal_file = os.path.join(save_dir, 'reciprocal')
     np.save(reciprocal_file, reciprocal)
     write_plot_errors(save_dir)
-
-    graph_dir = os.path.join(save_dir, 'graph')
-    if not os.path.exists(graph_dir):
-        os.makedirs(graph_dir)
-    flow_file = os.path.join(graph_dir, 'flow')
-    np.save(flow_file, np.asarray(flow))
-    iter_array_file = os.path.join(graph_dir, 'iter_array')
-    np.save(iter_array_file, iter_array)
-
     if metrics is not None:
         save_metrics(errs, save_dir, metrics)
     else:
         save_metrics(errs, save_dir)
 
 
-def save_multiple_results(samples, images, supports, cohs, errs, reciprocals, flows, iter_arrs, save_dir, metrics=None):
+def save_multiple_results(samples, images, supports, cohs, errs, reciprocals, save_dir, metrics=None):
     """
     This function saves results of multiple reconstructions to directory tree in save_dir.
     Parameters
@@ -513,21 +513,21 @@ def save_multiple_results(samples, images, supports, cohs, errs, reciprocals, fl
     for i in range(samples):
         subdir = os.path.join(save_dir, str(i))
         if metrics is None:
-            save_results(images[i], supports[i], cohs[i], np.asarray(errs[i]), reciprocals[i], flows[i], iter_arrs[i], subdir)
+            save_results(images[i], supports[i], cohs[i], np.asarray(errs[i]), reciprocals[i], subdir)
         else:
-            save_results(images[i], supports[i], cohs[i], np.asarray(errs[i]), reciprocals[i], flows[i], iter_arrs[i], subdir, metrics[i])
+            save_results(images[i], supports[i], cohs[i], np.asarray(errs[i]), reciprocals[i], subdir, metrics[i])
 
 
 def sub_pixel_shift(arr, row_shift, col_shift, z_shift):
     # arr is 3D
-    buf2ft = sf.fftn(arr)
+    buf2ft = np.fft.fftn(arr)
     shape = arr.shape
     Nr = np.fft.ifftshift(np.array(list(range(-int(np.floor(shape[0] / 2)), shape[0] - int(np.floor(shape[0] / 2))))))
     Nc = np.fft.ifftshift(np.array(list(range(-int(np.floor(shape[1] / 2)), shape[1] - int(np.floor(shape[1] / 2))))))
     Nz = np.fft.ifftshift(np.array(list(range(-int(np.floor(shape[2] / 2)), shape[2] - int(np.floor(shape[2] / 2))))))
     [Nc, Nr, Nz] = np.meshgrid(Nc, Nr, Nz)
     Greg = buf2ft * np.exp(1j * 2 * np.pi * (-row_shift * Nr / shape[0] - col_shift * Nc / shape[1] - z_shift * Nz / shape[2]))
-    return sf.ifftn(Greg)
+    return np.fft.ifftn(Greg)
 
 
 def arr_property(arr):
@@ -535,53 +535,3 @@ def arr_property(arr):
     print ('norm', np.sum(pow(abs(arr),2)))
     max_coordinates = list(np.unravel_index(np.argmax(arr1), arr.shape))
     print ('max coords, value', max_coordinates, arr[max_coordinates[0], max_coordinates[1],max_coordinates[2]])
-
-
-def get_gpu_load(mem_size, ids):
-    gpus = GPUtil.getGPUs()
-    total_avail = 0
-    available_dir = {}
-    for gpu in gpus:
-        if gpu.id in ids:
-            free_mem = gpu.memoryFree
-            avail_runs = int(free_mem / mem_size)
-            if avail_runs > 0:
-                total_avail += avail_runs
-                available_dir[gpu.id] = avail_runs
-    available = []
-    for id in ids:
-        try:
-            avail_runs = available_dir[id]
-        except:
-            avail_runs = 0
-        available.append(avail_runs)
-    return available
-
-
-def get_gpu_distribution(runs, available):
-    all_avail = reduce((lambda x,y: x+y), available)
-    while runs < all_avail:
-       # balance distribution
-       for i in range(len(available)):
-          if available[i] > 0:
-             available[i] -= 1
-             all_avail -= 1
-             if all_avail == runs:
-                break
-    return available
-
-
-#https://stackoverflow.com/questions/51503672/decorator-for-timeit-timeit-method/51503837#51503837
-from functools import wraps
-from time import time
-def measure(func):
-    @wraps(func)
-    def _time_it(*args, **kwargs):
-        start = int(round(time() * 1000))
-        try:
-            return func(*args, **kwargs)
-        finally:
-            end_ = int(round(time() * 1000)) - start
-            print(f"Total execution time: {end_ if end_ > 0 else 0} ms")
-    return _time_it
-

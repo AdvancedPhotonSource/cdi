@@ -53,7 +53,7 @@ void PartialCoherence::Init(af::array data)
         d_type c = 0.5;
         kernel_array = constant(c, roi_dims);
     }
-    dim4 kdim = kernel_array.dims();
+    //dim4 kdim = kernel_array.dims();
 }
 
 void PartialCoherence::SetPrevious(af::array abs_amplitudes)
@@ -152,15 +152,15 @@ af::array PartialCoherence::fftConvolve(af::array arr, af::array kernel)
 {
 try{
     af::dim4 dims_input = arr.dims();
-    af::dim4 dims_kernel = kernel.dims();    
-
-    int dims_fft_padded [nD];
-
-    for(unsigned int i = 0; i < nD; i++)
-    {
-        dim_t d = Utils::GetDimension(dims_input[i] + dims_kernel[i] - 1);
-        dims_fft_padded[i] = Utils::GetDimension(dims_input[i] + dims_kernel[i] - 1);
-    }
+//    af::dim4 dims_kernel = kernel.dims();
+//
+//    int dims_fft_padded [nD];
+//
+//    for(unsigned int i = 0; i < nD; i++)
+//    {
+//        dim_t d = Utils::GetDimension(dims_input[i] + dims_kernel[i] - 1);
+//        dims_fft_padded[i] = Utils::GetDimension(dims_input[i] + dims_kernel[i] - 1);
+//    }
     
     d_type pad = 0;
     af::array kernel_padded = Utils::PadAround(kernel, dims_input, pad);

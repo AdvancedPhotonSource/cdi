@@ -21,3 +21,6 @@ pixel = (55.0e-6, 55.0e-6)
 //crop = (120,120,120)
 crop = (.75, .75, .75)
 
+//upsize when running ramp removal
+rampups = 1
+

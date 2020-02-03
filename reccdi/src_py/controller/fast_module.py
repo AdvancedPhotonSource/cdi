@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 # #########################################################################
 # Copyright (c) , UChicago Argonne, LLC. All rights reserved.             #
 #                                                                         #
@@ -37,44 +34,32 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
     to the CFM (Calc Fast Module). When reconstruction is completed the function retrieves results from the CFM.
     The data received is max centered and the array is ordered "C". The CFM requires data zero-frequency component at
     the center of the spectrum and "F" array order. Thus the data is modified at the beginning.
-
     Parameters
     ----------
     proc : str
         a string indicating the processor type
-
     device : int
         device id assigned to this reconstruction
-
     conf : dict
         configuration map
-
     data : array
         a 3D np array containing pre-processed experiment data
-
     coh_dims : tuple
         shape of coherence array
-
     image : numpy array
         initial image for reconstruction or None
-
     support : numpy array
         support corresponding to image or None
-
     coherence : numpy array
        coherence corresponding to image
-
     Returns
     -------
     image : numpy array
         reconstructed image
-
     support : numpy array
         support for reconstructed image
-
     coherence : numpy array
         coherence for reconstructed image
-
     er : list
         a vector containing errors for each iteration
     """
@@ -90,80 +75,54 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
 
     # shift data
     data = sf.fftshift(data)
-    data = np.swapaxes(data,1,2)
-
-    dims = data.shape
-    dims1 = (dims[2], dims[1], dims[0])
-
+    dims = data.shape[::-1]
+    print("data dims", dims)
     data_l = data.flatten().tolist()
     if image is None:
-        fast_module.start_calc(device, data_l, dims1, conf)
+        # print("Running start_calc")
+        fast_module.start_calc(device, data_l, dims, conf)
     elif support is None:
-        # pass image
-        image = np.swapaxes(image, 1, 0)
-        image = np.swapaxes(image, 2, 0)
         image = image.flatten()
-        fast_module.start_calc_with_guess(device, data_l, image.real.tolist(), image.imag.tolist(), dims1, conf)
+        fast_module.start_calc_with_guess(device, data_l, image.real.tolist(), image.imag.tolist(), dims, conf)
     elif coherence is None:
-        # pass image and support
-        image = np.swapaxes(image, 1, 0)
-        image = np.swapaxes(image, 2, 0)
         image = image.flatten()
-        support = np.swapaxes(support, 1, 0)
-        support = np.swapaxes(support, 2, 0)
         support = support.flatten()
-        fast_module.start_calc_with_guess_support(device, data_l, image.real.tolist(), image.imag.tolist(), support.tolist(), dims1, conf)
+        fast_module.start_calc_with_guess_support(device, data_l, image.real.tolist(), image.imag.tolist(), support.tolist(), dims, conf)
     else:
-        # pass image and support and coherence
-        image = np.swapaxes(image, 1, 0)
-        image = np.swapaxes(image, 2, 0)
         image = image.flatten()
-        support = np.swapaxes(support, 1, 0)
-        support = np.swapaxes(support, 2, 0)
         support = support.flatten()
         coh_dims1 = (coh_dims[2], coh_dims[1], coh_dims[0])
-        coherence = np.swapaxes(coherence, 1, 0)
-        coherence = np.swapaxes(coherence, 2, 0)
         coherence = coherence.flatten()
 
-        fast_module.start_calc_with_guess_support_coh(device, data_l, image.real.tolist(), image.imag.tolist(), support.tolist(), dims1, coherence.tolist(), coh_dims1, conf)
+        fast_module.start_calc_with_guess_support_coh(device, data_l, image.real.tolist(), image.imag.tolist(), support.tolist(), dims, coherence.tolist(), coh_dims, conf)
 
     er = copy.deepcopy(fast_module.get_errors())
     if len(er) == 1 and er[0] == -1:
         # run into Nan during reconstruction
         fast_module.cleanup()
         return None, None, None, None, None, None, None
-    image_r = copy.deepcopy(np.asarray(fast_module.get_image_r()))
-    image_i = copy.deepcopy(np.asarray(fast_module.get_image_i()))
-    image = image_r + 1j*image_i
+    image_r = np.asarray(fast_module.get_image_r())
+    image_i = np.asarray(fast_module.get_image_i())
+    image = image_r + 1j*image_i  #no need to deepcopy the real and imag parts since this makes a new array
 
     # normalize image
-    mx = max(np.absolute(image).ravel().tolist())
+    mx = np.abs(image).max()
     image = image/mx
 
     support = copy.deepcopy(np.asarray(fast_module.get_support()))
     coherence = copy.deepcopy(np.asarray(fast_module.get_coherence()))
 
-    image = np.reshape(image, dims)
-    image = np.swapaxes(image, 2, 0)
-    image = np.swapaxes(image, 1, 0)
-
-    support = np.reshape(support, dims)
-    support = np.swapaxes(support, 2, 0)
-    support = np.swapaxes(support, 1, 0)
-
+    image.shape=dims[::-1]
+    support = np.reshape(support, dims[::-1])
     if coherence.shape[0] > 1:
-        coherence = np.reshape(coherence, coh_dims)
-        coherence = np.swapaxes(coherence, 2, 0)
-        coherence = np.swapaxes(coherence, 1, 0)
+        coherence = np.reshape(coherence, coh_dims[::-1])
     else:
         coherence = None
 
     reciprocal_r = copy.deepcopy(np.asarray(fast_module.get_reciprocal_r()))
     reciprocal_i = copy.deepcopy(np.asarray(fast_module.get_reciprocal_i()))
     reciprocal = reciprocal_r + 1j*reciprocal_i
-    reciprocal = np.reshape(reciprocal, dims)
-    reciprocal = np.swapaxes(reciprocal, 2, 1)
+    reciprocal = np.reshape(reciprocal, dims[::-1])
     reciprocal = sf.ifftshift(reciprocal)
 
     iter_array = copy.deepcopy(np.asarray(fast_module.get_iter_flow()))
@@ -174,4 +133,3 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
     fast_module.cleanup()
 
     return image, support, coherence, er, reciprocal, flow, iter_array
-
