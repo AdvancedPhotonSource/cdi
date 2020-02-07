@@ -28,7 +28,7 @@ class Diffractometer(object):
 
 class Diffractometer_34idc(Diffractometer):
     name="34idc"
-    sampleaxes=('y+','z-','x-')  #in xrayutilities notation
+    sampleaxes=('y+','z-','y+')  #in xrayutilities notation
     detectoraxes=('y+','x-')
     incidentaxis=(0,0,1)
     sampleaxes_name=('th','chi','phi') #using the spec mnemonics for scan id.
