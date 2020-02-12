@@ -1,4 +1,4 @@
-/***
+ /***
 Copyright (c) UChicago Argonne, LLC. All rights reserved.
 See LICENSE file.
 ***/
@@ -50,9 +50,9 @@ const int FOR_ALL_RUNS = 2;
 const int MODIFIED_AFTER_FIRST = 3;
 const int CUSTOM = 4;
 
-typedef struct flow_item_def { char* item_name;
+typedef struct flow_item_def {const char* item_name;
                            int type;
-                           char* func_name;
+                           const char* func_name;
                            flow_item_def(char* item, int t, char* func) : item_name(item), type(t), func_name(func){}
                   } flow_item_def;
 

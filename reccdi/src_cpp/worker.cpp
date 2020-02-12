@@ -98,28 +98,28 @@ void Reconstruction::Init()
     // create map of algorithms ids to the algorithm functions
     CreateAlgorithmMap();
 
-    std::map<char*, fp> flow_ptr_map;
-    flow_ptr_map[(char *)"NextIter"] = &Reconstruction::NextIter;
-    flow_ptr_map[(char *)"ResolutionTrigger"] =  &Reconstruction::ResolutionTrigger;
-    flow_ptr_map[(char *)"SupportTrigger"] = &Reconstruction::SupportTrigger;
-    flow_ptr_map[(char *)"PhaseTrigger"] = &Reconstruction::PhaseTrigger;
-    flow_ptr_map[(char *)"ToReciprocal"] = &Reconstruction::ToReciprocal;
-    flow_ptr_map[(char *)"PcdiTrigger"] = &Reconstruction::PcdiTrigger;
-    flow_ptr_map[(char *)"Pcdi"] = &Reconstruction::Pcdi;
-    flow_ptr_map[(char *)"NoPcdi"] = &Reconstruction::NoPcdi;
-    flow_ptr_map[(char *)"Gc"] = &Reconstruction::Gc;
-    flow_ptr_map[(char *)"SetPcdiPrevious"] = &Reconstruction::SetPcdiPrevious;
-    flow_ptr_map[(char *)"ToDirect"] = &Reconstruction::ToDirect;
-    flow_ptr_map[(char *)"RunAlg"] = &Reconstruction::ModulusConstrainEr;  //This will be replaced by configured algorithm method
-    flow_ptr_map[(char *)"Twin"] = &Reconstruction::Twin;
-    flow_ptr_map[(char *)"Average"] = &Reconstruction::Average;
-    flow_ptr_map[(char *)"Prog"] = &Reconstruction::Progress;
+    std::map<const char*, fp> flow_ptr_map;
+    flow_ptr_map[(const char *)"NextIter"] = &Reconstruction::NextIter;
+    flow_ptr_map[(const char *)"ResolutionTrigger"] =  &Reconstruction::ResolutionTrigger;
+    flow_ptr_map[(const char *)"SupportTrigger"] = &Reconstruction::SupportTrigger;
+    flow_ptr_map[(const char *)"PhaseTrigger"] = &Reconstruction::PhaseTrigger;
+    flow_ptr_map[(const char *)"ToReciprocal"] = &Reconstruction::ToReciprocal;
+    flow_ptr_map[(const char *)"PcdiTrigger"] = &Reconstruction::PcdiTrigger;
+    flow_ptr_map[(const char *)"Pcdi"] = &Reconstruction::Pcdi;
+    flow_ptr_map[(const char *)"NoPcdi"] = &Reconstruction::NoPcdi;
+    flow_ptr_map[(const char *)"Gc"] = &Reconstruction::Gc;
+    flow_ptr_map[(const char *)"SetPcdiPrevious"] = &Reconstruction::SetPcdiPrevious;
+    flow_ptr_map[(const char *)"ToDirect"] = &Reconstruction::ToDirect;
+    flow_ptr_map[(const char *)"RunAlg"] = &Reconstruction::ModulusConstrainEr;  //This will be replaced by configured algorithm method
+    flow_ptr_map[(const char *)"Twin"] = &Reconstruction::Twin;
+    flow_ptr_map[(const char *)"Average"] = &Reconstruction::Average;
+    flow_ptr_map[(const char *)"Prog"] = &Reconstruction::Progress;
 
     std::vector<int> used_flow_seq = params->GetUsedFlowSeq();
     std::vector<int> flow_array = params->GetFlowArray();
     int num_iter = params->GetNumberIterations();
 
-    for (uint i = 0; i < used_flow_seq.size(); i++)
+    for (int i = 0; i < used_flow_seq.size(); i++)
     {
         int func_order = used_flow_seq[i];
         int offset = i * num_iter;
@@ -177,14 +177,14 @@ int Reconstruction::Iterate()
         if (access("stopfile", F_OK) == 0)
         {
             remove("stopfile");
-            return (uint)(getpid());
+            return (int)(getpid());
         }
         if (anyTrue<bool>(isNaN(ds_image)))
         {
             printf("the image array has NaN element, quiting this reconstruction process\n");
-            return (uint)(getpid());
+            return (int)(getpid());
         }
-        for (uint i=0; i<iter_flow[current_iteration].size(); i++ )
+        for (int i=0; i<iter_flow[current_iteration].size(); i++ )
         {
             (this->*iter_flow[current_iteration][i])();
         }
@@ -209,40 +209,40 @@ void Reconstruction::NextIter()
 {
     iter_data = data;
     sig = params->GetSupportSigma();
-//    printf("NextIter %d\n", (uint)(getpid()));
+//    printf("NextIter %d\n", (int)(getpid()));
 }
 
 void Reconstruction::ResolutionTrigger()
 {
     iter_data = resolution->GetIterData(current_iteration, data.copy());
     sig = resolution->GetIterSigma(current_iteration);
-//    printf("ResolutionTrigger %d\n", (uint)(getpid()));
+//    printf("ResolutionTrigger %d\n", (int)(getpid()));
 }
 
 void Reconstruction::SupportTrigger()
 {
     support->UpdateAmp(ds_image.copy(), sig, current_iteration);
-//    printf("SupportTrigger %d\n", (uint)(getpid()));
+//    printf("SupportTrigger %d\n", (int)(getpid()));
 }
 
 void Reconstruction::PhaseTrigger()
 {
     support->UpdatePhase(ds_image.copy(), current_iteration);
-//    printf("PhaseTrigger %d\n", (uint)(getpid()));
+//    printf("PhaseTrigger %d\n", (int)(getpid()));
 }
 
 void Reconstruction::ToReciprocal()
 {
     rs_amplitudes = Utils::ifft(ds_image)*num_points;
 //    printf("data norm, ampl norm before ratio %fl %fl\n", GetNorm(iter_data), GetNorm(rs_amplitudes));
-//    printf("ToReciprocal %d\n", (uint)(getpid()));
+//    printf("ToReciprocal %d\n", (int)(getpid()));
 }
 
 void Reconstruction::PcdiTrigger()
 {
     af::array abs_amplitudes = abs(rs_amplitudes).copy();
     partialCoherence->UpdatePartialCoherence(abs_amplitudes);
-//    printf("PcdiTrigger %d\n", (uint)(getpid()));
+//    printf("PcdiTrigger %d\n", (int)(getpid()));
 }
 
 void Reconstruction::Pcdi()
@@ -254,7 +254,7 @@ void Reconstruction::Pcdi()
     current_error =  GetNorm(abs(converged)(converged > 0)-iter_data(converged > 0))/GetNorm(iter_data);
     state->RecordError(current_error);
     rs_amplitudes *= ratio;
-//    printf("Pcdi %d\n", (uint)(getpid()));
+//    printf("Pcdi %d\n", (int)(getpid()));
 }
 
 void Reconstruction::NoPcdi()
@@ -263,7 +263,7 @@ void Reconstruction::NoPcdi()
     current_error = GetNorm(abs(rs_amplitudes)(rs_amplitudes > 0)-iter_data(rs_amplitudes > 0))/GetNorm(iter_data);
     state->RecordError(current_error);
     rs_amplitudes *= ratio;
-//    printf("NoPcdi %d\n", (uint)(getpid()));
+//    printf("NoPcdi %d\n", (int)(getpid()));
 }
 
 void Reconstruction::Gc()
@@ -306,14 +306,14 @@ void Reconstruction::Average()
     std::vector<d_type> v(image_v, image_v + ds_image.elements());
     if (aver_v.size() == 0)
     {
-        for (uint i = 0; i < v.size(); i++)
+        for (int i = 0; i < v.size(); i++)
         {
             aver_v.push_back(v[i]);
         }
     }
     else
     {
-        for (uint i = 0; i < v.size(); i++)
+        for (int i = 0; i < v.size(); i++)
         {
             aver_v[i] += v[i];
         }
@@ -334,7 +334,7 @@ void Reconstruction::ModulusConstrainEr()
 //    printf("image norm before support %fl\n", GetNorm(ds_image_raw));
     af::array support_array = support->GetSupportArray();
     ds_image = ds_image_raw * support_array;
-//    printf("er, image norm after support %fl %d\n", GetNorm(ds_image), (uint)(getpid()));
+//    printf("er, image norm after support %fl %d\n", GetNorm(ds_image), (int)(getpid()));
 }
 
 void Reconstruction::ModulusConstrainHio()
@@ -347,7 +347,7 @@ void Reconstruction::ModulusConstrainHio()
     af::array combined_image = ds_image - adjusted_calc_image;
     ds_image = ds_image_raw;
     ds_image(support_array == 0) = combined_image(support_array == 0);
-//    printf("hio, image norm after support %fl %d\n",GetNorm(ds_image), (uint)(getpid()));
+//    printf("hio, image norm after support %fl %d\n",GetNorm(ds_image), (int)(getpid()));
 }
 
 double Reconstruction::GetNorm(af::array arr)

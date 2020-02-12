@@ -97,7 +97,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
     // is used
     for (int i = 0; i < flow_seq_len; i++)
     {
-        char *flow_item = flow_def[i].item_name;
+        const char *flow_item = flow_def[i].item_name;
         int type = flow_def[i].type;
 
         // no trigger is part of any flow
@@ -105,11 +105,13 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
         {
             used_flow_seq.push_back(i);
         }
-        else if (flow_item == (char *)"pcdi_trigger")
+        else if (strcmp(flow_item, "pcdi_trigger") == 0)
         {
             if (root.exists(flow_item))
             {
+                //const Setting &tmp = root[flow_item].c_str();
                 const Setting &tmp = root[flow_item];
+
                 int first_pcdi = tmp[0];
                 if (first_pcdi < number_iterations)
                 {
@@ -122,11 +124,11 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
         {
             if (type == CUSTOM)
             {
-                if (flow_item == (char *)"algorithm")
+                if (strcmp(flow_item, "algorithm") == 0)
                 {
                     used_flow_seq.push_back(i);
                 }
-                else if (flow_item == (char *)"no_pcdi")
+                else if (strcmp(flow_item, "no_pcdi") == 0)
                 {
                     if (!is_pcdi || first)
                     {
@@ -165,7 +167,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
     {
         int offset = f * number_iterations;
         int type = flow_def[used_flow_seq[f]].type;
-        char *flow_item = flow_def[used_flow_seq[f]].item_name;
+        const char *flow_item = flow_def[used_flow_seq[f]].item_name;
 
         if (type == NOT_TRIGGER)
         {
@@ -173,7 +175,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
         }
         else if (type == CUSTOM)
         {
-            if (flow_item == (char *)"algorithm")
+           if (strcmp(flow_item, "algorithm") == 0)
            {
                 int alg_start = 0;
                 for (int k=0; k < alg_switches.size(); k++)
@@ -182,7 +184,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
                     alg_start += alg_switches[k].iterations;
                 }
             }
-            else if (flow_item == (char *)"pcdi")
+            else if (strcmp(flow_item, "pcdi") == 0)
             {
                 int start_pcdi = first ? pcdi_tr_iter[0] : 0;
                 for (int i = start_pcdi; i < number_iterations; i ++)
@@ -190,7 +192,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
                     flow[offset + i] = 1;
                 }
             }
-            else if (flow_item == (char *)"no_pcdi")
+            else if (strcmp(flow_item, "no_pcdi"))
             {
                 int stop_pcdi = is_pcdi ? pcdi_tr_iter[0] : number_iterations;
                 for (int i = 0; i < stop_pcdi; i ++)
@@ -198,7 +200,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
                     flow[offset + i] = 1;
                 }
             }
-            else if (flow_item == (char *)"set_prev_pcdi_trigger")
+            else if (strcmp(flow_item, "set_prev_pcdi_trigger") == 0)
             {
                 for (int i = 0; i < pcdi_tr_iter.size(); i ++)
                 {
@@ -219,7 +221,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
                         // the line below handler negative number
                         ind = (ind + number_iterations) % number_iterations;
                         flow[offset + ind] = 1;
-                        if (flow_item == (char *)"pcdi_trigger")
+                        if (strcmp(flow_item, "pcdi_trigger") == 0)
                         {
                             pcdi_tr_iter.push_back(ind);
                         }
@@ -251,7 +253,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
                     for (int i = start_iter; i < stop_iter; i += step)
                     {
                         flow[offset + i] = 1;
-                        if (flow_item == (char *)"pcdi_trigger")
+                        if (strcmp(flow_item, "pcdi_trigger") == 0)
                         {
                             pcdi_tr_iter.push_back(i);
                         }
@@ -270,7 +272,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
                             // the line below handler negative number
                             ind = (ind + number_iterations) % number_iterations;
                             flow[offset + ind] = 1;
-                            if (flow_item == (char *)"pcdi_trigger")
+                            if (strcmp(flow_item, "pcdi_trigger") == 0)
                             {
                                 pcdi_tr_iter.push_back(ind);
                             }
@@ -301,7 +303,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
                         for (int i = start_iter; i < stop_iter; i += step)
                         {
                             flow[offset + i] = 1;
-                            if (flow_item == (char *)"pcdi_trigger")
+                            if (strcmp(flow_item, "pcdi_trigger") == 0)
                             {
                                 pcdi_tr_iter.push_back(i);
                             }
@@ -355,7 +357,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
         }
         catch ( const SettingNotFoundException &nfex)
         {
-            printf((std::string("No 'support_type' parameter in configuration file.\n")).c_str());
+            printf("No 'support_type' parameter in configuration file.\n");
         }
     }
 
@@ -366,14 +368,14 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
         }
         catch (const SettingNotFoundException &nfex)
         {
-            printf((std::string("No 'phase_min' parameter in configuration file. Set to pi/2.\n")).c_str());
+            printf("No 'phase_min' parameter in configuration file. Set to pi/2.\n");
         }
         try {
             phase_max = cfg.lookup("phase_max");
         }
         catch (const SettingNotFoundException &nfex)
         {
-            printf((std::string("No 'phase_max' parameter in configuration file. Set to pi/2.\n")).c_str());
+            printf("No 'phase_max' parameter in configuration file. Set to pi/2.\n");
         }
 
     }
@@ -385,7 +387,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
         }
         catch ( const SettingNotFoundException &nfex)
         {
-            printf((std::string("No 'partial_coherence_type' parameter in configuration file.\n")).c_str());
+            printf("No 'partial_coherence_type' parameter in configuration file.\n");
         }
         try {
             const Setting &tmp = root["partial_coherence_roi"];
@@ -415,7 +417,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
         }
         catch ( const SettingNotFoundException &nfex)
         {
-            printf((std::string("No 'partial_coherence_iteration_num' parameter in configuration file. Setting to 20.\n")).c_str());
+            printf("No 'partial_coherence_iteration_num' parameter in configuration file. Setting to 20.\n");
         }
     }
 
@@ -430,7 +432,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
     {
         twin_halves.push_back(0);
         twin_halves.push_back(0);
-        //printf((std::string("No 'twin_halves' parameter in configuration file. Setting to (0,0).\n")).c_str());
+        //printf("No 'twin_halves' parameter in configuration file. Setting to (0,0).\n");
     }
 
     if ((first) && root.exists("resolution_trigger"))
@@ -448,7 +450,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
         catch ( const SettingNotFoundException &nfex)
         {
             low_res_iterations = number_iterations;
-            printf((std::string("No 'resolution_trigger' upper bound in configuration file. Setting number to iteration number.\n")).c_str());
+            printf("No 'resolution_trigger' upper bound in configuration file. Setting number to iteration number.\n");
         }
         try
         {
@@ -490,7 +492,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
         {
             iter_res_det_first = .7;
             iter_res_det_last = 1.0;
-            printf("No 'iter_res_det_range' parameter in configuration file.\Default to 0.7, 1.0.n");
+            printf("No 'iter_res_det_range' parameter in configuration file.\n");
         }
     }
 
