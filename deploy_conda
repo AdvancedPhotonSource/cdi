@@ -1,0 +1,19 @@
+environment:
+install Anaconda3-2019.03-Linux-x86_64.sh (the newer one has a bug)
+The deployment directory has cdi project, lib directory containing arrayfire and libconfig libraries, and pylibconfig2 and gputil directories.
+from the deployment directory:
+1. conda config --remove channels conda-forge
+2. conda-build pylibconfig2
+3. conda-build gputil
+4. cd cdi
+5. python setup.py build_ext --inplace
+6. rm -rf build/
+7. conda build -c conda-forge -c defaults .
+
+to check the build locally
+8. conda config --add channels conda-forge
+9. conda install --use-local reccdi
+
+to upload
+10. anaconda login
+11. conda upload ~/anaconda3/conda-bld/linux-64/reccdixxx
