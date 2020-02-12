@@ -6,3 +6,4 @@ core
 *.o
 *.swp
 __pycache__
+.idea/
