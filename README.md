@@ -27,11 +27,13 @@ Pre-requisites
 Author(s)
 
 Barbara Frosik - Principal Software Engineer at Argonne National Laboratory
+
 Ross Harder - Scientist at Argonne National Laboratory
 
 License
 
 Copyright (c) UChicago Argonne, LLC. All rights reserved. See LICENSE file.
+
 C++ Libraries
 
     ArrayFire open source
