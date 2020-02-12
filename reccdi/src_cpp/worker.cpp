@@ -119,7 +119,7 @@ void Reconstruction::Init()
     std::vector<int> flow_array = params->GetFlowArray();
     int num_iter = params->GetNumberIterations();
 
-    for (int i = 0; i < used_flow_seq.size(); i++)
+    for (unsigned int i = 0; i < used_flow_seq.size(); i++)
     {
         int func_order = used_flow_seq[i];
         int offset = i * num_iter;
@@ -184,7 +184,7 @@ int Reconstruction::Iterate()
             printf("the image array has NaN element, quiting this reconstruction process\n");
             return (int)(getpid());
         }
-        for (int i=0; i<iter_flow[current_iteration].size(); i++ )
+        for (unsigned int i=0; i<iter_flow[current_iteration].size(); i++ )
         {
             (this->*iter_flow[current_iteration][i])();
         }
@@ -306,14 +306,14 @@ void Reconstruction::Average()
     std::vector<d_type> v(image_v, image_v + ds_image.elements());
     if (aver_v.size() == 0)
     {
-        for (int i = 0; i < v.size(); i++)
+        for (unsigned int i = 0; i < v.size(); i++)
         {
             aver_v.push_back(v[i]);
         }
     }
     else
     {
-        for (int i = 0; i < v.size(); i++)
+        for (unsigned int i = 0; i < v.size(); i++)
         {
             aver_v[i] += v[i];
         }

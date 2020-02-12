@@ -178,7 +178,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
            if (strcmp(flow_item, "algorithm") == 0)
            {
                 int alg_start = 0;
-                for (int k=0; k < alg_switches.size(); k++)
+                for (unsigned int k=0; k < alg_switches.size(); k++)
                 {
                     std::fill_n(flow + offset + alg_start, alg_switches[k].iterations, alg_switches[k].algorithm_id);
                     alg_start += alg_switches[k].iterations;
@@ -202,7 +202,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
             }
             else if (strcmp(flow_item, "set_prev_pcdi_trigger") == 0)
             {
-                for (int i = 0; i < pcdi_tr_iter.size(); i ++)
+                for (unsigned int i = 0; i < pcdi_tr_iter.size(); i ++)
                 {
                     flow[offset + pcdi_tr_iter[i]-1] = 1;
                 }
