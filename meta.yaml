@@ -1,15 +1,12 @@
 package:
   name: reccdi
-  version: "v1.1"
+  version: "1.1"
 
 source:
   path: .
 
 build:
-  script_env:
-    - LD_LIBRARY_PATH
   number: 0
-  noarch: generic
 
 requirements:
   build:
@@ -21,6 +18,7 @@ requirements:
     - cython
 
   run:
+    - python
     - tifffile
     - pylibconfig2
     - gputil
@@ -34,4 +32,3 @@ about:
   license: BSD
   license_file: LICENSE
   summary: Implement and parallelize genetic algorithms and phase retrieval methods for Bragg CDI techniques.
-
