@@ -1,0 +1,7 @@
+specfile = "/net/s34data/export/34idc-data/2019/NX2019/NX2019a.spec"
+rampups = 1
+sampleaxes_name=('theta','chi','phi')
+detectoraxes_name=('delta','gamma','detdist')
+sampleaxes=('y+', 'z-', 'x-')
+detectoraxes=('y+','z-')
+

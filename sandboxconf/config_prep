@@ -1,0 +1,8 @@
+data_dir = "/net/s34data/export/34idc-data/2020/Staff20-1/ADStaff20-1a"
+specfile = "/net/s34data/export/34idc-data/2020/Staff20-1/Staff20-1a.spec"
+
+darkfile = "/net/s34data/export/34idc-work/2020/dark.tif"
+whitefile = "/net/s34data/export/34idc-work/2020/Staff19-2b_whitefield.tif"
+
+detector = "34idcTIM2:"
+roi=(0,256,0,256)

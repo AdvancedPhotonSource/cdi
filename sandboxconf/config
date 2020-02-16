@@ -1,0 +1,4 @@
+scan = "11"
+working_dir = "/net/s34data/export/34idc-work/2020/Staff20-1/Analysis"
+experiment_id = "Theta1"
+specfile = "/net/s34data/export/34idc-data/2020/Staff20-1/Staff20-1a.spec"
