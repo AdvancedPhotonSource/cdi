@@ -7,12 +7,14 @@ import reccdi.src_py.utilities.parse_ver as ver
 import shutil
 
 
+######################################################################
 def prepare(experiment_dir, scan_range, conf_file):
     prep.prepare(experiment_dir, scan_range, conf_file)
 
     return experiment_dir
 
 
+######################################################################
 def copy_conf(src, dest):
     try:
         main_conf = os.path.join(src, 'config_prep')
@@ -26,7 +28,14 @@ def copy_conf(src, dest):
     except:
         pass
 
+######################################################################
+def copy_prep(src, dest):
+    try:
+      pass
+    except:
+      pass
 
+######################################################################
 def setup_rundirs(prefix, scan, conf_dir, specfile=None):
     id = prefix + '_' + scan
     print ('reading data files for experiment ' + id)

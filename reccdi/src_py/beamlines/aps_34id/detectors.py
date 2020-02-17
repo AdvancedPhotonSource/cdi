@@ -137,7 +137,7 @@ class Detector_34idcTIM2(Detector):
     self.get_raw_frame(filename)
     normframe=self.raw_frame/self.whitefield[roislice1,roislice2] * Imult
     normframe=np.where( self.darkfield[roislice1,roislice2]>1, 0.0, normframe)
-    normframe=np.where(np.isnan(normframe), 0, normframe)
+    normframe=np.where(np.isfinite(normframe), normframe, 0)
 
     s1range=range(roi[0],roi[0]+roi[1])
     s2range=range(roi[2],roi[2]+roi[3])
@@ -147,7 +147,8 @@ class Detector_34idcTIM2(Detector):
     try:
       i1=s1range.index(256)
       if i1 != 0:
-        frame=np.insert(normframe, i1, np.zeros((5,dims[0])),axis=0)
+        frame=np.insert(normframe, i1, np.zeros((4,dims[0])),axis=0)
+        #frame=np.insert(normframe, i1, np.zeros((5,dims[0])),axis=0)
     except:
       frame=normframe  #if there's no insert on dim1 need to copy to frame
       #print("no insert on dim1")
@@ -155,7 +156,7 @@ class Detector_34idcTIM2(Detector):
     try:
       i2=s2range.index(256)
       if i2 != 0:
-        frame=np.insert(frame, i2, np.zeros((4,dims[0]+5)),axis=1)
+        frame=np.insert(frame, i2, np.zeros((5,dims[0]+4)),axis=1)
     except:
       #if there's no insert on dim2 thre's nothing to do
       #print("no insert on dim2")
