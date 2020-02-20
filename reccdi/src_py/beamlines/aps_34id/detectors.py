@@ -138,24 +138,36 @@ class Detector_34idcTIM2(Detector):
     normframe=self.raw_frame/self.whitefield[roislice1,roislice2] * Imult
     normframe=np.where( self.darkfield[roislice1,roislice2]>1, 0.0, normframe)
     normframe=np.where(np.isfinite(normframe), normframe, 0)
+    frame = self.insert_seam(normframe, roi)
 
+    return frame
+
+  #frame here can also be a 3D array.
+  def insert_seam(self, arr, roi):
+    #Need to break this out.  When aligning multi scans the insert will mess up the aligns
+    #or maybe we just need to re-blank the seams after the aligns?
+    #I can't decide if the seams are a detriment to the alignment.  might need to try some.
     s1range=range(roi[0],roi[0]+roi[1])
     s2range=range(roi[2],roi[2]+roi[3])
-    dims=normframe.shape
+    dims=arr.shape
 
     #get the col that start at det col 256 in the roi
     try:
-      i1=s1range.index(256)
+      i1=s1range.index(256)  #if not in range try will except
       if i1 != 0:
-        frame=np.insert(normframe, i1, np.zeros((4,dims[0])),axis=0)
+        print("inserting dim0")
+        frame=np.insert(arr, i1, np.zeros((4,dims[0])),axis=0)
         #frame=np.insert(normframe, i1, np.zeros((5,dims[0])),axis=0)
+      else:
+        frame=arr
     except:
-      frame=normframe  #if there's no insert on dim1 need to copy to frame
+      frame=arr  #if there's no insert on dim1 need to copy to frame
       #print("no insert on dim1")
 
     try:
       i2=s2range.index(256)
       if i2 != 0:
+        print("inserting dim1")
         frame=np.insert(frame, i2, np.zeros((5,dims[0]+4)),axis=1)
     except:
       #if there's no insert on dim2 thre's nothing to do
@@ -164,3 +176,44 @@ class Detector_34idcTIM2(Detector):
 
     return frame
 
+  #################################################
+  def clear_seam(self, arr, roi):
+
+    dims=arr.shape
+    ranges=[]
+    for d in range(0,len(dims),2): 
+      ranges.append(np.arange(roi[0],roi[0]+roi[1]), 
+
+
+np.arange(roi[2],roi[2]+roi[3]), np.arange]
+
+    seam=(4,5,0)
+
+    for d in range(len(dims)):
+      i=np.argwhere(ranges[d]==256)
+      slices.append(slice[i:i+seam[n]])
+
+
+
+    try:
+      i1=np.argwhere(s1range==256)  #if not in range try will except
+      if i1 != 0:
+        print("cleaning seam dim0")
+        
+        frame=arr[i1:i1+4,:,:]=0
+        #frame=np.insert(normframe, i1, np.zeros((5,dims[0])),axis=0)
+      else:
+        frame=arr
+    except:
+      frame=arr  #if there's no insert on dim1 need to copy to frame
+      #print("no insert on dim1")
+
+    try:
+      i2=s2range.index(256)
+      if i2 != 0:
+        print("inserting dim1")
+        frame=np.insert(frame, i2, np.zeros((5,dims[0]+4)),axis=1)
+    except:
+      #if there's no insert on dim2 thre's nothing to do
+      #print("no insert on dim2")
+      pass

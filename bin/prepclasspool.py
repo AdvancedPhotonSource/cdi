@@ -134,12 +134,13 @@ def read_scan(dir, detector, det_area):
     files_dir = {}
     for file in os.listdir(dir):
         if file.endswith('tif') or file.endswith('tiff'):
-            temp = file.split('.')
+            fnbase = file.rsplit('.',1)[0]  #hard to deal with both tif and tiff in parse
             #it's assumed that the files end with four digits and 'tif' or 'tiff' extension
             #I wonder if this should also be in detector class?
             #Or maybe we can capture the filename template from AreaDetector into spec
-            
-            key = temp[0][-4:]
+            dirbase=os.path.basename(dir).strip()
+            key=parse.parse("%s_{:d}"%dirbase, fnbase)[0]  #this could be faster with parse.compile
+            #key = fnbase[0][-4:]
             files_dir[key] = file
 
     ordered_keys = sorted(list(files_dir.keys()))
@@ -254,9 +255,9 @@ def shift_to_ref_array(fft_ref, array):
 ###################################################################################
 #https://www.edureka.co/community/1245/splitting-a-list-into-chunks-in-python
 #this returns a generator, like range()
-def chunks(l, n):
-    for i in range(0, len(l), n):
-        yield l[i:i + n]
+#def chunks(l, n):
+#    for i in range(0, len(l), n):
+#        yield l[i:i + n]
 
 ###################################################################################
 class PrepData:
@@ -374,19 +375,31 @@ class PrepData:
   def write_sum_scan(self, scan_arrs):
     prep_data_dir = os.path.join(self.experiment_dir, 'prep')
     data_file = os.path.join(prep_data_dir, 'prep_data.tif')
+    temp_file = os.path.join(prep_data_dir, 'temp.tif')
     if not os.path.exists(prep_data_dir):
       os.makedirs(prep_data_dir)
-    if  os.path.isfile(data_file):
-      sumarr=ut.read_tif(data_file)
+    if  os.path.isfile(temp_file):
+      sumarr=ut.read_tif(temp_file)
     else:  
       sumarr=np.zeros_like(scan_arrs[0][1])
     for arr in scan_arrs:
       sumarr = sumarr + arr[1]
-    ut.save_tif(sumarr, data_file)
+    if (len(self.dirs)==0):
+      #i looked at it a little and decided it was better to insert the seam if
+      #needed before the alignment.  Now need to reinsert it to blank it out after
+      #all of the shifts made them nonzero.
+    
+      sumarr=self.detector.insert_seam(sumarr, self.det_area) #this is wrong. need to delete seam inten
+      ut.save_tif(sumarr, data_file)
+      if os.path.isfile(temp_file):
+        os.remove(temp_file)
+    else:
+      ut.save_tif(sumarr, temp_file)
+      
     print ('Added to prepdata:')
 
   ########################################
-  def read_align(self, scan):
+  def read_align(self, scan):  #this can have only single argument for Pool.
     print("read",scan)
     scan_arr = read_scan(scan[1], self.detector, self.det_area)
     shifted_arr=shift_to_ref_array(self.fft_refarr, scan_arr)
@@ -412,12 +425,12 @@ class PrepData:
     else:
       return nmem
 
-  def chunks_size(self):
-    narrs=len(self.scan_list)
-    arrsize=sys.getsizeof(self.fft_refarr)/2 #fft_refarr is comples arr!
-    freemem=psutil.virtual_memory().available
-    memforall=narrs*12*arrsize  #12 arrs per array to align and save
-    return ceil(memforall/freemem)
+#  def chunks_size(self):
+#    narrs=len(self.scan_list)
+#    arrsize=sys.getsizeof(self.fft_refarr)/2 #fft_refarr is comples arr!
+#    freemem=psutil.virtual_memory().available
+#    memforall=narrs*12*arrsize  #12 arrs per array to align and save
+#    return ceil(memforall/freemem)
 
  
   ########################################
@@ -425,8 +438,8 @@ class PrepData:
   def prep_data(self):
     self.scan_list=list(self.dirs)
     #scan_list is used for writing arrays if separate scans
-    #because dirs.keys gets the first array popped out.
-    firstscan=self.scan_list[0]
+    #because dirs.keys gets the arrays popped out.
+    firstscan=list(self.dirs)[0]
     refarr=read_scan( self.dirs.pop(firstscan), self.detector, self.det_area)
     print("first scan", firstscan)
 
@@ -443,22 +456,20 @@ class PrepData:
       #if there are a lot of them and they are big, it runs out of ram.
       #since process takes 10-12 arrays, maybe divide nscans/12 and make that many chunks
       #to pool?  Can also ask between pools how much ram is avaiable and modify nproc.
-      chunk=0
       while( len(list(self.dirs)) > 0):
         nproc=int(self.estimate_nconcurrent())
-        print("nproc", nproc, len(self.scan_list))
+        print("nproc", nproc, len(self.dirs))
         chunklist=list(self.dirs)[0:nproc]
         poollist = [ (s,self.dirs.pop(s)) for s in chunklist ]
         with Pool(processes=nproc) as pool:
           #read_align return (scan, aligned_arr)
           res=pool.map_async(self.read_align, poollist)
           pool.close()
-#          print(res.get())
           pool.join()
         print("moving to writes")
         #should also process the result queues after each pool completes.
         #maybe work sums directly onto disk to save ram.  Can't hold all of the
-        #large arrays in ram to add when done.
+        #large arrays in ram to add when done.  Need to change to do this through a temp file.
         scan_arrs=[arr for arr in res.get()]
         if self.separate_scans:
           self.write_split_scan( scan_arrs ) #if you say separate scans and only pass one scan you get a new dir.
@@ -476,14 +487,14 @@ def main(arg):
  
   prep_conf = os.path.join(experiment_dir, 'conf/config_prep')
   if os.path.isfile(prep_conf):
-    prep_data_dir = os.path.join(experiment_dir, 'prep')
-    data_file = os.path.join(prep_data_dir, 'prep_data.tif')
-    if  os.path.isfile(data_file):
-      os.remove(data_file)
+#    prep_data_dir = os.path.join(experiment_dir, 'prep')
+#    data_file = os.path.join(prep_data_dir, 'prep_data.tif')
+#    if  os.path.isfile(data_file):
+#      os.remove(data_file)
     p=PrepData(experiment_dir)
     p.prep_data()
   else:
-      print ('missing ' + prep_conf + ' file')
+    print ('missing ' + prep_conf + ' file')
   print("exp dir", experiment_dir)
 
   return experiment_dir

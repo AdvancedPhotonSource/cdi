@@ -5,6 +5,7 @@ import os
 import reccdi.src_py.beamlines.aps_34id.prep as prep
 import reccdi.src_py.utilities.parse_ver as ver
 import shutil
+import glob
 
 
 ######################################################################
@@ -36,7 +37,7 @@ def copy_prep(src, dest):
       pass
 
 ######################################################################
-def setup_rundirs(prefix, scan, conf_dir, specfile=None):
+def setup_rundirs(prefix, scan, conf_dir, copy_prep, specfile=None):
     id = prefix + '_' + scan
     print ('reading data files for experiment ' + id)
 
@@ -111,33 +112,50 @@ def setup_rundirs(prefix, scan, conf_dir, specfile=None):
         os.remove(temp_file)
 
     copy_conf(conf_dir, experiment_conf_dir)
+    if copy_prep:
+      #use abspath to get rid of trailing dir sep if it is there
+      other_exp_dir=os.path.split( os.path.abspath(conf_dir))[0]
+      new_exp_dir=os.path.split( os.path.abspath(experiment_conf_dir))[0]
 
-    # I don't want to chain functions together like this.  I don't know why.
-    #But this could make sense for Pooling to parallelize the prep of separate scans.
-    #although pooling could go into main.
-#Moved to prep.py
-#    prep_conf = os.path.join(experiment_conf_dir, 'config_prep')
-#    if os.path.isfile(prep_conf):
-#        prep.prepare(experiment_dir, scan_num, prep_conf)
-#    else:
-#        print ('missing ' + prep_conf + ' file')
-#    print("exp dir", experiment_dir)
-#
-#    return experiment_dir
-
-
+      #get case of single scan or summed
+      prep_dir_list=glob.glob( os.path.join(other_exp_dir, 'prep'), recursive=True )
+      print(other_exp_dir)
+      print(new_exp_dir)
+      print(prep_dir_list)
+      for dir in prep_dir_list:
+        shutil.copytree( dir, os.path.join(new_exp_dir,'prep') ) 
+     
+      #get case of split scans
+      prep_dir_list=glob.glob( os.path.join(other_exp_dir, "scan*/prep"), recursive=True)
+      print(other_exp_dir)
+      print(new_exp_dir)
+      print(prep_dir_list)
+      for dir in prep_dir_list:
+        scandir=os.path.basename(os.path.split(dir)[0])
+        shutil.copytree( dir, os.path.join(new_exp_dir,*(scandir,'prep')) ) 
+     
+#################################################################################
 def main(arg):
     parser = argparse.ArgumentParser()
     parser.add_argument("id", help="prefix to name of the experiment/data reconstruction")
     parser.add_argument("scan", help="a range of scans to prepare data from")
     parser.add_argument("conf_dir", help="directory where the configuration files are located")
+    parser.add_argument('--specfile', action='store')
+    parser.add_argument('--copy_prep', action='store_true')
+
     #would be nice to have specfile as optional arg?  
     args = parser.parse_args()
     scan = args.scan
     id = args.id
     conf_dir = args.conf_dir
-
-    return setup_rundirs(id, scan, conf_dir, specfile=None)
+      
+    if args.specfile and os.path.isfile(args.specfile):
+      specfile=args.specfile
+    else:
+      specfile=None
+    copy_prep=args.copy_prep
+    
+    return setup_rundirs(id, scan, conf_dir, copy_prep=copy_prep, specfile=specfile)
 
 
 if __name__ == "__main__":
