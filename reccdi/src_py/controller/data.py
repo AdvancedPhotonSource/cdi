@@ -151,8 +151,8 @@ def prep(fname, conf_info):
     for i in range(int(len(crops_pads)/2)):
         pair = crops_pads[2*i:2*i+2]
         pairs.append(pair)
-    # change pairs x and y, as the ImageJ swaps the axes
-    pairs[0], pairs[1] = pairs[1], pairs[0]
+    ## change pairs x and y, as the ImageJ swaps the axes
+    #pairs[0], pairs[1] = pairs[1], pairs[0]
     prep_data = ut.adjust_dimensions(prep_data, pairs)
     if prep_data is None:
         print('check "adjust_dimensions" configuration')
