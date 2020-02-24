@@ -181,11 +181,8 @@ class Detector_34idcTIM2(Detector):
 
     dims=arr.shape
     ranges=[]
-    for d in range(0,len(dims),2): 
-      ranges.append(np.arange(roi[0],roi[0]+roi[1]), 
-
-
-np.arange(roi[2],roi[2]+roi[3]), np.arange]
+#    for d in range(0,len(dims),2): 
+#      ranges.append(np.arange(roi[0],roi[0]+roi[1]), 
 
     seam=(4,5,0)
 
