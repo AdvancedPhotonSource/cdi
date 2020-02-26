@@ -42,6 +42,7 @@ basically an information agglomerator for the viz generation.
     -------
     none
     """
+    print(config)
     deg2rad = np.pi / 180.0
     try:
       specfile = config['specfile']

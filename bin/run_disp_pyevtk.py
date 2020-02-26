@@ -123,6 +123,11 @@ def to_vtk(experiment_dir, results_dir=None):
             conf_dict['last_scan'] = int(last_scan)
         except:
             print ("info: scan not determined, can't read " + conf + " configuration file")
+        try:
+            specfile=config_map.specfile
+            conf_dict['specfile']=specfile
+        except:
+            print("specfile not in config file")
 
     # get binning from the config_data file and add it to conf_dict
     binning = None
