@@ -36,6 +36,11 @@ class Detector(object):
     #self.raw_frame=tif.imread(filename)
     self.raw_frame=ut.read_tif(filename)
     return self.raw_frame
+  def insert_seam(self, arr, roi=None):
+    return arr
+  def clear_seam(self, arr, roi=None):
+    return arr
+
 
 ############################################################################
 class Detector_34idcTIM1(Detector):
@@ -110,7 +115,7 @@ class Detector_34idcTIM2(Detector):
     try:
       self.darkfield=ut.read_tif(self.darkfield_filename)
     except:
-      print("Darkfield filename no set for TIM2")
+      print("Darkfield filename not set for TIM2")
       raise
 
   def get_raw_frame(self, filename):
@@ -155,7 +160,7 @@ class Detector_34idcTIM2(Detector):
     try:
       i1=s1range.index(256)  #if not in range try will except
       if i1 != 0:
-        print("inserting dim0")
+#        print("inserting dim0")
         frame=np.insert(arr, i1, np.zeros((4,dims[0])),axis=0)
         #frame=np.insert(normframe, i1, np.zeros((5,dims[0])),axis=0)
       else:
@@ -167,7 +172,7 @@ class Detector_34idcTIM2(Detector):
     try:
       i2=s2range.index(256)
       if i2 != 0:
-        print("inserting dim1")
+#        print("inserting dim1")
         frame=np.insert(frame, i2, np.zeros((5,dims[0]+4)),axis=1)
     except:
       #if there's no insert on dim2 thre's nothing to do
@@ -177,40 +182,45 @@ class Detector_34idcTIM2(Detector):
     return frame
 
   #################################################
+  #This is needed if the seam has already been inserted and shifts have moved intensity
+  #into the seam.  Found that alignment of data sets was best done with the seam inserted.
+  #For instance.
   def clear_seam(self, arr, roi):
 
     dims=arr.shape
-    ranges=[]
+    #dims and roi will be different.  Should still be ok?
+    #I think all that matters is where 256 is in the roi.  That index does not change
+    #for the array that has already been inserted with zeros.
+    s1range=range(roi[0],roi[0]+roi[1])
+    s2range=range(roi[2],roi[2]+roi[3])
 #    for d in range(0,len(dims),2): 
 #      ranges.append(np.arange(roi[0],roi[0]+roi[1]), 
 
     seam=(4,5,0)
+    
+    slices=[]
+    for d in dims:
+      slices.append(slice(0,d))
 
-    for d in range(len(dims)):
-      i=np.argwhere(ranges[d]==256)
-      slices.append(slice[i:i+seam[n]])
+    s1=slices.copy()
+    s2=slices.copy()
 
-
-
+    #modify the slices if 256 is in roi
     try:
-      i1=np.argwhere(s1range==256)  #if not in range try will except
+      i1=s1range.index(256)  #if not in range try will except
       if i1 != 0:
-        print("cleaning seam dim0")
-        
-        frame=arr[i1:i1+4,:,:]=0
-        #frame=np.insert(normframe, i1, np.zeros((5,dims[0])),axis=0)
-      else:
-        frame=arr
+        s1[0]=slice(i1,i1+4) 
     except:
-      frame=arr  #if there's no insert on dim1 need to copy to frame
-      #print("no insert on dim1")
+      print("no clear on dim0")
 
     try:
       i2=s2range.index(256)
       if i2 != 0:
-        print("inserting dim1")
-        frame=np.insert(frame, i2, np.zeros((5,dims[0]+4)),axis=1)
+        s2[1]=slice(i2,i2+5) 
     except:
-      #if there's no insert on dim2 thre's nothing to do
-      #print("no insert on dim2")
-      pass
+      print("no clear on dim1")
+
+    arr[tuple(s1)]=0
+    arr[tuple(s2)]=0
+    return arr
+

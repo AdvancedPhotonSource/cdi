@@ -37,49 +37,50 @@ import psutil
 
 ###################################################################################
 #return the path to a valid data directory, otherwise None
-def get_dir_dict(scans, map):
-    """
-    Returns list of sub-directories in data_dir with names matching range of scans
-    It will exclude scans within exclude_scans list if provided, and directories with 
-    fewer files than min_files, Not sure how to deal with background files for CCD.  
-    if provided
-    :param scans:
-    :param map:
-    :return:
-    """
-    try:
-        min_files = map.min_files
-    except:
-        min_files = 0
-    try:
-        exclude_scans = map.exclude_scans
-    except:
-        exclude_scans = []
-    try:
-        data_dir = map.data_dir.strip()
-    except:
-        print ('please provide data_dir')
-        return
-
-    dirs = {}
-    for name in os.listdir(data_dir):
-        subdir = os.path.join(data_dir, name)
-        if os.path.isdir(subdir):
-            # exclude directories with fewer tif files than min_files
-            if len(glob.glob1(subdir, "*.tif")) < min_files and len(glob.glob1(subdir, "*.tiff")) < min_files:
-                continue
-            try:
-                #this assumes that the last four digits in the scan dir name are the scan number
-                index = int(name[-4:])
-                if index >= scans[0] and index <= scans[1] and not index in exclude_scans:
-                    dirs[index]=subdir
-            except:
-                continue
-    print(dirs)
-    return dirs
-
-
-###################################################################################
+#This one is not used anymore.  
+#def get_dir_dict(scans, map):
+#    """
+#    Returns list of sub-directories in data_dir with names matching range of scans
+#    It will exclude scans within exclude_scans list if provided, and directories with 
+#    fewer files than min_files, Not sure how to deal with background files for CCD.  
+#    if provided
+#    :param scans:
+#    :param map:
+#    :return:
+#    """
+#    try:
+#        min_files = map.min_files
+#    except:
+#        min_files = 0
+#    try:
+#        exclude_scans = map.exclude_scans
+#    except:
+#        exclude_scans = []
+#    try:
+#        data_dir = map.data_dir.strip()
+#    except:
+#        print ('please provide data_dir')
+#        return
+#
+#    dirs = {}
+#    for name in os.listdir(data_dir):
+#        subdir = os.path.join(data_dir, name)
+#        if os.path.isdir(subdir):
+#            # exclude directories with fewer tif files than min_files
+#            if len(glob.glob1(subdir, "*.tif")) < min_files and len(glob.glob1(subdir, "*.tiff")) < min_files:
+#                continue
+#            try:
+#                #this assumes that the last four digits in the scan dir name are the scan number
+#                index = int(name[-4:])
+#                if index >= scans[0] and index <= scans[1] and not index in exclude_scans:
+#                    dirs[index]=subdir
+#            except:
+#                continue
+##    print(dirs)
+#    return dirs
+#
+#
+####################################################################################
 def get_dir_dict2(scans, main_map, prep_map):
     try:
         min_files = prep_map.min_files
@@ -115,16 +116,17 @@ def get_dir_dict2(scans, main_map, prep_map):
             if len(glob.glob1(subdir, "*.tif")) < min_files and len(glob.glob1(subdir, "*.tiff")) < min_files:
                 continue
             try:
-                #this assumes that the last four digits in the scan dir name are the scan number
+                #originally assumed that the last four digits in the scan dir name are the scan number
                 #index = int(name[-4:])
+                #using parse to extract that now.  I couldn't figure out pyparse
                 template="%s%s"%(scandirbase,"_S{}")
                 index = int(parse.parse(template, name)[0]) #if parse fails this will raise exception on []
-                print(template, name, scans[0], scans[1], index)
+#                print(template, name, scans[0], scans[1], index)
                 if index >= scans[0] and index <= scans[1] and not index in exclude_scans:
                     dirs[index]=subdir
             except:
                 continue
-    print(dirs)
+#    print(dirs)
     return dirs
 
 
@@ -279,7 +281,7 @@ class PrepData:
       return
     self.experiment_dir = experiment_dir 
 
-    print(main_conf_map.keys())
+#    print(main_conf_map.keys())
     try:
       scans = [int(s) for s in main_conf_map.scan.split('-')]
     except:
@@ -311,7 +313,7 @@ class PrepData:
     #the detector 
     # this will capture things like whitefield_filename, etc.
     for attr in prep_conf_map.keys():
-      print(attr)
+#      print(attr)
       if hasattr(self.detector,attr):
         setattr(self.detector, attr, prep_conf_map.get(attr))
   
@@ -349,7 +351,7 @@ class PrepData:
   ########################################
   def single_scan(self):
     #handle the easy case of a single scan
-    print(self.dirs)
+#    print(self.dirs)
     arr = read_scan(self.dirs[scan], self.detector, self.det_area)
     prep_data_dir = os.path.join(self.experiment_dir, 'prep')
     data_file = os.path.join(prep_data_dir, 'prep_data.tif')
@@ -372,6 +374,7 @@ class PrepData:
       print ('written:', scan[0], scan[1].shape)
 
   ########################################
+  #Scan arrs is a list of tuples containing scan number and the array
   def write_sum_scan(self, scan_arrs):
     prep_data_dir = os.path.join(self.experiment_dir, 'prep')
     data_file = os.path.join(prep_data_dir, 'prep_data.tif')
@@ -384,16 +387,19 @@ class PrepData:
       sumarr=np.zeros_like(scan_arrs[0][1])
     for arr in scan_arrs:
       sumarr = sumarr + arr[1]
+#    print("dirs",self.dirs)
     if (len(self.dirs)==0):
       #i looked at it a little and decided it was better to insert the seam if
-      #needed before the alignment.  Now need to reinsert it to blank it out after
+      #needed before the alignment.  Now need to blank it out after
       #all of the shifts made them nonzero.
     
-      sumarr=self.detector.insert_seam(sumarr, self.det_area) #this is wrong. need to delete seam inten
+      sumarr=self.detector.clear_seam(sumarr, self.det_area) 
+#      print("saved from true") 
       ut.save_tif(sumarr, data_file)
       if os.path.isfile(temp_file):
         os.remove(temp_file)
     else:
+#      print("saved from false") 
       ut.save_tif(sumarr, temp_file)
       
     print ('Added to prepdata:')
@@ -413,7 +419,7 @@ class PrepData:
     #counting complex arrs as 2 arrays
     #fastshift should be more efficient
     #running out of ram for system pipe to hold results
-    
+    #need to write intermediate results to temp file.
     ncpu=cpu_count()
     narrs=len(self.dirs)
     freemem=psutil.virtual_memory().available
@@ -424,13 +430,6 @@ class PrepData:
       return ncpu
     else:
       return nmem
-
-#  def chunks_size(self):
-#    narrs=len(self.scan_list)
-#    arrsize=sys.getsizeof(self.fft_refarr)/2 #fft_refarr is comples arr!
-#    freemem=psutil.virtual_memory().available
-#    memforall=narrs*12*arrsize  #12 arrs per array to align and save
-#    return ceil(memforall/freemem)
 
  
   ########################################
@@ -443,6 +442,7 @@ class PrepData:
     refarr=read_scan( self.dirs.pop(firstscan), self.detector, self.det_area)
     print("first scan", firstscan)
 
+    #write the first scan to temp or if only scan, we are done here.
     if self.separate_scans:
       self.write_split_scan( [(firstscan,refarr),] ) #if you say separate scans and only pass one scan you get a new dir.
     else:
@@ -460,6 +460,7 @@ class PrepData:
         nproc=int(self.estimate_nconcurrent())
         print("nproc", nproc, len(self.dirs))
         chunklist=list(self.dirs)[0:nproc]
+        #by using pop the dirs dict gets shorter
         poollist = [ (s,self.dirs.pop(s)) for s in chunklist ]
         with Pool(processes=nproc) as pool:
           #read_align return (scan, aligned_arr)
@@ -469,7 +470,7 @@ class PrepData:
         print("moving to writes")
         #should also process the result queues after each pool completes.
         #maybe work sums directly onto disk to save ram.  Can't hold all of the
-        #large arrays in ram to add when done.  Need to change to do this through a temp file.
+        #large arrays in ram to add when done. This is all done.
         scan_arrs=[arr for arr in res.get()]
         if self.separate_scans:
           self.write_split_scan( scan_arrs ) #if you say separate scans and only pass one scan you get a new dir.
