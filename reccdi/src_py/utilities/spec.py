@@ -1,21 +1,5 @@
 from xrayutilities.io import spec as spec
 
-class Detector(object):
-    def __init__(self, det_name):
-        self.det_name = det_name
-
-    def get_pixel(self):
-        pass
-
-
-class Det_34idcTIM2(Detector):
-    def __init__(self):
-        super(Det_34idcTIM2, self).__init__('34idcTIM2:')
-
-    def get_pixel(self):
-        return '(55.0e-6, 55.0e-6)'
-
-
 def parse_spec(specfile, scan):
     # Scan numbers start at one but the list is 0 indexed
     ss = spec.SPECFile(specfile)[scan - 1]

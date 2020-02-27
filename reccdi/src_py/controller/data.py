@@ -98,7 +98,7 @@ def prep(fname, conf_info):
         for alien in aliens:
             # The ImageJ swaps the x and y axis, so the aliens coordinates needs to be swapped, since ImageJ is used
             # to find aliens
-            data[alien[1]:alien[4], alien[0]:alien[3], alien[2]:alien[5]] = 0
+            data[alien[0]:alien[3], alien[1]:alien[4], alien[2]:alien[5]] = 0
         # saving file for Kenley project - AI aliens removing
         aliens_f = os.path.join(experiment_dir, 'prep', 'aliens')
         with open(aliens_f, 'a') as a_f:
@@ -151,8 +151,7 @@ def prep(fname, conf_info):
     for i in range(int(len(crops_pads)/2)):
         pair = crops_pads[2*i:2*i+2]
         pairs.append(pair)
-    ## change pairs x and y, as the ImageJ swaps the axes
-    #pairs[0], pairs[1] = pairs[1], pairs[0]
+
     prep_data = ut.adjust_dimensions(prep_data, pairs)
     if prep_data is None:
         print('check "adjust_dimensions" configuration')
@@ -174,7 +173,6 @@ def prep(fname, conf_info):
             filler = len(prep_data.shape) - len(bins)
             for _ in range(filler):
                 bins.append(1)
-            bins[0], bins[1] = bins[1], bins[0]
             prep_data = ut.binning(prep_data, bins)
         except:
             print ('check "binning" configuration')

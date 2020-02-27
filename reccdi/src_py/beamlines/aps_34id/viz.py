@@ -27,6 +27,7 @@ class DispalyParams:
     This class encapsulates parameters defining image display. The parameters are
 read from config file on construction or whereever they may exist.  This class is
 basically an information agglomerator for the viz generation.
+    Might want to do something like Detector and Diffractometer where we subclass this.
   """
 
   def __init__(self, config):
@@ -42,6 +43,7 @@ basically an information agglomerator for the viz generation.
     -------
     none
     """
+    print(config)
     deg2rad = np.pi / 180.0
     try:
       specfile = config['specfile']
@@ -58,7 +60,9 @@ basically an information agglomerator for the viz generation.
       self.scanmot=scanmot
       self.scanmot_del=scanmot_del
       self.detector=detector
-
+      #should do something that loops through required attributes and sets them from
+      #config if they are present.  like we did in detector for prep.
+      #might do this and the subclass thing.
     except Exception as e:
       pass
     # override the parsed parameters with entries in config file
