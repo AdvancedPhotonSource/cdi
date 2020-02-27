@@ -83,12 +83,14 @@ def setup_rundirs(prefix, scan, conf_dir, copy_prep, specfile=None):
     if not os.path.exists(experiment_conf_dir):
         os.makedirs(experiment_conf_dir)
 
+    #here we want the command line to be used if present, so need to check if None was passed or not.
     try:
-      specfile = config_map.specfile.strip()
+      if not specfile:
+        specfile = config_map.specfile.strip()
     except:
       #need to add optional command line arg.
-      print("Specfile not in config, take from command line if possible")
-
+      print("Specfile not in config or command line")
+      return
 
     #Bases on params passed to this function create a temp config file and then copy it to the experiment dir.
     experiment_main_config = os.path.join(experiment_conf_dir, 'config')
@@ -153,9 +155,8 @@ def main(arg):
       specfile=args.specfile
     else:
       specfile=None
-    copy_prep=args.copy_prep
     
-    return setup_rundirs(id, scan, conf_dir, copy_prep=copy_prep, specfile=specfile)
+    return setup_rundirs(id, scan, conf_dir, copy_prep=args.copy_prep, specfile=specfile)
 
 
 if __name__ == "__main__":
