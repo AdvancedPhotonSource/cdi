@@ -10,6 +10,9 @@ import run_disp_tvtk as run_dp
 import reccdi.src_py.utilities.utils as ut
 import reccdi.src_py.beamlines.aps_34id.spec as spec
 import reccdi.src_py.utilities.parse_ver as ver
+import reccdi.src_py.beamlines.aps_34id.detectors as det
+import reccdi.src_py.beamlines.aps_34id.diffractometer as dif
+import prep
 import importlib
 
 
@@ -55,12 +58,10 @@ class cdi_gui(QWidget):
         uplayout.addRow("Experiment ID", self.Id_widget)
         self.scan_widget = QLineEdit()
         uplayout.addRow("scan(s)", self.scan_widget)
-        # self.set_conf_from_button = QPushButton("Load conf from")
-        # self.set_conf_from_button.setStyleSheet("background-color:rgb(205,178,102)")
-        # uplayout.addRow(self.set_conf_from_button)
-        # self.create_exp_button = QPushButton('create experiment')
-        # self.create_exp_button.setStyleSheet("background-color:rgb(120,180,220)")
-        # uplayout.addRow(self.create_exp_button)
+        self.spec_file_button = QPushButton()
+        uplayout.addRow("spec file", self.spec_file_button)
+        self.detector= QLineEdit()
+        uplayout.addRow("detector", self.detector)
 
         vbox = QVBoxLayout()
         vbox.addLayout(uplayout)
@@ -82,12 +83,36 @@ class cdi_gui(QWidget):
 
         self.setLayout(vbox)
         self.setWindowTitle("CDI Reconstruction")
-#        self.init_work_dir()
 
+        self.detector.returnPressed.connect(self.set_detector)
         self.set_conf_from_button.clicked.connect(self.load_conf_dir)
         self.set_work_dir_button.clicked.connect(self.set_working_dir)
+        self.spec_file_button.clicked.connect(self.set_spec_file)
         self.run_button.clicked.connect(self.run_everything)
         self.create_exp_button.clicked.connect(self.set_experiment)
+
+
+    def set_detector(self):
+        try:
+            self.detector.setStyleSheet('color: black')
+            detObj = det.getdetclass(self.detector.text())
+            pixel = detObj.get_pixel()
+            self.t.pixel.setText(str(pixel))
+            self.t.pixel.setStyleSheet('color: blue')
+        except Exception as e:
+            print (str(e))
+            self.t.pixel.setText('')
+            msg_window('pixel cannot be determined from detector')
+
+
+    def set_spec_file(self):
+        self.specfile = select_file(self.specfile)
+        if self.specfile is not None:
+            self.spec_file_button.setStyleSheet("Text-align:left")
+            self.spec_file_button.setText(self.specfile)
+            self.t.parse_spec()
+        else:
+            self.spec_file_button.setText('')
 
 
     def run_everything(self):
@@ -210,7 +235,17 @@ class cdi_gui(QWidget):
             self.experiment_dir = os.path.join(self.working_dir, self.exp_id)
         except:
             pass
-
+        try:
+            self.specfile = conf_map.specfile
+            self.spec_file_button.setStyleSheet("Text-align:left")
+            self.spec_file_button.setText(self.specfile)
+        except:
+            self.specfile = None
+            self.spec_file_button.setText('')
+        try:
+            self.detector.setText(str(conf_map.detector).replace(" ", ""))
+        except:
+            pass
         if self.experiment_dir is not None:
             # this shows default results directory in display tab
             self.t.results_dir = os.path.join(self.experiment_dir, 'results')
@@ -271,6 +306,10 @@ class cdi_gui(QWidget):
         # save the main config
         conf_map['working_dir'] = '"' + str(self.working_dir).strip() + '"'
         conf_map['experiment_id'] = '"' + self.id + '"'
+        if self.specfile is not None:
+            conf_map['specfile'] = '"' + str(self.specfile).strip() + '"'
+        if len(self.detector.text()) > 0:
+            conf_map['detector'] = str(self.detector.text())
         self.write_conf(conf_map, os.path.join(self.experiment_dir, 'conf'), 'config')
 
         # save prep config
@@ -352,9 +391,8 @@ class cdi_conf_tab(QTabWidget):
         self.tab4 = QWidget()
 
         self.data_dir = None
-        self.specfile = None
-        self.darkfile = None
-        self.whitefile = None
+        self.darkfield_filename = None
+        self.whitefield_filename = None
         self.binning = None
         self.results_dir = None
         self.addTab(self.tab1, "Data prep")
@@ -376,14 +414,12 @@ class cdi_conf_tab(QTabWidget):
         self.separate_scans.setChecked(False)
         self.data_dir_button = QPushButton()
         layout.addRow("data directory", self.data_dir_button)
-        self.spec_file_button = QPushButton()
-        layout.addRow("spec file", self.spec_file_button)
-        self.det_quad = QLineEdit()
-        layout.addRow("detector quad", self.det_quad)
         self.dark_file_button = QPushButton()
         layout.addRow("darkfield file", self.dark_file_button)
         self.white_file_button = QPushButton()
         layout.addRow("whitefield file", self.white_file_button)
+        self.roi = QLineEdit()
+        layout.addRow("detector area (roi)", self.roi)
         self.min_files = QLineEdit()
         layout.addRow("min files in scan", self.min_files)
         self.exclude_scans = QLineEdit()
@@ -409,10 +445,8 @@ class cdi_conf_tab(QTabWidget):
         self.prep_button.clicked.connect(self.prepare)
         self.prep.currentIndexChanged.connect(lambda: self.load_prep(sub_layout))
         self.data_dir_button.clicked.connect(self.set_data_dir)
-        self.spec_file_button.clicked.connect(self.set_spec_file)
         self.dark_file_button.clicked.connect(self.set_dark_file)
         self.white_file_button.clicked.connect(self.set_white_file)
-        self.det_quad.textChanged.connect(lambda: self.set_overriden(self.det_quad))
         self.set_prep_conf_from_button.clicked.connect(self.load_prep_conf)
 
 
@@ -583,12 +617,12 @@ class cdi_conf_tab(QTabWidget):
         layout = QFormLayout()
         self.result_dir_button = QPushButton()
         layout.addRow("results directory", self.result_dir_button)
+        self.diffractometer = QLineEdit()
+        layout.addRow("diffractometer", self.diffractometer)
         self.crop = QLineEdit()
         layout.addRow("crop", self.crop)
         self.rampups = QLineEdit()
         layout.addRow("ramp upscale", self.rampups)
-        self.spec_file_button1 = QPushButton()
-        layout.addRow("spec file", self.spec_file_button1)
         self.energy = QLineEdit()
         layout.addRow("energy", self.energy)
         self.delta = QLineEdit()
@@ -597,8 +631,8 @@ class cdi_conf_tab(QTabWidget):
         layout.addRow("gamma (deg)", self.gamma)
         self.arm = QLineEdit()
         layout.addRow("arm (mm)", self.arm)
-        self.dth = QLineEdit()
-        layout.addRow("dth (deg)", self.dth)
+        self.theta = QLineEdit()
+        layout.addRow("theta (deg)", self.theta)
         self.pixel = QLineEdit()
         layout.addRow("pixel", self.pixel)
         self.set_disp_conf_from_button = QPushButton("Load disp conf from")
@@ -611,13 +645,12 @@ class cdi_conf_tab(QTabWidget):
         self.tab4.setLayout(layout)
 
         self.result_dir_button.clicked.connect(self.set_results_dir)
-        self.spec_file_button1.clicked.connect(self.set_spec_file)
         self.config_disp.clicked.connect(self.display)
         self.energy.textChanged.connect(lambda: self.set_overriden(self.energy))
         self.delta.textChanged.connect(lambda: self.set_overriden(self.delta))
         self.gamma.textChanged.connect(lambda: self.set_overriden(self.gamma))
         self.arm.textChanged.connect(lambda: self.set_overriden(self.arm))
-        self.dth.textChanged.connect(lambda: self.set_overriden(self.dth))
+        self.theta.textChanged.connect(lambda: self.set_overriden(self.theta))
         self.pixel.textChanged.connect(lambda: self.set_overriden(self.pixel))
         self.set_disp_conf_from_button.clicked.connect(self.load_disp_conf)
         self.layout4 = layout
@@ -650,29 +683,18 @@ class cdi_conf_tab(QTabWidget):
             self.data_dir = None
             self.data_dir_button.setText('')
         try:
-            self.specfile = conf_map.specfile
-            self.spec_file_button.setStyleSheet("Text-align:left")
-            self.spec_file_button.setText(self.specfile)
-            # set specfile also in display tab
-            self.spec_file_button1.setStyleSheet("Text-align:left")
-            self.spec_file_button1.setText(self.specfile)
-        except:
-            self.specfile = None
-            self.spec_file_button.setText('')
-            self.spec_file_button1.setText('')
-        try:
-            self.darkfile = conf_map.darkfile
+            self.darkfield_filename = conf_map.darkfield_filename
             self.dark_file_button.setStyleSheet("Text-align:left")
-            self.dark_file_button.setText(self.darkfile)
+            self.dark_file_button.setText(self.darkfield_filename)
         except:
-            self.darkfile = None
+            self.darkfield_filename = None
             self.dark_file_button.setText('')
         try:
-            self.whitefile = conf_map.whitefile
+            self.whitefield_filename = conf_map.whitefield_filename
             self.white_file_button.setStyleSheet("Text-align:left")
-            self.white_file_button.setText(self.whitefile)
+            self.white_file_button.setText(self.whitefield_filename)
         except:
-            self.whitefile = None
+            self.whitefield_filename = None
             self.white_file_button.setText('')
         try:
             self.min_files.setText(str(conf_map.min_files).replace(" ", ""))
@@ -683,7 +705,7 @@ class cdi_conf_tab(QTabWidget):
         except:
             pass
         try:
-            self.det_quad.setText(str(conf_map.det_quad).replace(" ", ""))
+            self.roi.setText(str(conf_map.det_quad).replace(" ", ""))
         except:
             pass
         prep_file = None
@@ -785,17 +807,11 @@ class cdi_conf_tab(QTabWidget):
         except Exception as e:
             msg_window('please check configuration file ' + conf + '. Cannot parse, ' + str(e))
             return
-
+        # if parameters are configured, override the readings from spec file
         try:
-            specfile = conf_map.specfile
-            self.specfile = specfile
-            self.spec_file_button1.setStyleSheet("Text-align:left")
-            self.spec_file_button1.setText(self.specfile)
-            if os.path.isfile(self.specfile):
-                self.parse_spec()
+            self.diffractometer.setText(str(conf_map.diffractometer).replace(" ", ""))
         except AttributeError:
             pass
-        # if parameters are configured, override the readings from spec file
         try:
             self.crop.setText(str(conf_map.crop).replace(" ", ""))
         except AttributeError:
@@ -825,8 +841,8 @@ class cdi_conf_tab(QTabWidget):
         except AttributeError:
             pass
         try:
-            self.dth.setText(str(conf_map.dth).replace(" ", ""))
-            self.dth.setStyleSheet('color: black')
+            self.theta.setText(str(conf_map.theta).replace(" ", ""))
+            self.theta.setStyleSheet('color: black')
         except AttributeError:
             pass
         try:
@@ -834,12 +850,7 @@ class cdi_conf_tab(QTabWidget):
             self.pixel.setStyleSheet('color: black')
         except AttributeError:
             pass
-        # add parameters from config file that are not displayed 
-        try:
-            self.diffractometer = '"' + str(conf_map.diffractometer).replace(" ", "") + '"'
-        except AttributeError:
-            self.diffractometer = '"34idc"'
-        print ('self.diffractometer', self.diffractometer, type(self.diffractometer))
+        # add parameters from config file that are not displayed
         try:
             self.sampleaxes_name = str(conf_map.sampleaxes_name).replace(" ", "")
         except AttributeError:
@@ -862,12 +873,10 @@ class cdi_conf_tab(QTabWidget):
         conf_map = {}
         if self.data_dir is not None:
             conf_map['data_dir'] = '"' + str(self.data_dir).strip() + '"'
-        if self.specfile is not None:
-            conf_map['specfile'] = '"' + str(self.specfile).strip() + '"'
-        if self.darkfile is not None:
-            conf_map['darkfile'] = '"' + str(self.darkfile).strip() + '"'
-        if self.whitefile is not None:
-            conf_map['whitefile'] = '"' + str(self.whitefile).strip() + '"'
+        if self.darkfield_filename is not None:
+            conf_map['darkfield_filename'] = '"' + str(self.darkfield_filename).strip() + '"'
+        if self.whitefield_filename is not None:
+            conf_map['whitefield_filename'] = '"' + str(self.whitefield_filename).strip() + '"'
         if self.separate_scans.isChecked():
             conf_map['separate_scans'] = 'true'
         if len(self.min_files.text()) > 0:
@@ -875,8 +884,8 @@ class cdi_conf_tab(QTabWidget):
             conf_map['min_files'] = min_files
         if len(self.exclude_scans.text()) > 0:
             conf_map['exclude_scans'] = str(self.exclude_scans.text()).replace('\n','')
-        if len(self.det_quad.text()) > 0:
-            det_quad = str(self.det_quad.text())
+        if len(self.roi.text()) > 0:
+            det_quad = str(self.roi.text())
             conf_map['det_quad'] = det_quad
         try:
             if str(self.ready_prep.text()) != '':
@@ -929,8 +938,6 @@ class cdi_conf_tab(QTabWidget):
 
     def get_disp_config(self):
         conf_map = {}
-        if self.specfile is not None:
-            conf_map['specfile'] = '"' + str(self.specfile) + '"'
         if len(self.energy.text()) > 0:
             conf_map['energy'] = str(self.energy.text())
         if len(self.delta.text()) > 0:
@@ -939,18 +946,17 @@ class cdi_conf_tab(QTabWidget):
             conf_map['gamma'] = str(self.gamma.text())
         if len(self.arm.text()) > 0:
             conf_map['arm'] = str(self.arm.text())
-        if len(self.dth.text()) > 0:
-            conf_map['dth'] = str(self.dth.text())
+        if len(self.theta.text()) > 0:
+            conf_map['theta'] = str(self.theta.text())
         if len(self.pixel.text()) > 0:
             conf_map['pixel'] = str(self.pixel.text()).replace('\n', '')
+        if len(self.diffractometer.text()) > 0:
+            conf_map['diffractometer'] = '"' + str(self.diffractometer.text()) + '"'
         if len(self.crop.text()) > 0:
             conf_map['crop'] = str(self.crop.text()).replace('\n', '')
         if len(self.rampups.text()) > 0:
             conf_map['rampups'] = str(self.rampups.text()).replace('\n', '')
         # The following attributes are read from config file, not from GUI
-        if self.diffractometer is not None:
-            conf_map['diffractometer'] =  self.diffractometer
-            print ('in gui diffr', conf_map['diffractometer'])
         if self.sampleaxes_name is not None:
             conf_map['sampleaxes_name'] =  self.sampleaxes_name
         if self.detectoraxes_name is not None:
@@ -1020,53 +1026,52 @@ class cdi_conf_tab(QTabWidget):
         item.setStyleSheet('color: black')
 
 
-    def set_spec_file(self):
-        self.specfile = select_file(self.specfile)
-        if self.specfile is not None:
-            self.spec_file_button.setStyleSheet("Text-align:left")
-            self.spec_file_button.setText(self.specfile)
-            self.spec_file_button1.setStyleSheet("Text-align:left")
-            self.spec_file_button1.setText(self.specfile)
-            self.parse_spec()
-        else:
-            self.spec_file_button.setText('')
-            self.spec_file_button1.setText('')
-
-
     def parse_spec(self):
         try:
             last_scan = int(self.main_win.scan.split('-')[-1])
-            energy, delta, gamma, dth, arm, pixel = spec.parse_spec(self.specfile, last_scan)
+            detector_name, det_area = spec.get_det_from_spec(self.main_win.specfile, last_scan)
+            self.roi.setText(str(det_area))
+            self.roi.setStyleSheet('color: blue')
+            delta, gamma, theta, phi, chi, scanmot, scanmot_del, arm, detector_name, energy = spec.parse_spec(self.main_win.specfile, last_scan)
             self.energy.setText(str(energy))
             self.energy.setStyleSheet('color: blue')
             self.delta.setText(str(delta))
             self.delta.setStyleSheet('color: blue')
             self.gamma.setText(str(gamma))
             self.gamma.setStyleSheet('color: blue')
-            self.dth.setText(str(dth))
-            self.dth.setStyleSheet('color: blue')
+            self.theta.setText(str(theta))
+            self.theta.setStyleSheet('color: blue')
             self.arm.setText(str(arm))
             self.arm.setStyleSheet('color: blue')
-            self.pixel.setText(str(pixel))
-            self.pixel.setStyleSheet('color: blue')
-        except:
-            print ('scan not available, cannot parse spec')
+            try:
+                self.main_win.detector.setText(detector_name)
+                self.main_win.detector.setStyleSheet('color: blue')
+                detObj = det.getdetclass(detector_name)
+                pixel = detObj.get_pixel()
+                self.pixel.setText(str(pixel))
+                self.pixel.setStyleSheet('color: blue')
+            except:
+                self.pixel.setText('')
+                msg_window('pixel cannot be determined from detector')
+        except Exception as e:
+            print(str(e))
+            msg_window ('error parsing spec')
 
 
     def set_dark_file(self):
-        self.darkfile = select_file(self.darkfile)
-        if self.darkfile is not None:
+        self.darkfield_filename = select_file(self.darkfield_filename)
+        if self.darkfield_filename is not None:
             self.dark_file_button.setStyleSheet("Text-align:left")
-            self.dark_file_button.setText(self.darkfile)
+            self.dark_file_button.setText(self.darkfield_filename)
         else:
             self.dark_file_button.setText('')
 
 
     def set_white_file(self):
-        self.whitefile = select_file(self.whitefile)
-        if self.whitefile is not None:
+        self.whitefield_filename = select_file(self.whitefield_filename)
+        if self.whitefield_filename is not None:
             self.white_file_button.setStyleSheet("Text-align:left")
-            self.white_file_button.setText(self.whitefile)
+            self.white_file_button.setText(self.whitefield_filename)
         else:
             self.white_file_button.setText('')
 
@@ -1182,7 +1187,7 @@ class cdi_conf_tab(QTabWidget):
 
 
     def prepare_34id(self, conf_map):
-        mod = importlib.import_module('reccdi.src_py.run_scripts.run_34id_prepare')
+        #mod = importlib.import_module('prep')
         scan = str(self.main_win.scan_widget.text())
         try:
             # after checking that scan is entered convert it to list of int
@@ -1195,8 +1200,9 @@ class cdi_conf_tab(QTabWidget):
         conf_dir = os.path.join(self.main_win.experiment_dir, 'conf')
         conf_file = os.path.join(conf_dir, 'config_prep')
         if self.main_win.write_conf(conf_map, conf_dir, 'config_prep'):
-            f = getattr(mod, 'prepare')
-            f(self.main_win.experiment_dir, scan_range, conf_file)
+            #f = getattr(mod, 'main')
+            #f(self.main_win.experiment_dir)
+            prep.set_prep(self.main_win.experiment_dir)
         if self.separate_scans.isChecked():
             self.results_dir = self.main_win.experiment_dir
         self.result_dir_button.setStyleSheet("Text-align:left")
@@ -1307,6 +1313,15 @@ class cdi_conf_tab(QTabWidget):
         if not self.main_win.is_exp_set():
             msg_window('the experiment has changed, pres "set experiment" button')
             return
+        if len(self.diffractometer.text()) == 0:
+            msg_window('please enter the diffractometer in display tab')
+            return
+        else:
+            # check if the diffractometer is defined
+            diffObj = dif.getdiffclass(self.diffractometer.text())
+            if diffObj is None:
+                msg_window('the diffractometer is not defined')
+                return
         # check if the results exist
         if self.results_dir is None:
             self.results_dir = self.main_win.experiment_dir
@@ -1321,12 +1336,12 @@ class cdi_conf_tab(QTabWidget):
         if not is_result:
             msg_window('No image files found in the results directory tree. Please, run reconstruction in previous tab to activate this function')
             return
-        if (self.specfile is None or not os.path.isfile(self.specfile)) and \
+        if (self.main_win.specfile is None or not os.path.isfile(self.main_win.specfile)) and \
            (len(self.energy.text()) == 0 or \
             len(self.delta.text()) == 0 or \
             len(self.gamma.text()) == 0 or \
             len(self.arm.text()) == 0 or \
-            len(self.dth.text()) == 0 or \
+            len(self.theta.text()) == 0 or \
             len(self.pixel.text()) == 0):
                 msg_window('Please, enter valid spec file or all detector parameters')
                 return

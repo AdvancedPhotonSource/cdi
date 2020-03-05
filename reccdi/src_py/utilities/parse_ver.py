@@ -98,6 +98,17 @@ def ver_config(fname):
         print ('scan parameter parsing error')
         return False
 
+    try:
+        specfile = config_map.specfile
+        if type(specfile) != str:
+            print('specfile parameter should be string')
+            return False
+    except AttributeError:
+        pass
+    except:
+        print ('specfile parameter parsing error')
+        return False
+
     return True
 
 
@@ -333,7 +344,6 @@ def ver_config_rec(fname):
     except:
         print ('generations parameter parsing error')
         return False
-
 
     try:
         twin_trigger = config_map.twin_trigger
@@ -661,36 +671,25 @@ def ver_config_prep(fname):
         return False
 
     try:
-        specfile = config_map.specfile
-        if type(specfile) != str:
-            print('specfile parameter should be string')
+        darkfield_filename = config_map.darkfield_filename
+        if type(darkfield_filename) != str:
+            print('darkfield_filename parameter should be string')
             return False
     except AttributeError:
         pass
     except:
-        print ('specfile parameter parsing error')
+        print ('darkfield_filename parameter parsing error')
         return False
 
     try:
-        darkfile = config_map.darkfile
-        if type(darkfile) != str:
-            print('darkfile parameter should be string')
+        whitefield_filename = config_map.whitefield_filename
+        if type(whitefield_filename) != str:
+            print('whitefield_filename parameter should be string')
             return False
     except AttributeError:
         pass
     except:
-        print ('darkfile parameter parsing error')
-        return False
-
-    try:
-        whitefile = config_map.whitefile
-        if type(whitefile) != str:
-            print('whitefile parameter should be string')
-            return False
-    except AttributeError:
-        pass
-    except:
-        print ('whitefile parameter parsing error')
+        print ('whitefield_filename parameter parsing error')
         return False
 
     try:
@@ -764,6 +763,17 @@ def ver_config_disp(fname):
         return False
 
     try:
+        diffractometer = config_map.diffractometer
+        if type(diffractometer) != str:
+            print('diffractometer parameter should be string')
+            return False
+    except AttributeError:
+        pass
+    except:
+        print ('diffractometer parameter parsing error')
+        return False
+
+    try:
         crop = config_map.crop
         if not issubclass(type(crop), list):
             print('crop should be list')
@@ -776,17 +786,6 @@ def ver_config_disp(fname):
         pass
     except:
         print('crop parameter parsing error')
-        return False
-
-    try:
-        specfile = config_map.specfile
-        if type(specfile) != str:
-            print('specfile parameter should be string')
-            return False
-    except AttributeError:
-        pass
-    except:
-        print ('specfile parameter parsing error')
         return False
 
     try:

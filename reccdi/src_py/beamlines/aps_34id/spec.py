@@ -12,6 +12,7 @@ __all__ = ['parse_spec',
 from xrayutilities.io import spec as spec
 
 def parse_spec(specfile, scan):
+    print ('parsing spec')
     # Scan numbers start at one but the list is 0 indexed
     ss = spec.SPECFile(specfile)[scan - 1]
 
@@ -42,14 +43,9 @@ def get_det_from_spec(specfile, scan):
     # Stuff from the header
     try:
         detector_name = str(ss.getheader_element('UIMDET'))
-        print("here", detector_name)
         det_area = [int(n) for n in ss.getheader_element('UIMR5').split()]
-        print("here", det_area)
-#        det_area1 = int(det_area[0]), int(det_area[1])
-#        det_area2 = int(det_area[2]), int(det_area[3])
-
         return detector_name, det_area
     except:
-        return None, None, None
+        return None, None
 
 
