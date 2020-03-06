@@ -521,8 +521,6 @@ class cdi_conf_tab(QTabWidget):
         ulayout.addRow("device(s)", self.device)
         self.reconstructions = QLineEdit()
         ulayout.addRow("number of reconstructions", self.reconstructions)
-        self.gc = QLineEdit()
-        ulayout.addRow("gc triggers", self.gc)
         self.alg_seq = QLineEdit()
         ulayout.addRow("algorithm sequence", self.alg_seq)
         # TODO add logic to show this only if HIO is in sequence
@@ -776,10 +774,6 @@ class cdi_conf_tab(QTabWidget):
         except AttributeError:
             pass
         try:
-            self.gc.setText(str(conf_map.garbage_trigger).replace(" ", ""))
-        except AttributeError:
-            pass
-        try:
             self.alg_seq.setText(str(conf_map.algorithm_sequence).replace(" ", ""))
         except AttributeError:
             pass
@@ -921,8 +915,6 @@ class cdi_conf_tab(QTabWidget):
             conf_map['reconstructions'] = str(self.reconstructions.text())
         if len(self.device.text()) > 0:
             conf_map['device'] = str(self.device.text()).replace('\n','')
-        if len(self.gc.text()) > 0:
-            conf_map['garbage_trigger'] = str(self.gc.text()).replace('\n','')
         if len(self.alg_seq.text()) > 0:
             conf_map['algorithm_sequence'] = str(self.alg_seq.text()).replace('\n','')
         if len(self.beta.text()) > 0:
@@ -1360,7 +1352,6 @@ class cdi_conf_tab(QTabWidget):
         else:
             self.reconstructions.setText('1')
             self.device.setText('(0,1)')
-            self.gc.setText('(1000)')
             self.alg_seq.setText('((3,("ER",20),("HIO",180)),(1,("ER",20)))')
             self.beta.setText('.9')
             self.cont.setChecked(False)

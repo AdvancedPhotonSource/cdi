@@ -80,7 +80,7 @@ const flow_item_def flow_def[] = {
   flow_item_def("pcdi_trigger",          MODIFIED_AFTER_FIRST, "PcdiTrigger"),
   flow_item_def("pcdi",                  CUSTOM,               "Pcdi"),
   flow_item_def("no_pcdi",               CUSTOM,               "NoPcdi"),
-  flow_item_def("garbage_trigger",       FOR_ALL_RUNS,         "Gc"),
+  flow_item_def("garbage_trigger",       NOT_TRIGGER,          "Gc"),
   flow_item_def("set_prev_pcdi_trigger", CUSTOM,               "SetPcdiPrevious"),
   flow_item_def("to_direct_space",       NOT_TRIGGER,          "ToDirect"),
   flow_item_def("algorithm",             CUSTOM,               "RunAlg"),

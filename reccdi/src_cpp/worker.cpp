@@ -319,7 +319,6 @@ void Reconstruction::Average()
             aver_v[i] += v[i];
         }
     }
-
     delete [] image_v;
 //    printf("Average\n");
 }

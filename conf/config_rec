@@ -50,7 +50,7 @@ generations = 1              // number of generations
 
 ga_metrics = ("chi", "sharpness")
                              // defines which metric should be used to rank the reconstruction results
-                             // supported: 'chi', 'sharpness', 'summed_phase', 'area', ('TV')
+                             // supported: 'chi', 'sharpness', 'summed_phase', 'area'
 
 ga_breed_modes = ("sqrt_ab", "dsqrt")
                              // defines which breeding mode to use to populate new generation. If "none"
