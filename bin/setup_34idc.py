@@ -106,7 +106,7 @@ def setup_rundirs(prefix, scan, conf_dir, **kwargs):
         for dir in prep_dir_list:
             scandir = os.path.basename(os.path.split(dir)[0])
             shutil.copytree(dir, os.path.join(new_exp_dir, *(scandir, 'prep')))
-
+    return experiment_dir
         #################################################################################
 
 

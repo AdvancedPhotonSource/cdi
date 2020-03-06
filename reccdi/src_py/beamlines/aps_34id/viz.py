@@ -9,7 +9,6 @@ import sys
 import numpy as np
 import scipy.ndimage as ndi
 import math as m
-# import pyevtk.hl as vtk
 from tvtk.api import tvtk
 import xrayutilities.experiment as xuexp
 import reccdi.src_py.utilities.utils as ut

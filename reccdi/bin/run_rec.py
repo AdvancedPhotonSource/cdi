@@ -11,15 +11,16 @@ import reccdi.src_py.utilities.parse_ver as ver
 import time
 from functools import reduce
 
-
 MEM_FACTOR = 1500
 ADJUST = 0.0
+
 
 def interrupt_thread():
     """
     This function is part of interrupt mechanism. It detects ctl-c signal and creates an empty file named "stopfile".
     The file is discovered by fast module and the discovery prompts termonation of the process.
     """
+
     def int_handler(signal, frame):
         while not os.path.isfile('stopfile'):
             open('stopfile', 'a').close()
@@ -53,18 +54,18 @@ def get_gpu_use(devices, no_dir, no_rec, data_size):
     no_runs = no_dir * no_rec
     gpu_distribution = ut.get_gpu_distribution(no_runs, gpu_load)
     gpu_use = []
-    available = reduce((lambda x,y: x+y), gpu_distribution)
+    available = reduce((lambda x, y: x + y), gpu_distribution)
     dev_index = 0
     i = 0
     while i < available:
         if gpu_distribution[dev_index] > 0:
             gpu_use.append(devices[dev_index])
-            gpu_distribution[dev_index] = gpu_distribution[dev_index] -1
+            gpu_distribution[dev_index] = gpu_distribution[dev_index] - 1
             i += 1
         dev_index += 1
         dev_index = dev_index % len(devices)
     if no_dir > 1:
-        gpu_use = [gpu_use[x:x+no_rec] for x in range(0, len(gpu_use), no_rec)]
+        gpu_use = [gpu_use[x:x + no_rec] for x in range(0, len(gpu_use), no_rec)]
 
     return gpu_use
 
@@ -79,7 +80,7 @@ def manage_reconstruction(proc, experiment_dir, rec_id=None):
     """
     if os.path.exists('stopfile'):
         os.remove('stopfile')
-    print ('starting reconstruction')
+    print('starting reconstruction')
     # find how many reconstruction configurations are in config directory
     # if more than one, it will run in separate processes
     conf_dir = os.path.join(experiment_dir, 'conf')
@@ -90,7 +91,7 @@ def manage_reconstruction(proc, experiment_dir, rec_id=None):
 
     # check if file exists
     if not os.path.isfile(conf_file):
-        print ('no configuration file ' + conf_file + ' found')
+        print('no configuration file ' + conf_file + ' found')
         return
 
     # verify the configuration file
@@ -144,7 +145,7 @@ def manage_reconstruction(proc, experiment_dir, rec_id=None):
         from functools import reduce
         # find size of data array
         data_shape = ut.read_tif(exp_dirs_data[0][0]).shape
-        data_size = reduce((lambda x,y: x*y), data_shape)
+        data_size = reduce((lambda x, y: x * y), data_shape)
         gpu_use = get_gpu_use(devices, no_runs, reconstructions, data_size)
     else:
         gpu_use = devices
@@ -167,7 +168,7 @@ def manage_reconstruction(proc, experiment_dir, rec_id=None):
         r.reconstruction(proc, conf_file, datafile, dir, gpu_use)
     else:
         # check if is it worth to use last chunk
-        if len(gpu_use[0]) > len(gpu_use[-1])*2:
+        if len(gpu_use[0]) > len(gpu_use[-1]) * 2:
             gpu_use = gpu_use[0:-1]
 
         if generations > 1:
@@ -190,7 +191,7 @@ def manage_reconstruction(proc, experiment_dir, rec_id=None):
                 del processes[pid]
             datafile = exp_dirs_data[index][0]
             dir = exp_dirs_data[index][1]
-            p = Process(target = rec_process, args = (proc, conf_file, datafile, dir, gpus, r, q))
+            p = Process(target=rec_process, args=(proc, conf_file, datafile, dir, gpus, r, q))
             p.start()
             processes[p.pid] = index
             index += 1
@@ -203,7 +204,7 @@ def manage_reconstruction(proc, experiment_dir, rec_id=None):
         q.close()
 
     interrupt_process.terminate()
-    print ('finished reconstruction')
+    print('finished reconstruction')
 
 
 def main(arg):
@@ -222,8 +223,8 @@ def main(arg):
 
 
 if __name__ == "__main__":
-    print (sys.argv[1:])
+    print(sys.argv[1:])
     main(sys.argv[1:])
 
-#python run_rec.py opencl experiment_dir
-        
+# python run_rec.py opencl experiment_dir
+

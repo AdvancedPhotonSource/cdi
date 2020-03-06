@@ -428,6 +428,7 @@ def set_prep(experiment_dir):
             p.prep_data()
     else:
         print('missing ' + prep_conf + ' file')
+    return experiment_dir
 
 
 def main(arg):
