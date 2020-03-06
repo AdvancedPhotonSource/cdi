@@ -1,0 +1,18 @@
+// This configuration contains parameters defining the experiment
+working_dir = "/net/s34data/export/34idc-work/2020/Staff20-1/Analysis"
+                                            // mandatory
+                                            // working directory; the new experiment will
+                                            // be created in this directory
+experiment_id = "ab"                        // mandatory
+                                            // a string id
+
+scan = "2-7"                                // optional (but typically needed)
+                                            // a single number or a range defining scans, optional
+
+specfile = "/net/s34data/export/34idc-data/2020/Staff20-1/Staff20-1a.spec"
+                                            // optional (but typically needed)
+                                            // specfile can be specified on the command line argument to setup_34idc.py or here.
+
+detector = "34idcTIM1:"                     // optional
+                                            // If detector is not in specfile one can enter them here
+                                            // Dont forget the : on the end of the detector name (34idcTIM2:) if is

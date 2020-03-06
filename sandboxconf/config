@@ -1,6 +1,0 @@
-//The base config file needs at least the working directory.  
-//specfile can be specified on the command line argument to setup_34idc.py or here.
-//The ID and scan/scanrange are added to config by setup_34idc.py
-
-working_dir = "/net/s34data/export/34idc-work/2020/Staff20-1/Analysis"
-specfile = "/net/s34data/export/34idc-data/2020/Staff20-1/Staff20-1a.spec"

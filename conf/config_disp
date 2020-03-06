@@ -1,0 +1,27 @@
+// PARAMETERS FOR VISUALISATION
+results directory = "test/a_12/results" // optional, a directory of off which all results will be visualized
+
+diffractometer = "34idc"  // it typically will be set to a defined class, but in case of new diffractometer
+                          // one can enter the parameters below instead
+//These are set in the diffractometer class, but can be set from config
+//if no class has been written yet.  These will override anything set
+//internally.  can also set vals of the axes here.
+//sampleaxes_name = ('theta','chi','phi')
+//detectoraxes_name = ('delta','gamma','detdist')
+//sampleaxes = ('y+', 'z-', 'x-')
+//detectoraxes = ('y+','z-')
+
+rampups = 1                //upsize when running ramp removal
+
+//crop = (120,120,120)     // size to crop the image array
+crop = (.75, .75, .75)     // can be entered as absolute numbers or fractions
+
+// typically these parameters will be parsed from spec file
+// the parsed parameters will be overridden if they are configured
+energy = .13933            // wavelength
+delta = 30.1               // delta (degrees)
+gamma = 14.0               // gamma (degrees)
+arm = 500.0                // camera distance (mm)
+theta = 0.1999946          // angular step size
+pixel = (55.0e-6, 55.0e-6) // detector pixel
+

@@ -3,36 +3,33 @@ data_dir = "/net/s34data/export/34idc-data/2019/Staff19-1/ADStaff19-1a"
                                             // subdirectories each containing .tif data files. Each subdirectory 
                                             // represents separate scan and is numbered with the scan index
 
-specfile = "/net/s34data/export/34idc-data/2019/Staff19-1/Staff19-1a.spec"
-                                            // a specfile captured during experiment
+darkfield_filename = "/net/s34data/export/34idc-work/2020/dark.tif"
+                                            // dark file taken to clean bad pixels or correct background in CCD.
+                                            // each detector needs to implement this correctly.
 
-darkfile = "/net/s34data/export/34idc-work/2019/dark.tif"
-                                            // dark file taken at the time of experiment
+whitefield_filename = "/net/s34data/export/34idc-work/2020/Staff19-2b_whitefield.tif"
+                                            // each detector needs to implement this correctly.
 
-whitefile = "/net/s34data/export/34idc-work/2019/CelaWhiteField.tif"
-                                            // white file taken at the time of experiment
+roi = (0,256,0,256)
+                                            // Used to determine corrections on the detector if they are local.
+                                            // Read from specfile preferrably
+min_files = 80
+                                            // only scans containing minimum of .tif files will be included
 
 exclude_scans = (78,81)
                                             // a list containing scan indexes that will be excluded from preparation
 
-min_files = 80
-                                            // only scans containing minimum of .tif files will be included
-
-// det_quad = 1
-                                            // defines which detector quad was used during experiment.
-                                            // 0: all four quads
-                                            // 1: lower left
-                                            // 2: top left
-                                            // 3: lower right
-                                            // 4: top right
-                                            // this information is typically read from spec file,
-                                            // is required if not included in spec file or no spec file is given
 separate_scans = false
                                             // in typical scenario the data from all scans in experiment are
                                             // combined.
                                             // if specified as separate scans, each scan will be processed separately
                                             // and will have sub-experiment name containing scan index
                                             // ex. "scan_9", where 9 is scan index
+
+//Imult = 10000
+                                            // A multiplication factor used to renormalize the whitefield correction.
+                                            // This is not used yet.  Might just normalize to max, or max before
+                                            // correction
 
 // prep_file = "/net/s34data/export/34idc-work/2019/test/a_9/prep/prep_data.tiff"
                                             // tif file that has been already read (prepared)
