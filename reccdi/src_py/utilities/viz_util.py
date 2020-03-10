@@ -9,7 +9,7 @@ import numpy as np
 import scipy.ndimage as ndi
 import math as m
 import reccdi.src_py.utilities.utils as ut
-from reccdi.src_py.utilities.utils import measure
+#from reccdi.src_py.utilities.utils import measure
 
 __author__ = "Barbara Frosik"
 __copyright__ = "Copyright (c) 2016, UChicago Argonne, LLC."
@@ -22,7 +22,7 @@ def shift(arr, s0, s1, s2):
     return np.roll(shifted, s2, axis=2)
 
 
-@measure
+#@measure
 def remove_ramp(arr, ups=1):
     new_shape = list(arr.shape)
     # pad zeros around arr, to the size of 3 times (ups = 3) of arr size
@@ -39,7 +39,7 @@ new_shape[2]/2.0-com[2])
     return ramp_removed
 
 
-@measure
+#@measure
 def center(image, support):
     dims = image.shape
     image, support = ut.get_centered_both(image, support)

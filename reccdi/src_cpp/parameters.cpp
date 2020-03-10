@@ -39,6 +39,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
     is_resolution = false;
     low_res_iterations = 0;
     iter_res_det_first = 1;
+    nD = data_dim.size();
 
     BuildAlgorithmMap();
 
@@ -339,7 +340,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
         }
         catch ( const SettingNotFoundException &nfex)
         {
-            printf("No 'support_area' parameter in configuration file.\n");
+            printf("No 'support_area' parameter in configuration file. setting to half array.\n");
         }
         try {
             support_threshold = cfg.lookup("support_threshold");
@@ -357,6 +358,15 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
         catch ( const SettingNotFoundException &nfex)
         {
             printf((std::string("No 'support_type' parameter in configuration file.\n")).c_str());
+        }
+    }
+    if (support_area.size() < nD)
+    {
+        support_area.clear();
+        // even if the support trigger is not defined, the area must be set initially, but won't be updated
+        for (int i = 0; i < nD; i++)
+        {
+            support_area.push_back(int(0.5 * data_dim[i]));
         }
     }
 
@@ -515,6 +525,11 @@ Params::~Params()
     pcdi_roi.clear();
     used_flow_seq.clear();
     flow_vec.clear();
+}
+
+int Params::GetNdim()
+{
+    return nD;
 }
 
 void Params::BuildAlgorithmMap()

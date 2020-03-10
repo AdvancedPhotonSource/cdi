@@ -21,6 +21,7 @@ class Resolution
 private:
     std::vector<float> dets;
     std::vector<float> sigmas;
+    int nD;
 
 public:
     Resolution(Params *params);

@@ -234,7 +234,7 @@ void Reconstruction::PhaseTrigger()
 
 void Reconstruction::ToReciprocal()
 {
-    rs_amplitudes = Utils::ifft(ds_image)*num_points;
+    rs_amplitudes = Utils::ifft(ds_image, params->GetNdim())*num_points;
 //    printf("data norm, ampl norm before ratio %fl %fl\n", GetNorm(iter_data), GetNorm(rs_amplitudes));
 //    printf("ToReciprocal %d\n", (uint)(getpid()));
 }
@@ -281,7 +281,7 @@ void Reconstruction::SetPcdiPrevious()
 
 void Reconstruction::ToDirect()
 {
-    ds_image_raw = Utils::fft(rs_amplitudes)/num_points;
+    ds_image_raw = Utils::fft(rs_amplitudes, params->GetNdim())/num_points;
 //    printf("ToDirect\n");
 }
 

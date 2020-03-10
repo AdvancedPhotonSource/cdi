@@ -10,7 +10,7 @@ See LICENSE file.
 // defines the type of the data; can be float or double. The double will get replaced when running initializing script.
 typedef double d_type;
 
-const int nD = 3;
+// const int nD = 3;
 
 
 // a pair that defines an algorithm, and an iteration at which the algorithm is replaced by another or the process ends

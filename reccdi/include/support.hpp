@@ -25,7 +25,7 @@ private:
     int update_iter;
     d_type last_sigma;
     af::array support_array;
-    af::array init_support_array;
+//    af::array init_support_array;
     af::array GaussConvFft(af::array ds_image);
     af::array GetDistribution(const af::dim4 data_dim, d_type sigma);  
 

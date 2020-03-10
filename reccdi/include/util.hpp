@@ -36,8 +36,8 @@ public:
     
     static af::array fftshift(af::array arr);
     static af::array ifftshift(af::array arr);
-    static af::array fft(af::array arr);
-    static af::array ifft(af::array arr);
+    static af::array fft(af::array arr, int nD);
+    static af::array ifft(af::array arr, int nD);
 
     // This method takes a 3D array, and dimensions of sub-array. It is assumed that the dimensions do not extend array
     // dimensions.
@@ -63,7 +63,7 @@ public:
     static af::array CenterMax(af::array arr);
 
     static void GetMaxIndices(af::array arr, int* indices);
-    static af::array GaussDistribution(const af::dim4, d_type *, int);
+    static af::array GaussDistribution(int nD, const af::dim4, d_type *, int);
 
     // pads symmetrically around array arr to the size on new_dims with the constant value pad
     static af::array PadAround(af::array arr, af::dim4 new_dims, d_type pad);

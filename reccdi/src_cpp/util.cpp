@@ -76,7 +76,7 @@ af::array Utils::ifftshift(af::array arr)
     return af::shift(arr, ceil(arr.dims()[0]/2), ceil(arr.dims()[1]/2), ceil(arr.dims()[2]/2), ceil(arr.dims()[3]/2));
 }
 
-af::array Utils::fft(af::array arr)
+af::array Utils::fft(af::array arr, int nD)
 {
     if (nD == 3)
     {
@@ -88,9 +88,8 @@ af::array Utils::fft(af::array arr)
     }
 }
 
-af::array Utils::ifft(af::array arr)
+af::array Utils::ifft(af::array arr, int nD)
 {
-
     if (nD == 3)
     {
         return ifft3(arr);
@@ -116,17 +115,16 @@ void Utils::GetMaxIndices(af::array arr, int* indices)
     //printf("offset, ind1, ind2 ind3 %i %i %i %i\n", max_offset, indices[0], indices[1], indices[2]);
 }
 
-af::array Utils::GaussDistribution(af::dim4 data_dim, d_type * sgma, int alpha)
+af::array Utils::GaussDistribution(int nD, af::dim4 data_dim, d_type * sgma, int alpha)
 {
     // calculate multipliers
-    int dimension = nD;  //this should be changed to determine size from sgma
     //initialize first element of the grid, assuming at least one dimension
     d_type multiplier = - 0.5 * alpha/pow(sgma[0],2);
     af::array exponent =  pow( (range(data_dim, 0)-(data_dim[0]-1)/2.0).as(f64) ,2)* multiplier;
     af::array grid = exp(exponent);
 
     //add grid in other dimensions
-    for (int i = 1; i<dimension; i++)
+    for (int i = 1; i<nD; i++)
     {
         multiplier = - 0.5 * alpha/pow(sgma[i],2);
         exponent =  pow( (range(data_dim, i)-(data_dim[i]-1)/2.0).as(f64) ,2)* multiplier;

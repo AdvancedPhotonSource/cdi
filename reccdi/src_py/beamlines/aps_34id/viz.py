@@ -12,7 +12,7 @@ import math as m
 from tvtk.api import tvtk
 import xrayutilities.experiment as xuexp
 import reccdi.src_py.utilities.utils as ut
-from reccdi.src_py.utilities.utils import measure
+#from reccdi.src_py.utilities.utils import measure
 import reccdi.src_py.beamlines.aps_34id.spec as sput
 import reccdi.src_py.beamlines.aps_34id.detectors as det
 import reccdi.src_py.beamlines.aps_34id.diffractometer as diff
@@ -306,7 +306,7 @@ class CXDViz:
         self.recip_arrs.clear()
 
 
-    @measure
+#    @measure
     def add_ds_array(self, array, name, logentry=None):
 
         # Need to add something to ensure arrays are all the same dimension.
@@ -321,7 +321,7 @@ class CXDViz:
             self.update_dirspace(array.shape)
 
 
-    @measure
+#    @measure
     def add_rs_array(self, array, name, logentry=None):
 
         # Need to add something to ensure arrays are all the same dimension.

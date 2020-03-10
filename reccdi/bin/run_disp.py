@@ -1,13 +1,12 @@
 import reccdi.src_py.utilities.viz_util as vu
 import reccdi.src_py.beamlines.aps_34id.viz as v
 import reccdi.src_py.utilities.utils as ut
-from reccdi.src_py.utilities.utils import measure
 import reccdi.src_py.utilities.parse_ver as ver
 import argparse
 import sys
 import os
 import numpy as np
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 
 
 def save_CX(conf_dict, image, support, coh, save_dir):
@@ -142,13 +141,15 @@ def to_vtk(experiment_dir, results_dir=None):
         for file in filenames:
             if file.endswith('image.npy'):
                 dirs.append((dirpath, conf_dict))
-    # this overrides the pooling and will only work for a single reconstruction.  Just for testing.
-    save_vtk(dirs[0])
-
-#    with Pool(processes = no_gpus) as pool:
-#        pool.map_async(save_vtk, dirs)
-#        pool.close()
-#        pool.join()
+    if len(dirs) == 1:
+        save_vtk(dirs[0])
+    elif len(dirs) >1:
+        no_proc = min(cpu_count(), len(dirs))
+        with Pool(processes = no_proc) as pool:
+           pool.map_async(save_vtk, dirs)
+           pool.close()
+           pool.join()
+    print ('done with processing display')
 
 
 def main(arg):

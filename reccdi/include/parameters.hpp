@@ -17,6 +17,8 @@ See LICENSE file.
 class Params
 {
 private:
+    // number of dimensions taken from input array dims
+    int nD;
     // maps algorithm name to algorithm number
     std::map<std::string, int> algorithm_id_map;
     // vector holding algorithm run sequence, where algorithm run is a pair of algorithm and number of iterations
@@ -61,7 +63,7 @@ private:
     float iter_res_det_last;
     
     std::vector<int> used_flow_seq;
-//    int flow[];
+
     std::vector<int> flow_vec;
 
     void BuildAlgorithmMap();
@@ -70,7 +72,10 @@ public:
     // Constructor. Takes in configuration file, parses the configuration and sets the parameters accordingly.
     Params(const char* config_file, std::vector<int> data_dim, bool first);
     ~Params();
-       
+
+    // Returns number of dimensions of the data array
+    int GetNdim();
+
     // returns data type (float/double). Used by python code
     std::string GetDataType();
 
@@ -109,7 +114,7 @@ public:
     
     // Returns beta parameter for the HIO processing.
     float GetBeta();
-    
+
     // Returns a vector containing algorithm switch sequence.
     // Algorithm switch is defined as a pair of two elements, the first defines an algorithm, and the second defines
     // iteration at which the algorithm stops and switches to a next algorithm.
