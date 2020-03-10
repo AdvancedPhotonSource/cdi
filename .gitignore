@@ -2,6 +2,7 @@ build/*
 bridge*.cpp
 core
 *.so
+*.pyx
 *.o
 *.swp
 __pycache__
