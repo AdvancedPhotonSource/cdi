@@ -36,7 +36,7 @@ af::array Resolution::GetIterData(int iter, af::array data)
 {
     int alpha = 1;
     d_type *dim_sigmas = new d_type[nD];
-    for (int i=0; i<nD; i++)
+    for (uint i=0; i<nD; i++)
     {
         dim_sigmas[i] = data.dims()[i]*dets[iter];
     }

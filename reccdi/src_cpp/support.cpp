@@ -93,9 +93,9 @@ af::array Support::GetSupportArray()
 af::array Support::GetDistribution(const af::dim4 data_dim, d_type sigma)
 {
     int alpha = 1;
-    int nD = params->GetNdim();
+    uint nD = params->GetNdim();
     d_type *sigmas = new d_type[nD];
-    for (int i=0; i<nD; i++)
+    for (uint i=0; i<nD; i++)
     {
         sigmas[i] = data_dim[i]/(2.0*af::Pi*sigma);
     }

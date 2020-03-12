@@ -165,7 +165,7 @@ try{
     d_type pad = 0;
     af::array kernel_padded = Utils::PadAround(kernel, dims_input, pad);
 
-    int nD = params->GetNdim();
+    uint nD = params->GetNdim();
     af::array coh_padded = real( Utils::ifft( Utils::fft(arr, nD) * Utils::fft(kernel_padded, nD), nD ) );
     return coh_padded;
 }

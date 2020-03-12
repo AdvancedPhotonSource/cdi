@@ -9,6 +9,7 @@ See LICENSE file.
 
 // defines the type of the data; can be float or double. The double will get replaced when running initializing script.
 typedef double d_type;
+typedef unsigned int uint;
 
 // const int nD = 3;
 
@@ -50,10 +51,10 @@ const int FOR_ALL_RUNS = 2;
 const int MODIFIED_AFTER_FIRST = 3;
 const int CUSTOM = 4;
 
-typedef struct flow_item_def { char* item_name;
+typedef struct flow_item_def {const char* item_name;
                            int type;
-                           char* func_name;
-                           flow_item_def(char* item, int t, char* func) : item_name(item), type(t), func_name(func){}
+                           const char* func_name;
+                           flow_item_def(const char* item, int t, const char* func) : item_name(item), type(t), func_name(func){}
                   } flow_item_def;
 
 // The table below defines general iteration sequence. Each item defines a function with the reconstruction algorithm,

@@ -18,7 +18,7 @@ class Params
 {
 private:
     // number of dimensions taken from input array dims
-    int nD;
+    uint nD;
     // maps algorithm name to algorithm number
     std::map<std::string, int> algorithm_id_map;
     // vector holding algorithm run sequence, where algorithm run is a pair of algorithm and number of iterations
@@ -74,7 +74,7 @@ public:
     ~Params();
 
     // Returns number of dimensions of the data array
-    int GetNdim();
+    uint GetNdim();
 
     // returns data type (float/double). Used by python code
     std::string GetDataType();
