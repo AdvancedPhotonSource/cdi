@@ -114,14 +114,20 @@ def read_scan(dir, detector, det_area):
 
     # look at slice0 to find out shape
     n = 0
-    slice0 = detector.get_frame(files[n], roi=det_area)
+    if det_area is None:
+        slice0 = detector.get_frame(files[n])
+    else:
+        slice0 = detector.get_frame(files[n], roi=det_area)
     shape = (slice0.shape[0], slice0.shape[1], len(files))
     arr = np.zeros(shape, dtype=slice0.dtype)
     arr[:, :, 0] = slice0
 
     for file in files[1:]:
         n = n + 1
-        slice = detector.get_frame(file, roi=det_area)
+        if det_area is None:
+            slice = detector.get_frame(file)
+        else:
+            slice = detector.get_frame(file, roi=det_area)
         arr[:, :, n] = slice
     return arr
 
@@ -240,20 +246,23 @@ class PrepData:
         # use last scan in series to get info. This still works if only one scan in list.
         scan_end = scans[-1]
         det_name = None
-        self.det_area = None
+        self.roi = None
         try:
             specfile = main_conf_map.specfile.strip()
             # parse det name and saved roi from spec
             # get_det_from_spec is already a try block.  So maybe this is not needed?
-            det_name, self.det_area = spec.get_det_from_spec(specfile, scan_end)
+            det_name, self.roi = spec.get_det_from_spec(specfile, scan_end)
+        except AttributeError:
+            print("specfile not configured")
         except:
-            print("Detector information not in spec file, will try default detector for reading")
+            print("Detector information not in spec file")
 
         # default detector get_frame method just reads tif files and doesn't do anything to them.
         try:
             det_name = prep_conf_map.detector
         except:
             if det_name is None:
+                print('Detector name is not available, using default detector class')
                 det_name = "default"
 
         # The detector attributes for background/whitefield/etc need to be set to read frames
@@ -270,10 +279,9 @@ class PrepData:
 
         # if roi is set in config file use it, just in case spec had it wrong or it's not there.
         try:
-            self.det_area = prep_conf_map.roi
+            self.roi = prep_conf_map.roi
         except:
-            if self.det_area is None:
-                print('spec file or scan is not configured, and detector roi is not configured')
+            pass
 
         try:
             self.separate_scans = prep_conf_map.separate_scans
@@ -300,13 +308,12 @@ class PrepData:
     ########################################
     def single_scan(self):
         # handle the easy case of a single scan
-        arr = read_scan(self.dirs[scan], self.detector, self.det_area)
+        arr = read_scan(self.dirs[scan], self.detector, self.roi)
         prep_data_dir = os.path.join(self.experiment_dir, 'prep')
         data_file = os.path.join(prep_data_dir, 'prep_data.tif')
         if not os.path.exists(prep_data_dir):
             os.makedirs(prep_data_dir)
         ut.save_tif(arr, data_file)
-        print('done with prep, shape:', arr.shape)
 
     ########################################
     def write_split_scan(self, scan_arrs):
@@ -339,7 +346,7 @@ class PrepData:
             # needed before the alignment.  Now need to blank it out after
             # all of the shifts made them nonzero.
 
-            #sumarr = self.detector.clear_seam(sumarr, self.det_area)
+            #sumarr = self.detector.clear_seam(sumarr, self.roi)
             ut.save_tif(sumarr, data_file)
             if os.path.isfile(temp_file):
                 os.remove(temp_file)
@@ -348,7 +355,7 @@ class PrepData:
 
     ########################################
     def read_align(self, scan):  # this can have only single argument for Pool.
-        scan_arr = read_scan(scan[1], self.detector, self.det_area)
+        scan_arr = read_scan(scan[1], self.detector, self.roi)
         shifted_arr = shift_to_ref_array(self.fft_refarr, scan_arr)
         aligned_arr = np.abs(shifted_arr)
         del shifted_arr
@@ -379,7 +386,7 @@ class PrepData:
         # scan_list is used for writing arrays if separate scans
         # because dirs.keys gets the arrays popped out.
         firstscan = list(self.dirs)[0]
-        refarr = read_scan(self.dirs.pop(firstscan), self.detector, self.det_area)
+        refarr = read_scan(self.dirs.pop(firstscan), self.detector, self.roi)
 
         # write the first scan to temp or if only scan, we are done here.
         if self.separate_scans:

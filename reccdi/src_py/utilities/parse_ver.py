@@ -136,7 +136,7 @@ def ver_config_rec(fname):
             print ("can't read configuration file")
             return False
     except:
-        print ('Cannot parse ' + fname + ' configuration file. Check paranthesis and quotations.')
+        print ('Cannot parse ' + fname + ' configuration file. Check parenthesis and quotations.')
         return False
 
     try:
@@ -201,16 +201,6 @@ def ver_config_rec(fname):
         pass
     except:
         print ('device parameter parsing error')
-        return False
-
-    try:
-        garbage_trigger = config_map.garbage_trigger
-        if not ver_list_int('garbage_trigger', garbage_trigger):
-            return False
-    except AttributeError:
-        pass
-    except:
-        print ('garbage_trigger parameter parsing error')
         return False
 
     try:
@@ -656,8 +646,15 @@ def ver_config_prep(fname):
             print ("can't read configuration file")
             return False
     except:
-        print ('Cannot parse ' + fname + ' configuration file. Check paranthesis and quotations.')
+        print ('Cannot parse ' + fname + ' configuration file. Check parenthesis and quotations.')
         return False
+
+    try:
+        if not ver_list_int('roi', config_map.roi):
+            print ('roi parameter should be a list of int')
+            return False
+    except AttributeError:
+        pass
 
     try:
         data_dir = config_map.data_dir
@@ -707,18 +704,6 @@ def ver_config_prep(fname):
         pass
     except:
         print('min_files parameter parsing error')
-        return False
-
-    try:
-        det_quad = config_map.det_quad
-        quad_options = [0,1,2,3,4]
-        if det_quad not in quad_options:
-            print('det_quad should be one of the following: 0, 1, 2, 3, 4')
-            return False
-    except AttributeError:
-        pass
-    except:
-        print('det_quad parameter parsing error')
         return False
 
     try:
@@ -822,14 +807,14 @@ def ver_config_disp(fname):
         return False
 
     try:
-        arm = config_map.arm
-        if type(arm) != float:
-            print('arm should be float')
+        detdist = config_map.detdist
+        if type(detdist) != float:
+            print('detdist should be float')
             return False
     except AttributeError:
         pass
     except:
-        print('arm parameter parsing error')
+        print('detdist parameter parsing error')
         return False
 
     try:

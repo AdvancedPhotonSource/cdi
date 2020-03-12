@@ -71,6 +71,22 @@ class DispalyParams:
         except KeyError:
             pass
         try:
+            self.delta = config['delta']
+        except KeyError:
+            pass
+        try:
+            self.gamma = config['gamma']
+        except KeyError:
+            pass
+        try:
+            self.detdist = config['detdist']
+        except KeyError:
+            pass
+        try:
+            self.th = config['theta']
+        except KeyError:
+            pass
+        try:
             self.diffractometer = config['diffractometer']
             self.diffractometer_obj = diff.getdiffclass(self.diffractometer)  # will return None if not defined
         except KeyError:
