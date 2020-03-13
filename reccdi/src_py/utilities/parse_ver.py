@@ -602,21 +602,22 @@ def ver_config_data(fname):
 
     try:
         aliens = config_map.aliens
-        if not issubclass(type(aliens), list):
-            print('aliens should be a list of aliens(lists)')
+        if issubclass(type(aliens), list):
+            for a in aliens:
+                if not issubclass(type(a), list):
+                    print ('aliens should be a list of aliens(lists) or file name')
+                    return False
+                if not ver_list_int('aliens', a):
+                    return False
+                if (len(a) < 6):
+                    print('each alien is defined by list of six int')
+        elif type(aliens) != str:
+            print('aliens should be a list of aliens(lists) or a string (mask file name)')
             return False
-        for a in aliens:
-            if not issubclass(type(a), list):
-                print ('aliens should be a list of aliens(lists)')
-                return False
-            if not ver_list_int('aliens', a):
-                return False
-            if (len(a) < 6):
-                print('each alien is defined by list of six int')
     except AttributeError:
         pass
-    except:
-        print('amp_threshold parameter parsing error')
+    except Exception as e:
+        print('aliens parameter parsing error ', str(e))
         return False
 
     return True

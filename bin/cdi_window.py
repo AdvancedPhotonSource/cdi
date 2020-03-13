@@ -866,7 +866,10 @@ class cdi_conf_tab(QTabWidget):
     def get_data_config(self):
         conf_map = {}
         if len(self.aliens.text()) > 0:
-            conf_map['aliens'] = str(self.aliens.text()).replace('\n', '')
+            if os.path.isfile(str(self.aliens.text()).strip()):
+                conf_map['aliens'] = '"' + str(self.aliens.text()) + '"'
+            else:
+                conf_map['aliens'] = str(self.aliens.text()).replace('\n', '')
         if len(self.amp_intensity.text()) > 0:
             conf_map['amp_threshold'] = str(self.amp_intensity.text())
         if len(self.binning.text()) > 0:

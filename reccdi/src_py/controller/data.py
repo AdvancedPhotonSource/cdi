@@ -94,38 +94,47 @@ def prep(fname, conf_info):
     # zero out the ares defined by aliens
     try:
         aliens = config_map.aliens
-        print ('removing aliens')
-        for alien in aliens:
-            # The ImageJ swaps the x and y axis, so the aliens coordinates needs to be swapped, since ImageJ is used
-            # to find aliens
-            data[alien[0]:alien[3], alien[1]:alien[4], alien[2]:alien[5]] = 0
-        # saving file for Kenley project - AI aliens removing
-        aliens_f = os.path.join(experiment_dir, 'prep', 'aliens')
-        with open(aliens_f, 'a') as a_f:
-            try:
-                with open(conf, 'r') as f:
-                    for line in f:
-                        if line.startswith('aliens'):
-                            a_f.write(line + '\n')
-                            break
-                f.close()
-                a_f.close()
-            except:
-                pass
-        # saving file for Kenley project - AI aliens removing
-        d_f = os.path.join(experiment_dir, 'prep', 'prep_no_aliens.npy')
-        np.save(d_f, data)
-        d_f = os.path.join(experiment_dir, 'prep', 'prep_no_aliens.tif')
-        ut.save_tif(data, d_f)
-
+        # the parameter was entered as a list
+        if issubclass(type(aliens), list):
+            for alien in aliens:
+                # The ImageJ swaps the x and y axis, so the aliens coordinates needs to be swapped, since ImageJ is used
+                # to find aliens
+                data[alien[0]:alien[3], alien[1]:alien[4], alien[2]:alien[5]] = 0
+            # saving file for Kenley project - AI aliens removing
+            aliens_f = os.path.join(experiment_dir, 'prep', 'aliens')
+            with open(aliens_f, 'a') as a_f:
+                try:
+                    with open(conf, 'r') as f:
+                        for line in f:
+                            if line.startswith('aliens'):
+                                a_f.write(line + '\n')
+                                break
+                    f.close()
+                    a_f.close()
+                except:
+                    pass
+            # saving file for Kenley project - AI aliens removing
+            d_f = os.path.join(experiment_dir, 'prep', 'prep_no_aliens.npy')
+            np.save(d_f, data)
+            d_f = os.path.join(experiment_dir, 'prep', 'prep_no_aliens.tif')
+            ut.save_tif(data, d_f)
+        # the parameter was entered as a file name (mask)
+        else:
+            if os.path.isfile(aliens):
+                mask = np.load(aliens)
+                for i in range(len(mask.shape)):
+                    if mask.shape[i] != data.shape[i]:
+                        print ('exiting, mask must be of the same shape as data:', data.shape)
+                        return
+                data = np.where((mask==1), data, 0.0)
     except AttributeError:
         pass
-    except:
-        print ('error in aliens configuration')
+    except Exception as e:
+        print ('exiting, error in aliens configuration ', str(e))
+        return
 
     try:
         amp_threshold = config_map.amp_threshold
-        print ('applied threshold')
     except AttributeError:
         print ('define amplitude threshold. Exiting')
         return
@@ -138,7 +147,7 @@ def prep(fname, conf_info):
 
     try:
         crops_pads = config_map.adjust_dimensions
-        # the adjust_dimention parameter list holds adjustment in each direction. Append 0s, if shorter
+        # the adjust_dimension parameter list holds adjustment in each direction. Append 0s, if shorter
         if len(crops_pads) < 6:
             for _ in range (6 - len(crops_pads)):
                 crops_pads.append(0)
@@ -146,7 +155,6 @@ def prep(fname, conf_info):
         # the size still has to be adjusted to the opencl supported dimension
         crops_pads = (0, 0, 0, 0, 0, 0)
     # adjust the size, either pad with 0s or crop array
-    print ('cropping and/or padding dimensions')
     pairs = []
     for i in range(int(len(crops_pads)/2)):
         pair = crops_pads[2*i:2*i+2]
