@@ -22,7 +22,6 @@ import argparse
 import pylibconfig2 as cfg
 import numpy as np
 import copy
-import scipy.fftpack as sf
 import os
 import sys
 import glob
@@ -142,9 +141,9 @@ def shift_ftarr(ftarr, shifty):
         r.append(slice(int(np.ceil(-d / 2.)), int(np.ceil(d / 2.)), None))
     idxgrid = np.mgrid[r]
     for d in range(len(dims)):
-        ftarr *= np.exp(-1j * 2 * np.pi * shifty[d] * sf.fftshift(idxgrid[d]) / float(dims[d]))
+        ftarr *= np.exp(-1j * 2 * np.pi * shifty[d] * np.fft.fftshift(idxgrid[d]) / float(dims[d]))
 
-    shifted_arr = sf.ifftn(ftarr)
+    shifted_arr = np.fft.ifftn(ftarr)
     return shifted_arr
 
 
@@ -153,15 +152,15 @@ def shift(arr, shifty):
     # you get back the actual array, not the FT.
     dims = arr.shape
     # scipy does normalize ffts!
-    ftarr = sf.fftn(arr)
+    ftarr = np.fft.fftn(arr)
     r = []
     for d in dims:
         r.append(slice(int(np.ceil(-d / 2.)), int(np.ceil(d / 2.)), None))
     idxgrid = np.mgrid[r]
     for d in range(len(dims)):
-        ftarr *= np.exp(-1j * 2 * np.pi * shifty[d] * sf.fftshift(idxgrid[d]) / float(dims[d]))
+        ftarr *= np.exp(-1j * 2 * np.pi * shifty[d] * np.fft.fftshift(idxgrid[d]) / float(dims[d]))
 
-    shifted_arr = sf.ifftn(ftarr)
+    shifted_arr = np.fft.ifftn(ftarr)
     del ftarr
     return shifted_arr
 
@@ -196,8 +195,8 @@ def fast_shift(arr, shifty, fill_val=0):
 # pass fft of ref array to save doing that a lot.
 def shift_to_ref_array(fft_ref, array):
     # get cross correlation and pixel shift
-    fft_array = sf.fftn(array)
-    cross_correlation = sf.ifftn(fft_ref * np.conj(fft_array))
+    fft_array = np.fft.fftn(array)
+    cross_correlation = np.fft.ifftn(fft_ref * np.conj(fft_array))
     corelated = np.array(cross_correlation.shape)
     amp = np.abs(cross_correlation)
     intshift = np.unravel_index(amp.argmax(), corelated)
@@ -395,7 +394,7 @@ class PrepData:
             self.write_sum_scan([(firstscan, refarr), ])  # this works for single scan as well
 
         if len(self.dirs) > 1:
-            self.fft_refarr = sf.fftn(refarr)
+            self.fft_refarr = np.fft.fftn(refarr)
             # Need to further chunck becauase the result queue needs to hold N arrays.
             # if there are a lot of them and they are big, it runs out of ram.
             # since process takes 10-12 arrays, maybe divide nscans/12 and make that many chunks

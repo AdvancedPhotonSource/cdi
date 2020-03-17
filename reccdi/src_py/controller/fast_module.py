@@ -15,7 +15,6 @@ visualization.
 """
 
 import numpy as np
-import scipy.fftpack as sf
 # import reccdi.src_py.cyth.bridge_cpu as bridge_cpu
 # import reccdi.src_py.cyth.bridge_opencl as bridge_opencl
 # import reccdi.src_py.cyth.bridge_cuda as bridge_cuda
@@ -74,7 +73,7 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
         fast_module = bridge_cuda.PyBridge()
 
     # shift data
-    data = sf.fftshift(data)
+    data = np.fft.fftshift(data)
     dims = data.shape[::-1]
     print("data dims", dims)
     data_l = data.flatten().tolist()
@@ -123,7 +122,7 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
     reciprocal_i = copy.deepcopy(np.asarray(fast_module.get_reciprocal_i()))
     reciprocal = reciprocal_r + 1j*reciprocal_i
     reciprocal = np.reshape(reciprocal, dims[::-1])
-    reciprocal = sf.ifftshift(reciprocal)
+    reciprocal = np.fft.ifftshift(reciprocal)
 
     iter_array = copy.deepcopy(np.asarray(fast_module.get_iter_flow()))
     flow = copy.deepcopy(list(fast_module.get_flow()))

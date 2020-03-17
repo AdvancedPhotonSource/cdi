@@ -13,7 +13,6 @@ Please make sure the installation :ref:`pre-requisite-reference-label` are met.
 This module is a suite of utility mehods.
 """
 
-import scipy as sci
 import numpy as np
 import reccdi.src_py.utilities.utils as ut
 

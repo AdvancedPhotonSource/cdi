@@ -15,7 +15,6 @@ This module is a suite of utility mehods.
 import tifffile as tf
 import pylibconfig2 as cfg
 import numpy as np
-import scipy.fftpack as sf
 import os
 import logging
 import stat
@@ -378,12 +377,12 @@ def gaussian(shape, sigmas, alpha=1):
 
 def gauss_conv_fft(arr, sigmas):
     arr_sum = np.sum(abs(arr))
-    arr_f = sf.ifftshift(sf.fftn(sf.ifftshift(arr)))
+    arr_f = np.fft.ifftshift(np.fft.fftn(np.fft.ifftshift(arr)))
     shape = list(arr.shape)
     for i in range(len(sigmas)):
         sigmas[i] = shape[i] / 2.0 / np.pi / sigmas[i]
     convag = arr_f * gaussian(shape, sigmas)
-    convag = np.fft.ifftshift(sf.ifftn(np.fft.ifftshift(convag)))
+    convag = np.fft.ifftshift(np.fft.ifftn(np.fft.ifftshift(convag)))
     convag = convag.real
     convag = np.clip(convag, 0, None)
     correction = arr_sum / np.sum(convag)
@@ -520,14 +519,14 @@ def save_multiple_results(samples, images, supports, cohs, errs, reciprocals, fl
 
 def sub_pixel_shift(arr, row_shift, col_shift, z_shift):
     # arr is 3D
-    buf2ft = sf.fftn(arr)
+    buf2ft = np.fft.fftn(arr)
     shape = arr.shape
     Nr = np.fft.ifftshift(np.array(list(range(-int(np.floor(shape[0] / 2)), shape[0] - int(np.floor(shape[0] / 2))))))
     Nc = np.fft.ifftshift(np.array(list(range(-int(np.floor(shape[1] / 2)), shape[1] - int(np.floor(shape[1] / 2))))))
     Nz = np.fft.ifftshift(np.array(list(range(-int(np.floor(shape[2] / 2)), shape[2] - int(np.floor(shape[2] / 2))))))
     [Nc, Nr, Nz] = np.meshgrid(Nc, Nr, Nz)
     Greg = buf2ft * np.exp(1j * 2 * np.pi * (-row_shift * Nr / shape[0] - col_shift * Nc / shape[1] - z_shift * Nz / shape[2]))
-    return sf.ifftn(Greg)
+    return np.fft.ifftn(Greg)
 
 
 def arr_property(arr):
