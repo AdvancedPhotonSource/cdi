@@ -23,7 +23,7 @@ requirements:
     - pylibconfig2
     - gputil
     - xrayutilities
-    - traits
+    - parse
     - mayavi
 
 
