@@ -30,7 +30,7 @@ Manager::~Manager()
 void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vector<int> dim, std::string const & config)
 {
     bool first = true;
-    Params * params = new Params(config.c_str(), dim, first);
+    Params * params = new Params(config, dim, first);
     
     if (device >= 0)
     {

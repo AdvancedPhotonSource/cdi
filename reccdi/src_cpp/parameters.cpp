@@ -13,11 +13,12 @@ See LICENSE file.
 #include "util.hpp"
 #include "libconfig.h++"
 #include "math.h"
+#include "iostream"
 
 using namespace libconfig;
 
 
-Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
+Params::Params(std::string const & config_file, std::vector<int> data_dim, bool first)
 {
     algorithm_id_map.clear();
     alg_switches.clear();
@@ -48,24 +49,18 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
     // Read the file. If there is an error, report.
     try
     {
-        cfg.readFile(config_file);
+        cfg.readFile(config_file.c_str());
     }
     catch(const FileIOException &fioex)
     {
-        printf("config file I/O exception\n");
+        std::cout << "config file I/O exception" << std::endl;
     }
     catch(const ParseException &pex)
     {
-        printf("config file parse exception\n");
+        std::cout << "config file parsing exception" << std::endl;
     }
 
     const Setting& root = cfg.getRoot();
-
-    try {
-        plot_errors = cfg.lookup("plot_errors");
-    }
-    catch ( const SettingNotFoundException &nfex)
-    { }
 
     try {
         const Setting &tmp = root["algorithm_sequence"];
@@ -91,9 +86,8 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
     }
     catch ( const SettingNotFoundException &nfex)
     {
-        printf("No 'algorithm_sequence' parameter in configuration file.\n");
+        std::cout << "No 'algorithm_sequence' parameter in configuration file" << std::endl;
     }
-
     // process triggers
     // find which triggers are configured, add the index of the flow_seq item to used_flow_seq vwctor if this item
     // is used
@@ -156,7 +150,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
             }
         }
     }
-
+    
     // parse triggers and flow items into flow array; 0 if not executed, 1 if executed
     int used_flow_seq_len = used_flow_seq.size();
     int flow[number_iterations * used_flow_seq_len];
@@ -313,12 +307,10 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
             }
 
         }
-//    printf(" %s\n",flow_item);
 //    for (int i=0; i < number_iterations; i++)
 //        printf("  %i", flow[offset+i]);
 //    printf("\n");
     }
-
     std::vector<int> vec(flow, flow + number_iterations * used_flow_seq.size());
     flow_vec = vec;
 
@@ -326,23 +318,30 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
     {
         try {
             const Setting &tmp = root["support_area"];
-            for (int i = 0; i < tmp.getLength(); ++i)
+            if (tmp[0].getType() == Setting::TypeInt or tmp[0].getType() == Setting::TypeInt64)
             {
-                try {
-                    support_area.push_back(tmp[i]);
-                }
-                catch ( const SettingTypeException &nfex)
+                int item = tmp[0];
+                for (int i = 0; i < tmp.getLength(); ++i)
                 {
-                    float ftmp = tmp[i];
+                    item = tmp[i];
+                    support_area.push_back(item);
+                }
+            }
+            else
+            {
+                float ftmp = 0.0;
+                for (int i = 0; i < tmp.getLength(); ++i)
+                {
+                    ftmp = tmp[i];
                     support_area.push_back(int(ftmp * data_dim[i]));
                 }
             }
         }
         catch ( const SettingNotFoundException &nfex)
         {
-            printf("No 'support_area' parameter in configuration file. setting to half array.\n");
+            std::cout << "No 'support_area' parameter in configuration file. setting to half array" << std::endl;
         }
-        try {
+    try {
             support_threshold = cfg.lookup("support_threshold");
         }
         catch ( const SettingNotFoundException &nfex)
@@ -356,9 +355,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
             support_alg = algorithm_id_map[cfg.lookup("support_type")];
         }
         catch ( const SettingNotFoundException &nfex)
-        {
-            printf((std::string("No 'support_type' parameter in configuration file.\n")).c_str());
-        }
+        { }
     }
     if (support_area.size() < nD)
     {
@@ -369,7 +366,6 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
             support_area.push_back(int(0.5 * data_dim[i]));
         }
     }
-
     if ((first) && root.exists("phase_support_trigger"))
     {
         try {
@@ -377,16 +373,15 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
         }
         catch (const SettingNotFoundException &nfex)
         {
-            printf((std::string("No 'phase_min' parameter in configuration file. Set to pi/2.\n")).c_str());
+            std::cout << "No 'phase_min' parameter in configuration file. Set to pi/2" << std::endl;
         }
         try {
             phase_max = cfg.lookup("phase_max");
         }
         catch (const SettingNotFoundException &nfex)
         {
-            printf((std::string("No 'phase_max' parameter in configuration file. Set to pi/2.\n")).c_str());
+            std::cout << "No 'phase_max' parameter in configuration file. Set to pi/2" << std::endl;
         }
-
     }
 
     if (root.exists("pcdi_trigger"))
@@ -395,26 +390,17 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
             pcdi_alg = algorithm_id_map[cfg.lookup("partial_coherence_type")];
         }
         catch ( const SettingNotFoundException &nfex)
-        {
-            printf((std::string("No 'partial_coherence_type' parameter in configuration file.\n")).c_str());
-        }
+        {  }
         try {
             const Setting &tmp = root["partial_coherence_roi"];
             for (int i = 0; i < tmp.getLength(); ++i)
             {
-                try {
-                    pcdi_roi.push_back(Utils::GetDimension(tmp[i]));
-                }
-                catch ( const SettingTypeException &nfex)
-                {
-                    float ftmp = tmp[i];
-                    pcdi_roi.push_back(Utils::GetDimension(int(ftmp * data_dim[i])));
-                }
+                pcdi_roi.push_back(Utils::GetDimension(tmp[i]));
             }
         }
         catch ( const SettingNotFoundException &nfex)
         {
-            printf("No 'partial_coherence_roi' parameter in configuration file.\n");
+            std::cout << "No 'partial_coherence_roi' parameter in configuration file" << std::endl;
         }
         try {
             pcdi_normalize = cfg.lookup("partial_coherence_normalize");
@@ -426,7 +412,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
         }
         catch ( const SettingNotFoundException &nfex)
         {
-            printf((std::string("No 'partial_coherence_iteration_num' parameter in configuration file. Setting to 20.\n")).c_str());
+            std::cout << "No 'partial_coherence_iteration_num' parameter in configuration file. Setting to 20" << std::endl;
         }
     }
 
@@ -441,7 +427,6 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
     {
         twin_halves.push_back(0);
         twin_halves.push_back(0);
-        //printf((std::string("No 'twin_halves' parameter in configuration file. Setting to (0,0).\n")).c_str());
     }
 
     if ((first) && root.exists("resolution_trigger"))
@@ -459,7 +444,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
         catch ( const SettingNotFoundException &nfex)
         {
             low_res_iterations = number_iterations;
-            printf((std::string("No 'resolution_trigger' upper bound in configuration file. Setting number to iteration number.\n")).c_str());
+            std::cout << "No 'resolution_trigger' upper bound in configuration file. Setting it to iteration number" << std::endl;
         }
         try
         {
@@ -480,7 +465,7 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
         {
             iter_res_sigma_first = 2.0;
             iter_res_sigma_last = support_sigma;
-            printf("No 'iter_res_sigma_range' parameter in configuration file.Default to 2.0, sigma.\n");
+            std::cout << "No 'iter_res_sigma_range' parameter in configuration file.Default to 2.0, sigma" << std::endl;
         }
         try
         {
@@ -501,19 +486,17 @@ Params::Params(const char* config_file, std::vector<int> data_dim, bool first)
         {
             iter_res_det_first = .7;
             iter_res_det_last = 1.0;
-            printf("No 'iter_res_det_range' parameter in configuration file.\n");
+            std::cout << "No 'iter_res_det_range' parameter in configuration file" << std::endl;
         }
     }
-
     try
     {
         beta = cfg.lookup("beta");
     }
     catch (const SettingNotFoundException &nfex)
     {
-        printf("No 'beta' parameter in configuration file. Setting to .9\n");
+        std::cout << "No 'beta' parameter in configuration file. Setting to .9" << std::endl;
     }
-
 }
 
 Params::~Params()
@@ -658,6 +641,5 @@ std::vector<int> Params::GetUsedFlowSeq()
 
 std::vector<int> Params::GetFlowArray()
 {
-    //printf("flow vec len %i", flow_vec.size());
     return flow_vec;
 }

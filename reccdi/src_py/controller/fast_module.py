@@ -75,7 +75,6 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
     # shift data
     data = np.fft.fftshift(data)
     dims = data.shape[::-1]
-    print("data dims", dims)
     data_l = data.flatten().tolist()
     if image is None:
         # print("Running start_calc")

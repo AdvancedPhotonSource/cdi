@@ -70,7 +70,7 @@ private:
 
 public:
     // Constructor. Takes in configuration file, parses the configuration and sets the parameters accordingly.
-    Params(const char* config_file, std::vector<int> data_dim, bool first);
+    Params(std::string const & config_file, std::vector<int> data_dim, bool first);
     ~Params();
 
     // Returns number of dimensions of the data array
