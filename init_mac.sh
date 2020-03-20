@@ -12,7 +12,7 @@ read lc_dir
 LC='LC_DIR'
 sed -i 's?'$LC'?'$lc_dir'?g' reccdi/src_py/cyth/*.pyx
 
-export LD_LIBRARY_PATH=$lc_dir/lib:/usr/local/lib:$af_dir/lib
+export DYLD_LIBRARY_PATH=$lc_dir/lib:/usr/local/lib:$af_dir/lib
 
 lib_path='LIB_PATH'
 sed -i 's?'$lib_path'?'$lc_dir/lib:$af_dir/lib'?g' bin/everything.sh
