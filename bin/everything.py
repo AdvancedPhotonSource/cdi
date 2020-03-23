@@ -1,13 +1,13 @@
-import reccdi.bin.setup_34idc as set
-import reccdi.bin.run_prep as prep
-import reccdi.bin.run_data as dt
-import reccdi.bin.run_rec as rec
-import reccdi.bin.run_disp as dsp
+import setup_34idc as set
+#import run_prep_34idc as prep
+import format_data as dt
+import run_rec as rec
+import run_disp as dsp
 import sys
 import argparse
 
 def run_all(dev, experiment_dir):
-    prep.set_prep(experiment_dir)
+    #prep.set_prep(experiment_dir)
     dt.data(experiment_dir)
     rec.manage_reconstruction(dev, experiment_dir)
     dsp.to_vtk(experiment_dir)

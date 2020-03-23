@@ -1,6 +1,6 @@
 import reccdi.bin.setup_34idc as set
-import reccdi.bin.run_prep as prep
-import reccdi.bin.run_data as dt
+import reccdi.bin.run_prep_34idc as prep
+import reccdi.bin.format_data as dt
 import reccdi.bin.run_rec as rec
 import reccdi.bin.run_disp as dsp
 import sys

@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 # #########################################################################
 # Copyright (c) , UChicago Argonne, LLC. All rights reserved.             #
 #                                                                         #
@@ -9,19 +6,15 @@
 
 
 """
-Please make sure the installation :ref:`pre-requisite-reference-label` are met.
-This module controls the reconstruction process. The user has to provide parameters such as type of processor, data, and configuration.
-The processor specifies which library will be used by CFM (Calc Fast Module) that performs the processor intensive calculations. The module
-can be run on cpu, or gpu. Depending on the gpu hardware and library, one can use opencl or cuda library.
-The module starts the data preparation routines, calls for reconstruction using the CFM, and prepares the reconstructed data for
-visualization.
+This script formats data for reconstruction according to configuration.
 """
 
+import sys
+import argparse
+import os
 import numpy as np
 import reccdi.src_py.utilities.utils as ut
 import reccdi.src_py.utilities.parse_ver as ver
-import os
-
 
 __author__ = "Barbara Frosik"
 __copyright__ = "Copyright (c) 2016, UChicago Argonne, LLC."
@@ -30,7 +23,6 @@ __all__ = ['prep']
 
 
 def prep(fname, conf_info):
-
     """
     This function prepares raw data for reconstruction. It uses configured parameters. The preparation consists of the following steps:
     1. clearing the noise - the values below an amplitude threshold are set to zero
@@ -43,22 +35,19 @@ def prep(fname, conf_info):
     are adjusted further to find the smallest dimension that is supported by opencl library (multiplier of 2, 3, and 5).
     6. centering - finding the greatest amplitude and locating it at a center of new array. If shift center is defined, the
     center will be shifted accordingly. The shifted elements are rolled into the other end of array.
-
     The modified data is then saved in data directory.
-
     Parameters
     ----------
     fname : str
         tif file containing raw data
-
     conf_info : str
         experiment directory or configuration file. If it is directory, the "conf/config_data" will be
         appended to determine configuration file
-
     Returns
     -------
     nothing
     """
+    
     # The data has been transposed when saved in tif format for the ImageJ to show the right orientation
     data = ut.read_tif(fname)
 
@@ -200,4 +189,28 @@ def prep(fname, conf_info):
     data_file = os.path.join(data_dir, 'data.tif')
     ut.save_tif(prep_data, data_file)
     print ('data ready for reconstruction, data dims:', prep_data.shape)
+    
+    
+def data(experiment_dir):
+    print ('formating data')
+    prep_file = os.path.join(experiment_dir, 'prep', 'prep_data.tif')
+    if os.path.isfile(prep_file):
+        prep(prep_file, experiment_dir)
+    else:
+        dirs = os.listdir(experiment_dir)
+        for dir in dirs:
+            if dir.startswith('scan'):
+                scan_dir = os.path.join(experiment_dir, dir)
+                prep_file = os.path.join(scan_dir, 'prep', 'prep_data.tif')
+                prep(prep_file, scan_dir)
 
+
+def main(arg):
+    parser = argparse.ArgumentParser()
+    parser.add_argument("experiment_dir", help="experiment directory")
+    args = parser.parse_args()
+    data(args.experiment_dir)
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
