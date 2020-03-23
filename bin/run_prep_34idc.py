@@ -345,7 +345,7 @@ class PrepData:
             # needed before the alignment.  Now need to blank it out after
             # all of the shifts made them nonzero.
 
-            #sumarr = self.detector.clear_seam(sumarr, self.roi)
+            sumarr = self.detector.clear_seam(sumarr, self.roi)
             ut.save_tif(sumarr, data_file)
             if os.path.isfile(temp_file):
                 os.remove(temp_file)

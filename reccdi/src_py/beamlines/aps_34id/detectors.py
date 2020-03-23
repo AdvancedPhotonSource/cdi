@@ -193,45 +193,25 @@ class Detector_34idcTIM2(Detector):
     # into the seam.  Found that alignment of data sets was best done with the seam inserted.
     # For instance.
     def clear_seam(self, arr, roi):
-
-        dims = arr.shape
-        # dims and roi will be different.  Should still be ok?
-        # I think all that matters is where 256 is in the roi.  That index does not change
-        # for the array that has already been inserted with zeros.
-        s1range = range(roi[0], roi[0] + roi[1])
-        s2range = range(roi[2], roi[2] + roi[3])
-        #    for d in range(0,len(dims),2):
-        #      ranges.append(np.arange(roi[0],roi[0]+roi[1]),
-
-        seam = (4, 5, 0)
-
-        slices = []
-        for d in dims:
-            slices.append(slice(0, d))
-
-        s1 = slices.copy()
-        s2 = slices.copy()
-
         # modify the slices if 256 is in roi
-        try:
-            i1 = s1range.index(256)  # if not in range try will except
-            if i1 != 0:
-                s1[0] = slice(i1, i1 + 4)
-        except:
-            pass
-            #print("no clear on dim0")
-
-        try:
-            i2 = s2range.index(256)
-            if i2 != 0:
-                s2[1] = slice(i2, i2 + 5)
-        except:
-            pass
-            #print("no clear on dim1")
-
-        arr[tuple(s1)] = 0
-        arr[tuple(s2)] = 0
-        return arr
+            try:
+                i1 = s1range.index(256)  # if not in range try will except
+                if i1 != 0:
+                    s1[0] = slice(i1, i1 + 4)
+                    arr[tuple(s1)] = 0
+            except:
+                pass
+                #print("no clear on dim0")
+            try:
+                i2 = s2range.index(256)
+                if i2 != 0:
+                    s2[1] = slice(i2, i2 + 5)
+                    arr[tuple(s2)] = 0
+            except:
+                pass
+                #print("no clear on dim1")
+            
+            return arr
 
 
     def get_pixel(self):
