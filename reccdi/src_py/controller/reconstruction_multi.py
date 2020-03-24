@@ -32,7 +32,7 @@ __all__ = ['read_config',
            'reconstruction']
 
 
-def single_rec_process(proc, conf, data, coh_dims, prev):
+def single_rec_process(proc, conf, data, coh_dims, prev_dir):
     """
     This function runs in the reconstruction palarellized by Parsl.
 
@@ -74,7 +74,13 @@ def single_rec_process(proc, conf, data, coh_dims, prev):
 
     error : list containing errors for iterations
     """
-    prev_image, prev_support, prev_coh = prev
+    if prev is None:
+        prev_image = None
+        prev_support = None
+        prev_coh = None
+    else:
+        image, support, coh = ut.read_results(prev_dir)
+    
     image, support, coherence, errors, reciprocal, flow, iter_array = calc.fast_module_reconstruction(proc, gpu, conf, data, coh_dims,
                                                                        prev_image, prev_support, prev_coh)
     return image, support, coherence, errors, reciprocal, flow, iter_array
@@ -86,7 +92,7 @@ def assign_gpu(*args):
    gpu = q.get()
 
 
-def multi_rec(proc, data, conf, config_map, devices, prev_images, prev_supports, prev_cohs=None):
+def multi_rec(save_dir, proc, data, conf, config_map, devices, prev_dirs):
 
     """
     This function controls the multiple reconstructions. It invokes a loop to execute parallel resconstructions,
@@ -129,25 +135,24 @@ def multi_rec(proc, data, conf, config_map, devices, prev_images, prev_supports,
     errs : list
         list of lists of errors (now each element is another list by iterations, but should we take the last error?)
     """
-    images = []
-    supports = []
-    cohs = []
-    errs = []
-    recips = []
-    flows = []
-    iter_arrs = []
+    save_dirs = []
+    
     def collect_result(result):
         for r in result:
             if r[0] is None:
                 continue
-            images.append(r[0])
-            supports.append(r[1])
-            cohs.append(r[2])
-            errs.append(r[3])
-            recips.append(r[4])
-            flows.append(r[5])
-            iter_arrs.append(r[6])
-
+            save_dir = os.path.join(save_dir, str(len(save_dirs)
+            save_dirs.append(save_dir)
+            image = r[0]
+            support = r[1]
+            coh = r[2]
+            errs = r[3]
+            reciprocal = r[4]
+            flow = r[5])
+            iter_arrs = r[6]
+            metric = ut.get_metric(image, errs)
+            ut.save_results(image, support, coh, errs, reciprocal, flow, iter_array, save_dir, metric)
+            
     reconstructions = config_map.reconstructions
 
     try:
@@ -155,26 +160,18 @@ def multi_rec(proc, data, conf, config_map, devices, prev_images, prev_supports,
     except:
         coh_dims = None
 
-    iterable = []
-    for i in range(reconstructions):
-        if prev_cohs is None:
-            coh = None
-        else:
-            coh = prev_cohs[i]
-        iterable.append((prev_images[i], prev_supports[i], coh))
-
     func = partial(single_rec_process, proc, conf, data, coh_dims)
     q = Queue()
     for device in devices:
         q.put(device)
     with Pool(processes = len(devices),initializer=assign_gpu, initargs=(q,)) as pool:
-        pool.map_async(func, iterable, callback=collect_result)
+        pool.map_async(func, prev_dirs, callback=collect_result)
         pool.close()
         pool.join()
         pool.terminate()
 
     # return only error from last iteration for each reconstruction
-    return images, supports, cohs, errs, recips, flows, iter_arrs
+    return save_dirs
 
 
 def reconstruction(proc, conf_file, datafile, dir, devices):
@@ -225,28 +222,21 @@ def reconstruction(proc, conf_file, datafile, dir, devices):
     except:
         reconstructions = 1
 
-    images = []
-    supports = []
-    cohs = []
+    prev_dirs = []
     try:
         if config_map.cont:
             try:
                 continue_dir = config_map.continue_dir
                 for sub in os.listdir(continue_dir):
                     image, support, coh = ut.read_results(os.path.join(continue_dir, sub) + '/')
-                    images.append(image)
-                    supports.append(support)
-                    cohs.append(coh)
+                    if image is not None:
+                        prev_dirs.append(sub)
             except:
                 print("continue_dir not configured")
                 return None
     except:
         for _ in range(reconstructions):
-            images.append(None)
-            supports.append(None)
-            cohs.append(None)
-
-    new_images, new_supports, new_cohs, errs, recips, flows, iter_arrs = multi_rec(proc, data, conf_file, config_map, devices, images, supports, cohs)
+            prev_dirs.append(None)
 
     try:
         save_dir = config_map.save_dir
@@ -254,4 +244,5 @@ def reconstruction(proc, conf_file, datafile, dir, devices):
         filename = conf_file.split('/')[-1]
         save_dir = os.path.join(dir, filename.replace('config_rec', 'results'))
 
-    ut.save_multiple_results(len(new_images), new_images, new_supports, new_cohs, errs, recips, flows, iter_arrs, save_dir)
+    save_dirs = multi_rec(save_dir, proc, data, conf_file, config_map, devices, prev_dirs)
+

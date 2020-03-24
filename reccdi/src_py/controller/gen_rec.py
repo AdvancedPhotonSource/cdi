@@ -17,6 +17,7 @@ import reccdi.src_py.controller.reconstruction_multi as multi
 import reccdi.src_py.utilities.utils as ut
 import reccdi.src_py.utilities.utils_ga as gut
 import multiprocessing as mp
+import shutil
 from functools import partial
 import time
 
@@ -121,70 +122,52 @@ class Generation:
                 return np.ones(shape)
 
 
-    def get_metrics(self, images, errs):
-        metrics = []
-        for i in range(len(images)):
-            pop_metric = {}
-            pop_metric['chi'] = errs[i][-1]
-            pop_metric['sharpness'] = sum(sum(sum(pow(abs(images[i]), 4))))
-            pop_metric['summed_phase'] = sum(sum(gut.sum_phase_tight_support(images[i])))
-            pop_metric['area'] = sum(sum(sum(ut.shrink_wrap(images[i], .2, .5))))
-            metrics.append(pop_metric)
-        return metrics
-
-
-    def rank(self, images, errs):
+    def order(self, dirs):
         print ('ranking generation ', self.current_gen)
-        rank_property = []
-
-        reconstructions = len(images)
+        # def order(self, images, supports, cohs, errs, recips):
         metric = self.metrics[self.current_gen]
-
-        for i in range (reconstructions):
-            image = images[i]
-            if metric == 'chi':
-                rank_property.append(errs[i][-1])
-            elif metric == 'sharpness':
-                rank_property.append(sum(sum(sum(pow(abs(image), 4)))))
-            elif metric == 'summed_phase':
-                rank_property.append(sum(sum(gut.sum_phase_tight_support(image))))
-            elif metric == 'area':
-                support = ut.shrink_wrap(image, .2, .5)
-                rank_property.append(sum(sum(sum(support))))
-            else:
-                # metric is 'chi'
-                rank_property.append(errs[i][-1])
-
+        rank_property = []
+        for dir in dirs:
+            f = open(os.path.join(dir, 'summary'), 'r')
+            looking = True
+            while looking:
+                line = f.readline()
+                if not line:  #EOF
+                    looking = False
+                else:
+                    # generation object is created with metric for each generation
+                    if line.startswith(metric):
+                        looking = False
+                        metric_value = float(line.split('=')[-1].strip())
+                        rank_property.append(metric_value)
+                        
         # ranks keeps indexes of reconstructions from best to worst
         # for most of the metric types the minimum of the metric is best, but for
         # 'summed_phase' and 'area' it is oposite, so reversing the order
         ranks = np.argsort(rank_property).tolist()
         if metric == 'summed_phase' or metric == 'area':
             ranks.reverse()
-        return ranks
-
-
-    def order(self, images, supports, cohs, errs, recips):
-        start = time.time()
-        ranks = self.rank(images, errs)
-        ordered_images = []
-        ordered_supports = []
-        ordered_cohs = []
-        ordered_errs = []
-        ordered_recips = []
+         
+        # all the generation directories are in the same parent directory
+        parent_dir = os.path.abspath(os.path.join(dirs[0], os.pardir))
+        rank_dirs = []
+        # append "_<rank>" to each result directory name
         for i in range(len(ranks)):
-            ordered_images.append(images[ranks[i]])
-            ordered_supports.append(supports[ranks[i]])
-            ordered_cohs.append(cohs[ranks[i]])
-            ordered_errs.append(errs[ranks[i]])
-            ordered_recips.append(recips[ranks[i]])
+            dest = os.path.join(parent_dir, str(i) + '_' + str(ranks[i]))
+            shutil.move(dirs[i], dest)
+            rank_dirs.append(dest)
 
-        stop = time.time()
-        # print ('rank and order time', (stop - start))
-        return ordered_images, ordered_supports, ordered_cohs, ordered_errs, ordered_recips
+        # remove the number preceding rank from each directory name, so the directories are numbered
+        # according to rank
+        for dir in rank_dirs:
+            last_sub = os.path.basename(dir)
+            dest = os.path.join(parent_dir, last_sub.split('_')[-1])
+            shutil.move(dir, dest)
 
 
-    def breed_one(self, alpha, breed_mode, beta):
+    def breed_one(self, alpha, breed_mode, dir):
+        image_file = os.path.join(dir, 'image.npy')
+        beta = np.load(image_file)
         beta = gut.zero_phase(beta, 0)
         alpha = gut.check_get_conj_reflect(beta, alpha)
         alpha_s = gut.align_arrays(beta, alpha)
@@ -242,9 +225,15 @@ class Generation:
         elif breed_mode == 'avg_ab_pa':
             beta = 0.5 * (abs(alpha_s) + abs(beta)) * np.exp(1j * (ph_alpha))
 
-        return beta
+        os.remove(image_file)
+        np.save(image_file, beta)
+        sigma = self.ga_support_sigmas[self.current_gen]
+        threshold = self.ga_support_thresholds[self.current_gen]
+        new_support = ut.shrink_wrap(beta, threshold, sigma)
+        np.save(os.path.join(dir, 'support.npy'), new_support)
+        
 
-    def breed(self, images):
+    def breed(self, dirs):
         """
         This function ranks the multiple reconstruction. It breeds next generation by combining the reconstructed
         images, centered
@@ -268,27 +257,17 @@ class Generation:
         child_cohs : list
             list of child coherence, set to None
         """
-        print ('breeding generation ', (self.current_gen + 1))
-        start = time.time()
-        child_images = []
-        child_supports = []
-        def collect_result(result):
-            for r in result:
-                if r is None:
-                    continue
-                child_images.append(r)
-                child_supports.append(ut.shrink_wrap(r, threshold, sigma))
-
-        sigma = self.ga_support_sigmas[self.current_gen]
-        threshold = self.ga_support_thresholds[self.current_gen]
         breed_mode = self.breed_modes[self.current_gen]
-        reconstructions = len(images)
-        if self.worst_remove_no is not None:
-            reconstructions = reconstructions - self.worst_remove_no[self.current_gen]
         if breed_mode == 'none':
-            return images, None
+            return dirs
+            
+        print ('breeding generation ', (self.current_gen + 1))
+        child_dirs = dirs
+        
+        if self.worst_remove_no is not None:
+            child_dirs = child_dirs[0:len(child_dirs)-self.worst_remove_no[self.current_gen]
 
-        alpha = images[0]
+        alpha = np.load(os.path.join(child_dirs[0], 'image.npy')
         alpha = gut.zero_phase(alpha, 0)
         ims = images[1 : reconstructions]
 
@@ -296,17 +275,15 @@ class Generation:
         child_images.append(alpha)
         child_supports.append(ut.shrink_wrap(alpha, threshold, sigma))
 
-        no_processes = min(len(ims), mp.cpu_count())
+        no_processes = min(len(child_dirs), mp.cpu_count())
         func = partial(self.breed_one, alpha, breed_mode)
         with mp.Pool(processes = no_processes) as pool:
-            pool.map_async(func, ims, callback=collect_result)
+            pool.map_async(func, child_dirs[1:])
             pool.close()
             pool.join()
             pool.terminate()
 
-        stop = time.time()
-        # print ('breeding time', (stop - start))
-        return child_images, child_supports
+        return child_dirs
 
 
 def reconstruction(proc, conf_file, datafile, dir, devices):
@@ -367,27 +344,23 @@ def reconstruction(proc, conf_file, datafile, dir, devices):
     # init starting values
     # if multiple reconstructions configured (typical for genetic algorithm), use "reconstruction_multi" module
     if reconstructions > 1:
-        images = []
-        supports = []
-        cohs = []
-        for _ in range(reconstructions):
-            images.append(None)
-            supports.append(None)
-            cohs.append(None)
         rec = multi
-        # load parls configuration
+        save_dirs = []
+        for _ in range(reconstructions):
+            save_dirs.append(None)
         for g in range(generations):
             gen_data = gen_obj.get_data(data)
-            images, supports, cohs, errs, recips, flows, iter_arrs = rec.multi_rec(proc, gen_data, conf_file, config_map, devices, images, supports, cohs)
-            images, supports, cohs, errs, recips = gen_obj.order(images, supports, cohs, errs, recips)
-            metrics = gen_obj.get_metrics(images, errs)
-            # save the generation results
             gen_save_dir = os.path.join(save_dir, 'g_' + str(g))
-            ut.save_multiple_results(len(images), images, supports, cohs, errs, recips, flows, iter_arrs, gen_save_dir, metrics)
+            
+            save_dirs = rec.multi_rec(gen_save_dir, proc, gen_data, conf_file, config_map, devices, save_dirs)
+            
+            # results are saved in a list of directories - save_dir
+            # it will be ranked, and moved to temporary ranked directories
+            gen_obj.order(save_dirs)
+
             if g < generations - 1 and len(images) > 1:
-                images, shrink_supports = gen_obj.breed(images)
-                if shrink_supports is not None:
-                    supports = shrink_supports
+                save_dirs = gen_obj.breed(save_dirs)
+                
             gen_obj.next_gen()
     else:
         image = None
