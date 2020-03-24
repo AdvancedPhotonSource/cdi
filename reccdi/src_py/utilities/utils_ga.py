@@ -172,17 +172,11 @@ def align_arrays(ref_arr, arr):
 # arr = np.load('/home/phoebus/BFROSIK/temp/test/B_78-97/results/image.npy')
 # l  = align_arrays(ref_arr, arr)
 
-def sum_phase_tight_support(arr):
-    arr = zero_phase(arr)
-    ph = np.arctan2(arr.imag, arr.real)
-    support = ut.shrink_wrap(abs(arr), .2, .5)
-    return sum( abs(ph * support))
-
 
 def get_arr_characteristic(arr):
     lev1_norm = sum(abs(arr))
     sharpness = sum(abs(arr)^4)
-    summed_phase = sum_phase_tight_support(arr)
+    summed_phase = ut.sum_phase_tight_support(arr)
     support = ut.shrink_wrap(arr, .2, .5)
     area = sum(support)
     gradients = np.gradient(arr)

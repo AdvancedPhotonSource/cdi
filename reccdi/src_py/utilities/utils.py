@@ -424,12 +424,28 @@ def read_results(read_dir):
     return image, support, coh
 
 
+def zero_phase(arr, val=0):
+    ph = np.angle(arr)
+    support = shrink_wrap(abs(arr), .2, .5)  #get just the crystal, i.e very tight support
+    avg_ph = np.sum(ph * support)/np.sum(support)
+    ph = ph - avg_ph + val
+    return abs(arr) * np.exp(1j * ph)
+
+
+def sum_phase_tight_support(arr):
+    arr = zero_phase(arr)
+    ph = np.arctan2(arr.imag, arr.real)
+    support = shrink_wrap(abs(arr), .2, .5)
+    return sum( abs(ph * support))
+
+
+
 def get_metric(image, errs):
     metric = {}
     metric['chi'] = errs[-1]
     metric['sharpness'] = sum(sum(sum(pow(abs(image), 4))))
-    metric['summed_phase'] = sum(sum(gut.sum_phase_tight_support(image)))
-    metric['area'] = sum(sum(sum(ut.shrink_wrap(image, .2, .5))))
+    metric['summed_phase'] = sum(sum(sum_phase_tight_support(image)))
+    metric['area'] = sum(sum(sum(shrink_wrap(image, .2, .5))))
     return metric
 
 
@@ -470,7 +486,6 @@ def write_plot_errors(save_dir):
 def save_results(image, support, coh, errs, reciprocal, flow, iter_array, save_dir, metric=None):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
-    print("image shape", image.shape)
 
     image_file = os.path.join(save_dir, 'image')
     np.save(image_file, image)

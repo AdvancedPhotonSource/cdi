@@ -32,9 +32,9 @@ __all__ = ['read_config',
            'reconstruction']
 
 
-def single_rec_process(proc, conf, data, coh_dims, prev_dir):
+def single_rec_process(proc, conf, data, coh_dims, dirs):
     """
-    This function runs in the reconstruction palarellized by Parsl.
+    This function runs in the reconstruction palarellized by Pool.
 
     Parameters
     ----------
@@ -74,16 +74,18 @@ def single_rec_process(proc, conf, data, coh_dims, prev_dir):
 
     error : list containing errors for iterations
     """
+    (prev, save_dir) = dirs
     if prev is None:
         prev_image = None
         prev_support = None
         prev_coh = None
     else:
-        image, support, coh = ut.read_results(prev_dir)
+        image, support, coh = ut.read_results(prev)
     
-    image, support, coherence, errors, reciprocal, flow, iter_array = calc.fast_module_reconstruction(proc, gpu, conf, data, coh_dims,
+    image, support, coh, errs, reciprocal, flow, iter_array = calc.fast_module_reconstruction(proc, gpu, conf, data, coh_dims,
                                                                        prev_image, prev_support, prev_coh)
-    return image, support, coherence, errors, reciprocal, flow, iter_array
+    metric = ut.get_metric(image, errs)
+    ut.save_results(image, support, coh, errs, reciprocal, flow, iter_array, save_dir, metric)
 
 
 def assign_gpu(*args):
@@ -135,26 +137,13 @@ def multi_rec(save_dir, proc, data, conf, config_map, devices, prev_dirs):
     errs : list
         list of lists of errors (now each element is another list by iterations, but should we take the last error?)
     """
+    iterable = []
     save_dirs = []
-    
-    def collect_result(result):
-        for r in result:
-            if r[0] is None:
-                continue
-            save_dir = os.path.join(save_dir, str(len(save_dirs)
-            save_dirs.append(save_dir)
-            image = r[0]
-            support = r[1]
-            coh = r[2]
-            errs = r[3]
-            reciprocal = r[4]
-            flow = r[5])
-            iter_arrs = r[6]
-            metric = ut.get_metric(image, errs)
-            ut.save_results(image, support, coh, errs, reciprocal, flow, iter_array, save_dir, metric)
-            
     reconstructions = config_map.reconstructions
-
+    for i in range(reconstructions):
+        save_sub = os.path.join(save_dir, str(i))
+        save_dirs.append(save_sub)	
+        iterable.append((prev_dirs[i], save_sub))
     try:
         coh_dims = tuple(config_map.partial_coherence_roi)
     except:
@@ -165,7 +154,7 @@ def multi_rec(save_dir, proc, data, conf, config_map, devices, prev_dirs):
     for device in devices:
         q.put(device)
     with Pool(processes = len(devices),initializer=assign_gpu, initargs=(q,)) as pool:
-        pool.map_async(func, prev_dirs, callback=collect_result)
+        pool.map_async(func, iterable)
         pool.close()
         pool.join()
         pool.terminate()

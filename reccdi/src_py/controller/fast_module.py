@@ -77,7 +77,6 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
     dims = data.shape[::-1]
     data_l = data.flatten().tolist()
     if image is None:
-        # print("Running start_calc")
         fast_module.start_calc(device, data_l, dims, conf)
     elif support is None:
         image = image.flatten()
@@ -129,5 +128,4 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
     iter_array = np.reshape(iter_array, (flow_len, int(iter_array.shape[0]/flow_len)))
 
     fast_module.cleanup()
-
     return image, support, coherence, er, reciprocal, flow, iter_array
