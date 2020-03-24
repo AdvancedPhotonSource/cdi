@@ -406,19 +406,31 @@ def read_results(read_dir):
     try:
         imagefile = os.path.join(read_dir, 'image.npy')
         image = np.load(imagefile)
-
+    except:
+        image = None
+        
+    try:
         supportfile = os.path.join(read_dir, 'support.npy')
         support = np.load(supportfile)
-
-        try:
-            cohfile = os.path.join(read_dir, 'coherence.npy')
-            coh = np.load(cohfile)
-        except:
-            coh = None
     except:
-        pass
+        support = None
+
+    try:
+        cohfile = os.path.join(read_dir, 'coherence.npy')
+        coh = np.load(cohfile)
+    except:
+        coh = None
 
     return image, support, coh
+
+
+def get_metric(image, errs):
+    metric = {}
+    metric['chi'] = errs[-1]
+    metric['sharpness'] = sum(sum(sum(pow(abs(image), 4))))
+    metric['summed_phase'] = sum(sum(gut.sum_phase_tight_support(image)))
+    metric['area'] = sum(sum(sum(ut.shrink_wrap(image, .2, .5))))
+    return metric
 
 
 def save_metrics(errs, dir, metrics=None):
@@ -455,7 +467,7 @@ def write_plot_errors(save_dir):
     os.chmod(plot_file, st.st_mode | stat.S_IEXEC)
 
 
-def save_results(image, support, coh, errs, reciprocal, flow, iter_array, save_dir, metrics=None):
+def save_results(image, support, coh, errs, reciprocal, flow, iter_array, save_dir, metric=None):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     print("image shape", image.shape)
@@ -484,8 +496,8 @@ def save_results(image, support, coh, errs, reciprocal, flow, iter_array, save_d
     iter_array_file = os.path.join(graph_dir, 'iter_array')
     np.save(iter_array_file, iter_array)
 
-    if metrics is not None:
-        save_metrics(errs, save_dir, metrics)
+    if metric is not None:
+        save_metrics(errs, save_dir, metric)
     else:
         save_metrics(errs, save_dir)
 
