@@ -61,7 +61,8 @@ def ver_config(fname):
         if config_map is None:
             print ("can't read configuration file")
             return False
-    except:
+    except Exception as e:
+        print(str(e))
         print ('Cannot parse ' + fname + ' configuration file. Check paranthesis and quotations.')
         return False
 

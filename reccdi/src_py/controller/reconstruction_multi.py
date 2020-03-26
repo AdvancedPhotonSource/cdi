@@ -80,10 +80,10 @@ def single_rec_process(proc, conf, data, coh_dims, dirs):
         prev_support = None
         prev_coh = None
     else:
-        image, support, coh = ut.read_results(prev)
+        prev_image, prev_support, prev_coh = ut.read_results(prev)
     
-    image, support, coh, errs, reciprocal, flow, iter_array = calc.fast_module_reconstruction(proc, gpu, conf, data, coh_dims,
-                                                                       prev_image, prev_support, prev_coh)
+    image, support, coh, errs, reciprocal, flow, iter_array = calc.fast_module_reconstruction(proc, gpu, conf, data, coh_dims, prev_image, prev_support, prev_coh)
+ 
     metric = ut.get_metric(image, errs)
     ut.save_results(image, support, coh, errs, reciprocal, flow, iter_array, save_dir, metric)
 
@@ -148,7 +148,7 @@ def multi_rec(save_dir, proc, data, conf, config_map, devices, prev_dirs):
         coh_dims = tuple(config_map.partial_coherence_roi)
     except:
         coh_dims = None
-
+        
     func = partial(single_rec_process, proc, conf, data, coh_dims)
     q = Queue()
     for device in devices:

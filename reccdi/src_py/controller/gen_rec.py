@@ -346,10 +346,8 @@ def reconstruction(proc, conf_file, datafile, dir, devices):
         for g in range(generations):
             gen_data = gen_obj.get_data(data)
             gen_save_dir = os.path.join(save_dir, 'g_' + str(g))
-            print('gen_save_dir', gen_save_dir)
             
             save_dirs = rec.multi_rec(gen_save_dir, proc, gen_data, conf_file, config_map, devices, save_dirs)
-            print ('save_dirs', save_dirs)
             
             # results are saved in a list of directories - save_dir
             # it will be ranked, and moved to temporary ranked directories
@@ -357,7 +355,6 @@ def reconstruction(proc, conf_file, datafile, dir, devices):
 
             if g < generations - 1 and len(save_dirs) > 1:
                 save_dirs = gen_obj.breed(save_dirs)
-                print(save_dirs)
                 
             gen_obj.next_gen()
     else:
