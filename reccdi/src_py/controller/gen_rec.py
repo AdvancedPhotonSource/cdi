@@ -347,9 +347,7 @@ def reconstruction(proc, conf_file, datafile, dir, devices):
             gen_data = gen_obj.get_data(data)
             gen_save_dir = os.path.join(save_dir, 'g_' + str(g))
             m = gen_obj.metrics[g]
-            print ('gen, metric', g, m)
             save_dirs, evals = rec.multi_rec(gen_save_dir, proc, gen_data, conf_file, config_map, devices, temp_dirs, m)
-            print('save_dirs, evals', save_dirs, evals)
             
             # results are saved in a list of directories - save_dir
             # it will be ranked, and moved to temporary ranked directories

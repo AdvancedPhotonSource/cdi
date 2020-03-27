@@ -438,7 +438,6 @@ def set_prep(experiment_dir):
 
 
 def main(arg):
-    print ('args', arg)
     parser = argparse.ArgumentParser()
     parser.add_argument("experiment_dir", help="directory where the configuration files are located")
     args = parser.parse_args()

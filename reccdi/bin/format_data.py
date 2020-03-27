@@ -76,11 +76,6 @@ def prep(fname, conf_info):
         print ('Please check the configuration file ' + conf + '. Cannot parse')
         return
 
-    # saving file for Kenley project - AI aliens removing
-    print ('saving for AI')
-    d_f = os.path.join(experiment_dir, 'prep', 'prep_data.npy')
-    np.save(d_f, data)
-    # zero out the ares defined by aliens
     try:
         aliens = config_map.aliens
         # the parameter was entered as a list
@@ -89,24 +84,6 @@ def prep(fname, conf_info):
                 # The ImageJ swaps the x and y axis, so the aliens coordinates needs to be swapped, since ImageJ is used
                 # to find aliens
                 data[alien[0]:alien[3], alien[1]:alien[4], alien[2]:alien[5]] = 0
-            # saving file for Kenley project - AI aliens removing
-            aliens_f = os.path.join(experiment_dir, 'prep', 'aliens')
-            with open(aliens_f, 'a') as a_f:
-                try:
-                    with open(conf, 'r') as f:
-                        for line in f:
-                            if line.startswith('aliens'):
-                                a_f.write(line + '\n')
-                                break
-                    f.close()
-                    a_f.close()
-                except:
-                    pass
-            # saving file for Kenley project - AI aliens removing
-            d_f = os.path.join(experiment_dir, 'prep', 'prep_no_aliens.npy')
-            np.save(d_f, data)
-            d_f = os.path.join(experiment_dir, 'prep', 'prep_no_aliens.tif')
-            ut.save_tif(data, d_f)
         # the parameter was entered as a file name (mask)
         else:
             if os.path.isfile(aliens):
