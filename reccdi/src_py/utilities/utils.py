@@ -486,21 +486,18 @@ def write_plot_errors(save_dir):
 def save_results(image, support, coh, errs, reciprocal, flow, iter_array, save_dir, metric=None):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
-
     image_file = os.path.join(save_dir, 'image')
     np.save(image_file, image)
-    save_tif(np.abs(image), image_file+".tif")
     support_file = os.path.join(save_dir, 'support')
     np.save(support_file, support)
-    save_tif(np.abs(support), support_file+".tif")
 
     errs_file = os.path.join(save_dir, 'errors')
     np.save(errs_file, errs)
     if not coh is None:
         coh_file = os.path.join(save_dir, 'coherence')
         np.save(coh_file, coh)
-    reciprocal_file = os.path.join(save_dir, 'reciprocal')
-    np.save(reciprocal_file, reciprocal)
+#    reciprocal_file = os.path.join(save_dir, 'reciprocal')
+#    np.save(reciprocal_file, reciprocal)
     write_plot_errors(save_dir)
 
     graph_dir = os.path.join(save_dir, 'graph')

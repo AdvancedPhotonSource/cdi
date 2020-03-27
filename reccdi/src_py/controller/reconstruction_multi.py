@@ -32,7 +32,7 @@ __all__ = ['read_config',
            'reconstruction']
 
 
-def single_rec_process(proc, conf, data, coh_dims, dirs):
+def single_rec_process(proc, conf, data, coh_dims, req_metric, dirs):
     """
     This function runs in the reconstruction palarellized by Pool.
 
@@ -86,7 +86,8 @@ def single_rec_process(proc, conf, data, coh_dims, dirs):
  
     metric = ut.get_metric(image, errs)
     ut.save_results(image, support, coh, errs, reciprocal, flow, iter_array, save_dir, metric)
-
+    return metric[req_metric]
+    
 
 def assign_gpu(*args):
    q = args[0]
@@ -94,7 +95,7 @@ def assign_gpu(*args):
    gpu = q.get()
 
 
-def multi_rec(save_dir, proc, data, conf, config_map, devices, prev_dirs):
+def multi_rec(save_dir, proc, data, conf, config_map, devices, prev_dirs, metric='chi'):
 
     """
     This function controls the multiple reconstructions. It invokes a loop to execute parallel resconstructions,
@@ -137,6 +138,11 @@ def multi_rec(save_dir, proc, data, conf, config_map, devices, prev_dirs):
     errs : list
         list of lists of errors (now each element is another list by iterations, but should we take the last error?)
     """
+    evals = []
+    def collect_result(result):
+        for r in result:
+            evals.append(r)
+
     iterable = []
     save_dirs = []
     reconstructions = config_map.reconstructions
@@ -149,18 +155,18 @@ def multi_rec(save_dir, proc, data, conf, config_map, devices, prev_dirs):
     except:
         coh_dims = None
         
-    func = partial(single_rec_process, proc, conf, data, coh_dims)
+    func = partial(single_rec_process, proc, conf, data, coh_dims, metric)
     q = Queue()
     for device in devices:
         q.put(device)
     with Pool(processes = len(devices),initializer=assign_gpu, initargs=(q,)) as pool:
-        pool.map_async(func, iterable)
+        pool.map_async(func, iterable, callback=collect_result)
         pool.close()
         pool.join()
         pool.terminate()
 
     # return only error from last iteration for each reconstruction
-    return save_dirs
+    return save_dirs, evals
 
 
 def reconstruction(proc, conf_file, datafile, dir, devices):
@@ -233,5 +239,5 @@ def reconstruction(proc, conf_file, datafile, dir, devices):
         filename = conf_file.split('/')[-1]
         save_dir = os.path.join(dir, filename.replace('config_rec', 'results'))
 
-    save_dirs = multi_rec(save_dir, proc, data, conf_file, config_map, devices, prev_dirs)
+    save_dirs, evals = multi_rec(save_dir, proc, data, conf_file, config_map, devices, prev_dirs)
 

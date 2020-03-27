@@ -122,29 +122,12 @@ class Generation:
                 return np.ones(shape)
 
 
-    def order(self, dirs):
-        print ('ranking generation ', self.current_gen)
-        # def order(self, images, supports, cohs, errs, recips):
+    def order(self, dirs, rank_property):
         metric = self.metrics[self.current_gen]
-        rank_property = []
-        for dir in dirs:
-            f = open(os.path.join(dir, 'summary'), 'r')
-            looking = True
-            while looking:
-                line = f.readline()
-                if not line:  #EOF
-                    looking = False
-                else:
-                    # generation object is created with metric for each generation
-                    if line.startswith(metric):
-                        looking = False
-                        metric_value = float(line.split('=')[-1].strip())
-                        rank_property.append(metric_value)
-                        
         # ranks keeps indexes of reconstructions from best to worst
         # for most of the metric types the minimum of the metric is best, but for
         # 'summed_phase' and 'area' it is oposite, so reversing the order
-        ranks = np.argsort(rank_property).tolist()
+        ranks = np.argsort(rank_property)
         if metric == 'summed_phase' or metric == 'area':
             ranks.reverse()
          
@@ -165,8 +148,9 @@ class Generation:
             shutil.move(dir, dest)
 
 
-    def breed_one(self, alpha, breed_mode, dir):
-        image_file = os.path.join(dir, 'image.npy')
+    def breed_one(self, alpha, breed_mode, dirs):
+        (child_dir, breed_dir) = dirs
+        image_file = os.path.join(child_dir, 'image.npy')
         beta = np.load(image_file)
         beta = gut.zero_phase(beta, 0)
         alpha = gut.check_get_conj_reflect(beta, alpha)
@@ -225,15 +209,18 @@ class Generation:
         elif breed_mode == 'avg_ab_pa':
             beta = 0.5 * (abs(alpha_s) + abs(beta)) * np.exp(1j * (ph_alpha))
 
-        os.remove(image_file)
-        np.save(image_file, beta)
+        # save beta in the breeding sub-dir
+        if not os.path.exists(breed_dir):
+            os.makedirs(breed_dir)
+
+        np.save(os.path.join(breed_dir, 'image.npy'), beta)
         sigma = self.ga_support_sigmas[self.current_gen]
         threshold = self.ga_support_thresholds[self.current_gen]
         new_support = ut.shrink_wrap(beta, threshold, sigma)
-        np.save(os.path.join(dir, 'support.npy'), new_support)
+        np.save(os.path.join(breed_dir, 'support.npy'), new_support)
         
 
-    def breed(self, dirs):
+    def breed(self, breed_dir, dirs):
         """
         This function ranks the multiple reconstruction. It breeds next generation by combining the reconstructed
         images, centered
@@ -269,16 +256,29 @@ class Generation:
 
         alpha = np.load(os.path.join(child_dirs[0], 'image.npy'))
         alpha = gut.zero_phase(alpha, 0)
+        # assign breed directory for each bred child
+        iterable = []
+        breed_dirs = []
+        for i in range (len(child_dirs)):
+            breed_dirs.append(os.path.join(breed_dir, str(i)))
+            iterable.append((child_dirs[i], breed_dirs[i]))
+
+	# copy the alpha to the first breeding sub-dir
+        if not os.path.exists(breed_dirs[0]):
+            os.makedirs(breed_dirs[0])
+
+        shutil.copyfile(os.path.join(child_dirs[0], 'image.npy'), os.path.join(breed_dirs[0], 'image.npy'))
+        shutil.copyfile(os.path.join(child_dirs[0], 'support.npy'), os.path.join(breed_dirs[0], 'support.npy'))
 
         no_processes = min(len(child_dirs), mp.cpu_count())
         func = partial(self.breed_one, alpha, breed_mode)
         with mp.Pool(processes = no_processes) as pool:
-            pool.map_async(func, child_dirs[1:])
+            pool.map_async(func, iterable[1:])
             pool.close()
             pool.join()
             pool.terminate()
 
-        return child_dirs
+        return breed_dirs
 
 
 def reconstruction(proc, conf_file, datafile, dir, devices):
@@ -329,7 +329,7 @@ def reconstruction(proc, conf_file, datafile, dir, devices):
     except AttributeError:
         filename = conf_file.split('/')[-1]
         save_dir = os.path.join(dir, filename.replace('config_rec', 'results'))
-
+    temp_dir = os.path.join(save_dir, 'temp')
     try:
         generations = config_map.generations
     except:
@@ -340,23 +340,27 @@ def reconstruction(proc, conf_file, datafile, dir, devices):
     # if multiple reconstructions configured (typical for genetic algorithm), use "reconstruction_multi" module
     if reconstructions > 1:
         rec = multi
-        save_dirs = []
+        temp_dirs = []
         for _ in range(reconstructions):
-            save_dirs.append(None)
+            temp_dirs.append(None)
         for g in range(generations):
             gen_data = gen_obj.get_data(data)
             gen_save_dir = os.path.join(save_dir, 'g_' + str(g))
-            
-            save_dirs = rec.multi_rec(gen_save_dir, proc, gen_data, conf_file, config_map, devices, save_dirs)
+            m = gen_obj.metrics[g]
+            print ('gen, metric', g, m)
+            save_dirs, evals = rec.multi_rec(gen_save_dir, proc, gen_data, conf_file, config_map, devices, temp_dirs, m)
+            print('save_dirs, evals', save_dirs, evals)
             
             # results are saved in a list of directories - save_dir
             # it will be ranked, and moved to temporary ranked directories
-            gen_obj.order(save_dirs)
+            gen_obj.order(save_dirs, evals)
 
             if g < generations - 1 and len(save_dirs) > 1:
-                save_dirs = gen_obj.breed(save_dirs)
+               temp_dirs = gen_obj.breed(temp_dir, save_dirs)
                 
             gen_obj.next_gen()
+	# remove temp dir
+        shutil.rmtree(temp_dir)
     else:
         image = None
         support = None
