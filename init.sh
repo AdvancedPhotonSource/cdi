@@ -1,5 +1,9 @@
 #!/bin/sh
 
+cp reccdi/src_py/cyth/bridge_cpu.templ reccdi/src_py/cyth/bridge_cpu.pyx
+cp reccdi/src_py/cyth/bridge_cuda.templ reccdi/src_py/cyth/bridge_cuda.pyx
+cp reccdi/src_py/cyth/bridge_opencl.templ reccdi/src_py/cyth/bridge_opencl.pyx
+
 echo -n "enter ArrayFire installation directory > "
 read af_dir
 AF='AF_DIR'
