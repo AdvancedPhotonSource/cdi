@@ -6,7 +6,6 @@
 
 
 """
-Please make sure the installation :ref:`pre-requisite-reference-label` are met.
 This module controls the reconstruction process. The user has to provide parameters such as type of processor, data, and configuration.
 The processor specifies which library will be used by CFM (Calc Fast Module) that performs the processor intensive calculations. The module
 can be run on cpu, or gpu. Depending on the gpu hardware and library, one can use opencl or cuda library.
@@ -128,4 +127,5 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
     iter_array = np.reshape(iter_array, (flow_len, int(iter_array.shape[0]/flow_len)))
 
     fast_module.cleanup()
+    print (' ')
     return image, support, coherence, er, reciprocal, flow, iter_array
