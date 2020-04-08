@@ -20,7 +20,7 @@ Pre-requisites
         pip install tifffile
         pip install pylibconfig2
         pip install GPUtil
-        pip install traits
+        pip install parse
         pip install mayavi
         pip install xrayutilities (for parsing spec file if using 34Id prep)
 
