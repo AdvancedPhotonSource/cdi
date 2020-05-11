@@ -1,6 +1,6 @@
 package:
   name: reccdi
-  version: "1.2"
+  version: "1.22"
 
 source:
   path: .
@@ -16,8 +16,10 @@ requirements:
   host:
     - python
     - cython
+    - numpy
 
   run:
+    - numpy
     - python
     - tifffile
     - pylibconfig2

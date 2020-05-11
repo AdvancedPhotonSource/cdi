@@ -49,8 +49,13 @@ def rec_process(proc, conf_file, datafile, dir, gpus, r, q):
 
 
 def get_gpu_use(devices, no_dir, no_rec, data_size):
-    rec_mem_size = data_size / MEM_FACTOR
-    gpu_load = ut.get_gpu_load(rec_mem_size, devices)
+    if sys.platform == 'darwin':
+        # the gpu library is not working on OSX, so run one reconstruction on each GPU
+        gpu_load = len(devices) * [1,]
+    else:
+        rec_mem_size = data_size / MEM_FACTOR
+        gpu_load = ut.get_gpu_load(rec_mem_size, devices)
+						
     no_runs = no_dir * no_rec
     gpu_distribution = ut.get_gpu_distribution(no_runs, gpu_load)
     gpu_use = []
@@ -104,8 +109,9 @@ def manage_reconstruction(proc, experiment_dir, rec_id=None):
         if config_map is None:
             print("can't read configuration file " + conf_file)
             return
-    except:
+    except Exception as e:
         print('Cannot parse configuration file ' + conf_file + ' , check for matching parenthesis and quotations')
+        print (str(e))
         return
 
     exp_dirs_data = []

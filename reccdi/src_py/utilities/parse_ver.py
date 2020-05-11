@@ -486,8 +486,9 @@ def ver_config_rec(fname):
                 if not ver_list_int('partial_coherence_roi', partial_coherence_roi):
                     return False
             except AttributeError:
-                pass
-            except:
+                print("'partial_coherence_roi' parameter must be configured when pcdi in active")
+                return False
+            except:		
                 print("'partial_coherence_roi' parameter parsing error")
                 return False
 

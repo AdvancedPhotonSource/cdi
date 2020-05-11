@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 # #########################################################################
 # Copyright (c) , UChicago Argonne, LLC. All rights reserved.             #
 #                                                                         #
@@ -19,7 +16,6 @@ import os
 import logging
 import stat
 from functools import reduce
-import GPUtil
 
 __author__ = "Barbara Frosik"
 __copyright__ = "Copyright (c) 2016, UChicago Argonne, LLC."
@@ -79,7 +75,6 @@ def read_config(config):
     config_map : dict
         a map containing parsed configuration, None if the given file does not exist
     """
-
     if os.path.isfile(config):
         with open(config, 'r') as f:
             config_map = cfg.Config(f.read())
@@ -163,14 +158,6 @@ def binning(array, binsizes):
             new_shape = list(binned_array.shape)
     return binned_array
 
-
-# ar = np.asarray([1,2,3,4,5,6,7,8,9,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6,7,8,9])
-# ar.resize((5,9))
-# print ('ar', ar)
-# b = binning(ar, (2,2))
-# print ('b',b)
-# c = binning1(ar,(2,2))
-# print ('c',c)
 
 
 def get_centered(arr, center_shift):
@@ -310,12 +297,6 @@ def adjust_dimensions(arr, pads):
 
     return adjusted
 
-# ar = np.zeros((256,256,90))
-# pads = (-100,-100,0,0,0,0)
-# ar = np.zeros((81,256,256))
-# pads = (5,-7,-20,-30,4,-20)
-# arr = adjust_dimensions(ar,pads)
-# print (arr.shape)
 
 def crop_center(arr, new_size):
     size = arr.shape
@@ -328,11 +309,6 @@ def crop_center(arr, new_size):
 
     return cropped
 
-
-# ar = np.zeros((81,256,256))
-# new_size = (40, 200,100)
-# arr = crop_center(ar,new_size)
-# print (arr.shape)
 
 def get_norm(arr):
     return sum(sum(sum(abs(arr) ** 2)))
@@ -561,6 +537,8 @@ def arr_property(arr):
 
 
 def get_gpu_load(mem_size, ids):
+    import GPUtil
+
     gpus = GPUtil.getGPUs()
     total_avail = 0
     available_dir = {}
