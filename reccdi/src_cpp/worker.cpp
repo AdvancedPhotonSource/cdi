@@ -178,7 +178,7 @@ int Reconstruction::Iterate()
         if (access("stopfile", F_OK) == 0)
         {
             remove("stopfile");
-            return (uint)(getpid());
+            return -2;
         }
         if (anyTrue<bool>(isNaN(ds_image)))
         {

@@ -173,13 +173,13 @@ def data(experiment_dir):
     prep_file = os.path.join(experiment_dir, 'prep', 'prep_data.tif')
     if os.path.isfile(prep_file):
         prep(prep_file, experiment_dir)
-    else:
-        dirs = os.listdir(experiment_dir)
-        for dir in dirs:
-            if dir.startswith('scan'):
-                scan_dir = os.path.join(experiment_dir, dir)
-                prep_file = os.path.join(scan_dir, 'prep', 'prep_data.tif')
-                prep(prep_file, scan_dir)
+
+    dirs = os.listdir(experiment_dir)
+    for dir in dirs:
+        if dir.startswith('scan'):
+            scan_dir = os.path.join(experiment_dir, dir)
+            prep_file = os.path.join(scan_dir, 'prep', 'prep_data.tif')
+            prep(prep_file, scan_dir)
 
 
 def main(arg):

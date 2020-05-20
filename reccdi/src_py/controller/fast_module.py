@@ -61,15 +61,20 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
     er : list
         a vector containing errors for each iteration
     """
-    if proc == 'cpu':
-        import reccdi.src_py.cyth.bridge_cpu as bridge_cpu
-        fast_module = bridge_cpu.PyBridge()
-    elif proc == 'opencl':
-        import reccdi.src_py.cyth.bridge_opencl as bridge_opencl
-        fast_module = bridge_opencl.PyBridge()
-    elif proc == 'cuda':
-        import reccdi.src_py.cyth.bridge_cuda as bridge_cuda
-        fast_module = bridge_cuda.PyBridge()
+    try:
+        if proc == 'cpu':
+            import reccdi.src_py.cyth.bridge_cpu as bridge_cpu
+            fast_module = bridge_cpu.PyBridge()
+        elif proc == 'opencl':
+            import reccdi.src_py.cyth.bridge_opencl as bridge_opencl
+            fast_module = bridge_opencl.PyBridge()
+        elif proc == 'cuda':
+            import reccdi.src_py.cyth.bridge_cuda as bridge_cuda
+            fast_module = bridge_cuda.PyBridge()
+    except Exception as ex:
+        print(str(ex))
+        print ('could not import library')
+        return None, None, None, None, None, None, None
 
     # shift data
     data = np.fft.fftshift(data)
@@ -92,11 +97,16 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
 
         fast_module.start_calc_with_guess_support_coh(device, data_l, image.real.tolist(), image.imag.tolist(), support.tolist(), dims, coherence.tolist(), coh_dims, conf)
 
+    ec = fast_module.is_success()
+    print ('error code', ec)
+
+    if ec < 0:
+        print ('the reconstruction in c++ module encountered problems')
+        if ec != -1:  # this error code is returned when device can't be set, the cleanup not needed
+            fast_module.cleanup()
+        return None, None, None, None, None, None, None	
+
     er = copy.deepcopy(fast_module.get_errors())
-    if len(er) == 1 and er[0] == -1:
-        # run into Nan during reconstruction
-        fast_module.cleanup()
-        return None, None, None, None, None, None, None
     image_r = np.asarray(fast_module.get_image_r())
     image_i = np.asarray(fast_module.get_image_i())
     image = image_r + 1j*image_i  #no need to deepcopy the real and imag parts since this makes a new array

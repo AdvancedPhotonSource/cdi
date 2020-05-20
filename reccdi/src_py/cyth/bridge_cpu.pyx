@@ -6,10 +6,10 @@
 
 
 # distutils: language = c++
-# distutils: include_dirs = ['reccdi/include', 'lib/arrayfire/include', 'lib/libconfig/include',]
+# distutils: include_dirs = ['reccdi/include', 'include',]
 # distutils: sources = ['reccdi/src_cpp/bridge.cpp', 'reccdi/src_cpp/manager.cpp', 'reccdi/src_cpp/parameters.cpp', 'reccdi/src_cpp/pcdi.cpp', 'reccdi/src_cpp/resolution.cpp', 'reccdi/src_cpp/state.cpp', 'reccdi/src_cpp/support.cpp', 'reccdi/src_cpp/util.cpp', 'reccdi/src_cpp/worker.cpp']
 # distutils: libraries = ['afcpu',  'config++',]
-# distutils: library_dirs = ['lib/arrayfire/lib64', 'lib/libconfig/lib',]
+# distutils: library_dirs = ['lib',]
 
 
 from libcpp.vector cimport vector
@@ -32,6 +32,7 @@ cdef extern from "../include/bridge.hpp":
         vector[double] GetReciprocalI()
         vector[int] GetFlowV()
         vector[int] GetIterFlowV()
+        int IsSuccess()	
         void Cleanup()
 
 
@@ -67,6 +68,8 @@ cdef class PyBridge:
         return self.thisptr.GetFlowV()
     def get_iter_flow(self):
         return self.thisptr.GetIterFlowV()
+    def is_success(self):
+        return self.thisptr.IsSuccess()    
     def cleanup(self):
         self.thisptr.Cleanup()
 

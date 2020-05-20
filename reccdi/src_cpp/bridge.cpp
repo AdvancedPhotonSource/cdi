@@ -98,4 +98,8 @@ void Bridge::Cleanup()
    delete mgr;
 }
 
+int Bridge::IsSuccess()
+{
+    return mgr->IsSuccess();
+}
 

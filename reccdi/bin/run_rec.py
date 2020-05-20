@@ -18,7 +18,7 @@ ADJUST = 0.0
 def interrupt_thread():
     """
     This function is part of interrupt mechanism. It detects ctl-c signal and creates an empty file named "stopfile".
-    The file is discovered by fast module and the discovery prompts termonation of the process.
+    The file is discovered by fast module processand the discovery prompts termination of that process.
     """
 
     def int_handler(signal, frame):
@@ -48,11 +48,15 @@ def rec_process(proc, conf_file, datafile, dir, gpus, r, q):
     q.put((os.getpid(), gpus))
 
 
-def get_gpu_use(devices, no_dir, no_rec, data_size):
-    if sys.platform == 'darwin':
+def get_gpu_use(devices, no_dir, no_rec, data_shape):
+    from functools import reduce
+				
+    if sys.platform != 'darwin':
         # the gpu library is not working on OSX, so run one reconstruction on each GPU
         gpu_load = len(devices) * [1,]
     else:
+        # find size of data array
+        data_size = reduce((lambda x, y: x * y), data_shape)
         rec_mem_size = data_size / MEM_FACTOR
         gpu_load = ut.get_gpu_load(rec_mem_size, devices)
 						
@@ -86,8 +90,8 @@ def manage_reconstruction(proc, experiment_dir, rec_id=None):
     if os.path.exists('stopfile'):
         os.remove('stopfile')
     print('starting reconstruction')
-    # find how many reconstruction configurations are in config directory
-    # if more than one, it will run in separate processes
+
+    # the rec_id is a postfix added to config_rec configuration file. If defined, use this configuration.
     conf_dir = os.path.join(experiment_dir, 'conf')
     if rec_id is None:
         conf_file = os.path.join(conf_dir, 'config_rec')
@@ -114,8 +118,10 @@ def manage_reconstruction(proc, experiment_dir, rec_id=None):
         print (str(e))
         return
 
+    # exp_dirs_data list hold pairs of data and directory, where the directory is the root of data/data.tif file, and
+    # data is the data.tif file in this directory.
     exp_dirs_data = []
-    # experiment may be multi-scan in which case will run a reconstruction for each scan
+    # experiment may be multi-scan in which case reconstruction will run for each scan
     for dir in os.listdir(experiment_dir):
         if dir.startswith('scan'):
             datafile = os.path.join(experiment_dir, dir, 'data', 'data.tif')
@@ -133,7 +139,9 @@ def manage_reconstruction(proc, experiment_dir, rec_id=None):
         if os.path.isfile(datafile):
             exp_dirs_data.append((datafile, experiment_dir))
     no_runs = len(exp_dirs_data)
-
+    if no_runs == 0:
+        print('did not find data.tif file(s). ')
+        return
     try:
         generations = config_map.generations
     except:
@@ -142,50 +150,57 @@ def manage_reconstruction(proc, experiment_dir, rec_id=None):
         reconstructions = config_map.reconstructions
     except:
         reconstructions = 1
-    try:
-        devices = config_map.device
-    except:
-        devices = [-1]
-
-    if (no_runs > 1 or reconstructions > 1) and devices[0] != -1:
-        from functools import reduce
-        # find size of data array
-        data_shape = ut.read_tif(exp_dirs_data[0][0]).shape
-        data_size = reduce((lambda x, y: x * y), data_shape)
-        gpu_use = get_gpu_use(devices, no_runs, reconstructions, data_size)
+    device_use = []
+    if proc == 'cpu':
+        cpu_use = [-1] * reconstructions
+        if no_runs > 1:
+            for _ in range(no_runs):
+                device_use.append(cpu_use)
+        else:
+            device_use = cpu_use
     else:
-        gpu_use = devices
+        try:
+            devices = config_map.device
+        except:
+            devices = [-1]
 
-    if generations > 1:
-        r = gen_rec
-    elif reconstructions > 1:
-        r = mult_rec
-    else:
-        r = rec
+        if no_runs * reconstructions > 1: 
+            data_shape = ut.read_tif(exp_dirs_data[0][0]).shape
+            device_use = get_gpu_use(devices, no_runs, reconstructions, data_shape)
+        else:
+            device_use = devices
 
     # start the interrupt process
     interrupt_process = Process(target=interrupt_thread, args=())
     interrupt_process.start()
 
     if no_runs == 1:
+        if len(device_use) == 0:
+            device_use = [-1]
         dir_data = exp_dirs_data[0]
         datafile = dir_data[0]
         dir = dir_data[1]
-        r.reconstruction(proc, conf_file, datafile, dir, gpu_use)
+        if generations > 1:
+            gen_rec.reconstruction(proc, conf_file, datafile, dir, device_use)
+        elif reconstructions > 1:
+            mult_rec.reconstruction(proc, conf_file, datafile, dir, device_use)
+        else:
+            rec.reconstruction(proc, conf_file, datafile, dir, device_use)
     else:
-        # check if is it worth to use last chunk
-        if len(gpu_use[0]) > len(gpu_use[-1]) * 2:
-            gpu_use = gpu_use[0:-1]
-
+        if len(device_use) == 0:
+            device_use = [[-1]]
+        else:
+            # check if is it worth to use last chunk
+            if proc != 'cpu' and len(device_use[0]) > len(device_use[-1]) * 2:
+                device_use = device_use[0:-1]
         if generations > 1:
             r = 'g'
         elif reconstructions > 1:
             r = 'm'
         else:
             r = 's'
-
         q = Queue()
-        for gpus in gpu_use:
+        for gpus in device_use:
             q.put((None, gpus))
         # index keeps track of the multiple directories
         index = 0

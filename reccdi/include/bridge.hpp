@@ -38,6 +38,7 @@ public:
     std::vector<d_type> GetErrors();
     std::vector<int> GetFlowV();
     std::vector<int> GetIterFlowV();
+    int IsSuccess();
 
     void Cleanup();
 };

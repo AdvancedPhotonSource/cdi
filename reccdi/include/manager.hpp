@@ -18,7 +18,7 @@ class Manager
 private:
     // A worker instance managed by the Manager
     Reconstruction *rec;
-    bool good_reconstruction;
+    int error_code;
 
 public:
     Manager();
@@ -75,7 +75,9 @@ public:
 
     // This method returns 2D flow array (flow x iterations).
     std::vector<int> GetIterFlowV();
-
+    
+    // Returns True if the reconstruction was successful, i.e. no exception happened.
+    int IsSuccess();
 };
 
 

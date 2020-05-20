@@ -18,7 +18,7 @@ using namespace af;
 
 Manager::Manager()
 {
-    good_reconstruction = true;
+    error_code = 0;
 }
 
 
@@ -39,8 +39,8 @@ void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vect
         }
         catch (...)
         {
-            printf("can't select gpu %d\n", device);
-            good_reconstruction = false;
+            printf("no gpu with id %d, check configuration\n", device);
+            error_code = -1;
             return;
         }
         info();
@@ -70,15 +70,15 @@ void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vect
     printf("initialized\n");
 
     timer::start();
-    int ret = rec->Iterate();
-    if (ret > 0)
-    {
-        good_reconstruction = false;
-    }
-    else
-    {
+    error_code = rec->Iterate();
+    if (error_code == 0)
+    {       
         printf("iterate function took %g seconds\n", timer::stop());
     }
+    else    
+    {
+        timer::stop();
+    }       
 }
 
 void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vector<d_type> guess_buffer_r, std::vector<d_type> guess_buffer_i, std::vector<int> dim, const std::string & config)
@@ -93,8 +93,8 @@ void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vect
         }
         catch (...)
         {
-            printf("can't select gpu %d\n", device);
-            good_reconstruction = false;
+            printf("no gpu with id %d, check configuration\n", device);
+            error_code = -1;
             return;
         }
         info();
@@ -116,15 +116,15 @@ void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vect
     printf("initialized\n");
 
     timer::start();
-    int ret = rec->Iterate();
-    if (ret > 0)
-    {
-        good_reconstruction = false;
-    }
-    else
-    {
+    error_code = rec->Iterate();
+    if (error_code == 0)
+    {       
         printf("iterate function took %g seconds\n", timer::stop());
     }
+    else    
+    {
+        timer::stop();
+    }       
 }
 
 void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vector<d_type> guess_buffer_r, std::vector<d_type> guess_buffer_i, std::vector<int> support_vector, std::vector<int> dim, const std::string & config)
@@ -139,8 +139,8 @@ void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vect
         }
         catch (...)
         {// leave to the os to assign device
-            printf("can't select gpu %d\n", device);
-            good_reconstruction = false;
+            printf("no gpu with id %d, check configuration\n", device);
+            error_code = -1;
             return;
         }
         info();
@@ -163,14 +163,14 @@ void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vect
     printf("initialized\n");
 
     timer::start();
-    int ret = rec->Iterate();
-    if (ret > 0)
+    error_code = rec->Iterate();
+    if (error_code == 0)
     {
-        good_reconstruction = false;
+        printf("iterate function took %g seconds\n", timer::stop());
     }
     else
     {
-        printf("iterate function took %g seconds\n", timer::stop());
+        timer::stop();
     }
 }
 
@@ -186,8 +186,8 @@ void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vect
         }
         catch (...)
         {
-            printf("can't select gpu %d\n", device);
-            good_reconstruction = false;
+            printf("no gpu with id %d, check configuration\n", device);
+            error_code = -1;
             return;
         }
         info();
@@ -209,14 +209,14 @@ void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vect
     printf("initialized\n");
 
     timer::start();
-    int ret = rec->Iterate();
-    if (ret > 0)
+    error_code = rec->Iterate();
+    if (error_code == 0)
     {
-        good_reconstruction = false;
+        printf("iterate function took %g seconds\n", timer::stop());
     }
     else
     {
-        printf("iterate function took %g seconds\n", timer::stop());
+        timer::stop();
     }
 }
 
@@ -244,12 +244,6 @@ std::vector<d_type> Manager::GetImageI()
 
 std::vector<d_type> Manager::GetErrors()
 {
-    if (! good_reconstruction)
-    {
-        std::vector<d_type> errors;
-        errors.push_back(-1.0);
-        return errors;
-    }
     return rec->GetErrors();
 }
 
@@ -293,4 +287,9 @@ std::vector<int> Manager::GetFlowV()
 std::vector<int> Manager::GetIterFlowV()
 {
     return rec->GetIterFlowVector();
+}
+
+int Manager::IsSuccess()
+{
+    return error_code;
 }
