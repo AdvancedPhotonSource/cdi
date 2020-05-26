@@ -5,13 +5,13 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 import importlib
-import reccdi.bin.format_data as run_dt
-import reccdi.bin.run_rec as run_rc
-import reccdi.bin.run_disp as run_dp
-import reccdi.bin.run_prep_34idc as prep
+import format_data as run_dt
+import run_rec as run_rc
+import run_disp as run_dp
+import run_prep_34idc as prep
 import reccdi.src_py.utilities.utils as ut
-import reccdi.src_py.beamlines.aps_34id.spec as spec
 import reccdi.src_py.utilities.parse_ver as ver
+import reccdi.src_py.beamlines.aps_34id.spec as spec
 import reccdi.src_py.beamlines.aps_34id.diffractometer as dif
 import reccdi.src_py.beamlines.aps_34id.detectors as det
 
@@ -1647,7 +1647,7 @@ class pcdi(Feature):
         except AttributeError:
             pass
         try:
-            self.pcdi_det_roi.setText(str(conf_map.partial_coherence_roi).replace(" ", ""))
+            self.pcdi_roi.setText(str(conf_map.partial_coherence_roi).replace(" ", ""))
         except AttributeError:
             pass
 

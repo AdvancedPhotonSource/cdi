@@ -1647,7 +1647,7 @@ class pcdi(Feature):
         except AttributeError:
             pass
         try:
-            self.pcdi_det_roi.setText(str(conf_map.partial_coherence_roi).replace(" ", ""))
+            self.pcdi_roi.setText(str(conf_map.partial_coherence_roi).replace(" ", ""))
         except AttributeError:
             pass
 
