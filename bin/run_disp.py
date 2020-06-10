@@ -11,22 +11,28 @@ from multiprocessing import Pool, cpu_count
 
 def save_CX(conf_dict, image, support, coh, save_dir):
     params = v.DispalyParams(conf_dict)
-    image, support = vu.center(image, support)
+    if support is not None:
+        image, support = vu.center(image, support)
     if 'rampups' in conf_dict:
         image = vu.remove_ramp(image, ups=conf_dict['rampups'])
     viz = v.CXDViz()
     viz.set_geometry(params, image.shape)
 
+    try:
+        image_name = conf_dict['image_name']
+    except:
+        image_name = 'image'
     viz.add_ds_array(abs(image), "imAmp")
     viz.add_ds_array(np.angle(image), "imPh")
-    image_file = os.path.join(save_dir, 'image')
+    image_file = os.path.join(save_dir, image_name)
     viz.write_directspace(image_file)
     viz.clear_direct_arrays()
 
-    viz.add_ds_array(support, "support")
-    support_file = os.path.join(save_dir, 'support')
-    viz.write_directspace(support_file)
-    viz.clear_direct_arrays()
+    if support is not None:
+        viz.add_ds_array(support, "support")
+        support_file = os.path.join(save_dir, 'support')
+        viz.write_directspace(support_file)
+        viz.clear_direct_arrays()
 
     if coh is not None:
         coh = np.fft.fftshift(np.fft.fftn(np.fft.fftshift(coh)))
@@ -78,12 +84,16 @@ def save_vtk(res_dir_conf):
         save_CX(conf_dict, image, support, None, res_dir)
 
 
-# This is the first thing called by main
-# reads the config_disp file into a dictionary
-# Gets the binning param from config_data
-# Gets GPU list from config_rec
-# in principle I think all of this could go to DisplayParams?
-def to_vtk(experiment_dir, results_dir=None):
+def save_vtk_file(image_file, conf_dict):
+    image_file_name = image_file.split('/')[-1]
+    image_file_name = image_file_name[0:-4]
+    conf_dict['image_name'] = image_file_name
+    image = np.load(image_file)
+    res_dir = os.path.dirname(image_file)
+    save_CX(conf_dict, image, None, None, res_dir)
+
+
+def get_conf_dict(experiment_dir):
     if not os.path.isdir(experiment_dir):
         print("Please provide a valid experiment directory")
         return
@@ -132,24 +142,36 @@ def to_vtk(experiment_dir, results_dir=None):
             conf_dict['binning'] = conf_map.binning
         except:
             pass
+    return conf_dict
 
-    if results_dir is None:
-        results_dir = experiment_dir
-    # find directories with image.npy file
-    dirs = []
-    for (dirpath, dirnames, filenames) in os.walk(results_dir):
-        for file in filenames:
-            if file.endswith('image.npy'):
-                dirs.append((dirpath, conf_dict))
-    if len(dirs) == 1:
-        save_vtk(dirs[0])
-    elif len(dirs) >1:
-        no_proc = min(cpu_count(), len(dirs))
-        with Pool(processes = no_proc) as pool:
-           pool.map_async(save_vtk, dirs)
-           pool.close()
-           pool.join()
-    print ('done with processing display')
+
+# This is the first thing called by main
+# reads the config_disp file into a dictionary
+# Gets the binning param from config_data
+# Gets GPU list from config_rec
+# in principle I think all of this could go to DisplayParams?
+def to_vtk(experiment_dir, results_dir=None, image_file=None):
+    conf_dict = get_conf_dict(experiment_dir)
+    if image_file is not None:
+        save_vtk_file(image_file, conf_dict)
+    else:
+        if results_dir is None:
+            results_dir = experiment_dir
+        # find directories with image.npy file
+        dirs = []
+        for (dirpath, dirnames, filenames) in os.walk(results_dir):
+            for file in filenames:
+                if file.endswith('image.npy'):
+                    dirs.append((dirpath, conf_dict))
+        if len(dirs) == 1:
+            save_vtk(dirs[0])
+        elif len(dirs) >1:
+            no_proc = min(cpu_count(), len(dirs))
+            with Pool(processes = no_proc) as pool:
+               pool.map_async(save_vtk, dirs)
+               pool.close()
+               pool.join()
+        print ('done with processing display')
 
 
 def main(arg):
@@ -157,9 +179,12 @@ def main(arg):
     parser.add_argument("experiment_dir", help="experiment directory")
     parser.add_argument("--results_dir",
                         help="directory in experiment that has a tree (or leaf) with reconstruction results which will be visualized")
+    parser.add_argument("--image_file", help="a file in .npy format to be processed for visualization")
     args = parser.parse_args()
     experiment_dir = args.experiment_dir
-    if args.results_dir:
+    if args.image_file:
+        to_vtk(experiment_dir, None, args.image_file)
+    elif args.results_dir:
         to_vtk(experiment_dir, args.results_dir)
     else:
         to_vtk(experiment_dir)
