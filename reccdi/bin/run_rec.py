@@ -51,7 +51,7 @@ def rec_process(proc, conf_file, datafile, dir, gpus, r, q):
 def get_gpu_use(devices, no_dir, no_rec, data_shape):
     from functools import reduce
 				
-    if sys.platform != 'darwin':
+    if sys.platform == 'darwin':
         # the gpu library is not working on OSX, so run one reconstruction on each GPU
         gpu_load = len(devices) * [1,]
     else:
