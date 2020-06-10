@@ -116,7 +116,7 @@ public:
     // 3. it calculates and set an amplitude threshold condition boolean array
     // 4. it normalizes the image with the first element of the data array
     // 5. it initializes other components (i.e. state)
-    void Init();
+    void Init(bool first);
     
     // Each iteration of the image, is considered as a new state. This method executes one iteration.
     // First it calls Next() on State, which determines which algorithm should be run in this state. It also determines whether the

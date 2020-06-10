@@ -274,13 +274,13 @@ def ver_config_rec(fname):
             if not issubclass(type(ga_breed_modes), list):
                 print (ga_breed_modes + ' is not a list')
                 return False
-            breed_options = ['sqrt_ab', 'max_all', 'Dhalf', 'Dhalf-best', 'dsqrt', 'pixel_switch',\
+            breed_options = ['none', 'sqrt_ab', 'max_all', 'Dhalf', 'Dhalf-best', 'dsqrt', 'pixel_switch',\
                              'b_pa', '2ab_a_b', '2a-b_pa', 'sqrt_ab_pa', 'sqrt_ab_pa_recip', 'sqrt_ab_recip',\
                              'max_ab', 'max_ab_pa', 'min_ab_pa', 'avg_ab', 'avg_ab_pa', 'sqrt_abg',
                              'sqrt_abg_pa', 'max_abg','max_abg_pa', 'avg_abg', 'avg_abg_pa', 'avg_sqrt']
             for breed in ga_breed_modes:
                 if breed not in breed_options:
-                    print ("ga_breed_modes list can include only following strings: 'sqrt_ab', 'max_all',\
+                    print ("ga_breed_modes list can include only following strings: 'none', 'sqrt_ab', 'max_all',\
                            'Dhalf', 'Dhalf-best', 'dsqrt', 'pixel_switch',\
                            'b_pa', '2ab_a_b', '2a-b_pa', 'sqrt_ab_pa', 'sqrt_ab_pa_recip', 'sqrt_ab_recip',\
                            'max_ab', 'max_ab_pa', 'min_ab_pa', 'avg_ab', 'avg_ab_pa', 'sqrt_abg',\

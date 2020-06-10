@@ -358,7 +358,8 @@ def reconstruction(proc, conf_file, datafile, dir, devices):
                 
             gen_obj.next_gen()
 	# remove temp dir
-        shutil.rmtree(temp_dir)
+        if os.path.isdir(temp_dir):
+            shutil.rmtree(temp_dir)
     else:
         image = None
         support = None

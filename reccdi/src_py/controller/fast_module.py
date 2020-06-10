@@ -98,7 +98,6 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
         fast_module.start_calc_with_guess_support_coh(device, data_l, image.real.tolist(), image.imag.tolist(), support.tolist(), dims, coherence.tolist(), coh_dims, conf)
 
     ec = fast_module.is_success()
-    print ('error code', ec)
 
     if ec < 0:
         print ('the reconstruction in c++ module encountered problems')

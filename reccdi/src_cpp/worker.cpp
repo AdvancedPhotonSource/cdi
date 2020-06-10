@@ -93,7 +93,7 @@ Reconstruction::~Reconstruction()
     Gc();
 }
 
-void Reconstruction::Init()
+void Reconstruction::Init(bool first)
 {
     // create map of algorithms ids to the algorithm functions
     CreateAlgorithmMap();
@@ -148,19 +148,22 @@ void Reconstruction::Init()
     {
          partialCoherence->Init(data);
     }
-
+   
     norm_data = GetNorm(data);
     num_points = data.elements();
-    // multiply the rs_amplitudes by max element of data array and the norm
-    d_type max_data = af::max<d_type>(data);
-    ds_image *= max_data * GetNorm(ds_image);
+    if (first)
+    {
+	// multiply the rs_amplitudes by max element of data array and the norm
+        d_type max_data = af::max<d_type>(data);
+        ds_image *= max_data * GetNorm(ds_image);
 
-// the next two lines are for testing it sets initial guess to initial support
-    // af::array temp = support->GetSupportArray();
-    // ds_image  = complex(temp.as((af_dtype) dtype_traits<d_type>::ctype), 0.0).as(c64);
+        // the next two lines are for testing it sets initial guess to initial support
+        // af::array temp = support->GetSupportArray();
+        // ds_image  = complex(temp.as((af_dtype) dtype_traits<d_type>::ctype), 0.0).as(c64);
 
-    ds_image *= support->GetSupportArray();
-    //printf("initial image norm %f\n", GetNorm(ds_image));
+        ds_image *= support->GetSupportArray();
+        //printf("initial image norm %f\n", GetNorm(ds_image));
+    }
 
 }
 
