@@ -75,7 +75,7 @@ Adding new trigger
 - add the pair (func_name, fp) to the flow_ptr_map in worker.cpp.
 
 Conda Build
-==========
+===========
 - In the cdi directory create "lib" and "include" directories. Copy content of <arrayfire installation directory>/lib64 and content of <libconfig installation directory>/lib to cdi/lib directory. Copy content of <arrayfire installation directory>/include and content of <libconfig installation directory>/include to cdi/include directory. 
 
 - change version in dev/meta.yaml and setup.py files
