@@ -52,3 +52,5 @@ How to install
 How to run
 
     refer to how_to_run file
+    
+https://cdi.readthedocs.io/
