@@ -37,6 +37,7 @@ Parameters
 | The following parameters are set in the diffractometer class, but can be set from config if no class has been written yet.  These will override anything set internally. This functionality is supported only by command line scripts, not GUI.
 | example:
 ::
+
     sampleaxes_name = ('theta','chi','phi')
     detectoraxes_name = ('delta','gamma','detdist')
     sampleaxes = ('y+', 'z-', 'x-')

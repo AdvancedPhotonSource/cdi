@@ -1,0 +1,36 @@
+package:
+  name: reccdi
+  version: "1.23"
+
+source:
+  path: .
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+
+  host:
+    - python
+    - cython
+    - numpy
+
+  run:
+    - numpy
+    - python
+    - tifffile
+    - pylibconfig2
+    - gputil
+    - xrayutilities
+    - parse
+    - mayavi
+
+
+about:
+  home: https://github.com/advancedPhotonSource/cdi
+  license: BSD
+  license_file: LICENSE
+  summary: Implement and parallelize genetic algorithms and phase retrieval methods for Bragg CDI techniques.

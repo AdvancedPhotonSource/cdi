@@ -7,7 +7,7 @@ Installation for development
 ============================
 Pre-requisites
 ++++++++++++++
-| The development is to be in conda environment with the packages listed below installed. | Also required are c++ libraries listed below.
+| The development is to be in conda environment with the packages listed below installed. Also required are c++ libraries listed below.
 - libraries:
    - ArrayFire library version 3.5.0 or higher
    - Libconfig library version 1.5 or higher
@@ -73,6 +73,10 @@ Adding new trigger
 - Add code to parse feature's parameters in reccdi/include/parameters.hpp and reccdi/src_cpp/parameters.cpp.
 - Add the new function to the reccdi/include/worker.hpp and reccdi/src_cpp/worker.cpp
 - add the pair (func_name, fp) to the flow_ptr_map in worker.cpp.
+
+Adding new algorithm
+====================
+| Currently
 
 Conda Build
 ===========
