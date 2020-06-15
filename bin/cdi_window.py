@@ -903,6 +903,8 @@ class cdi_conf_tab(QTabWidget):
 
     def get_disp_config(self):
         conf_map = {}
+        if self.results_dir is not None:
+            conf_map['results_dir'] = '"' + str(self.results_dir).strip() + '"'
         if len(self.energy.text()) > 0:
             conf_map['energy'] = str(self.energy.text())
         if len(self.delta.text()) > 0:
