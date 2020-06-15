@@ -56,7 +56,7 @@ Parameters
 | example:
 ::
 
-    energy = .13933
+    energy = 7.2
 
 - delta:
 | delta (degrees)

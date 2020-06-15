@@ -1,5 +1,5 @@
 // PARAMETERS FOR VISUALISATION
-results directory = "test/a_12/results" // optional, a directory of off which all results will be
+results_dir = "test/a_12/results" // optional, a directory of off which all results will be
                                         // visualized. Default is the experiment directory
 rampups = 1                // optional, upsize when running ramp removal
                            // default is 1
@@ -23,7 +23,7 @@ diffractometer = "34idc"  // it typically will be set to a defined class, but in
 
 // typically these parameters will be parsed from spec file
 // the parsed parameters will be overridden if they are configured
-energy = .13933            // wavelength
+energy = 7.2               // wavelength
 delta = 30.1               // delta (degrees)
 gamma = 14.0               // gamma (degrees)
 detdist = 500.0            // camera distance (mm)

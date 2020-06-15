@@ -1,6 +1,6 @@
 // GENERAL
 // data_dir = "data"
-                             // directory where prepared data is saved, default "data"
+                             // directory where prepared data is saved, default <experiment_dir>/data
 
 // PARAMETER FOR DATA PREPARATION
 aliens = ((170,220,112,195,245,123), (50,96,10,60,110,20))
