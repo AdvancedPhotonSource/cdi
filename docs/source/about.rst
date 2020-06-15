@@ -1,6 +1,6 @@
 =====About=====The reccdi package provides tools for reconstruction of image of a nanoscale structures from data obtained using Bragg Coherent Diffraction Imaging technique.
 
-The reconstruction has very good performance, in particular when utilizing GPU. User has a choice to run on cpu or GPU (cuda or OpenCL). The solution offers concurrent processing for fast reconstruction of multiple starting points. 
+The reconstruction has very good performance, in particular when utilizing GPU. User has a choice to run on cpu or GPU (cuda or OpenCL library). The solution offers concurrent processing for fast reconstruction of multiple starting points. 
 
 A powerful feature that can deliver good reconstruction result offered by the reccdi package is genetic algorithm (GA).
 
