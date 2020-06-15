@@ -156,7 +156,7 @@ def to_vtk(experiment_dir, image_file=None):
         save_vtk_file(image_file, conf_dict)
     else:
         try:
-            results_dir = conf_dir['results_dir'
+            results_dir = conf_dir['results_dir']
         except:
             results_dir = experiment_dir
         # find directories with image.npy file

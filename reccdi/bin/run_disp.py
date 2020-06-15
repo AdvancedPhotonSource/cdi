@@ -150,12 +150,14 @@ def get_conf_dict(experiment_dir):
 # Gets the binning param from config_data
 # Gets GPU list from config_rec
 # in principle I think all of this could go to DisplayParams?
-def to_vtk(experiment_dir, results_dir=None, image_file=None):
+def to_vtk(experiment_dir, image_file=None):
     conf_dict = get_conf_dict(experiment_dir)
     if image_file is not None:
         save_vtk_file(image_file, conf_dict)
     else:
-        if results_dir is None:
+        try:
+            results_dir = conf_dir['results_dir']
+        except:
             results_dir = experiment_dir
         # find directories with image.npy file
         dirs = []
@@ -177,15 +179,11 @@ def to_vtk(experiment_dir, results_dir=None, image_file=None):
 def main(arg):
     parser = argparse.ArgumentParser()
     parser.add_argument("experiment_dir", help="experiment directory")
-    parser.add_argument("--results_dir",
-                        help="directory in experiment that has a tree (or leaf) with reconstruction results which will be visualized")
     parser.add_argument("--image_file", help="a file in .npy format to be processed for visualization")
     args = parser.parse_args()
     experiment_dir = args.experiment_dir
     if args.image_file:
-        to_vtk(experiment_dir, None, args.image_file)
-    elif args.results_dir:
-        to_vtk(experiment_dir, args.results_dir)
+        to_vtk(experiment_dir, args.image_file)
     else:
         to_vtk(experiment_dir)
 

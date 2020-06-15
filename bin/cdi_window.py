@@ -1324,7 +1324,7 @@ class cdi_conf_tab(QTabWidget):
 
         conf_dir = os.path.join(self.main_win.experiment_dir, 'conf')
         if self.main_win.write_conf(conf_map, conf_dir, 'config_disp'):
-            run_dp.to_vtk(self.main_win.experiment_dir, self.results_dir)
+            run_dp.to_vtk(self.main_win.experiment_dir)
 
 
     def rec_default(self):

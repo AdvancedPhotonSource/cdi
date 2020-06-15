@@ -903,6 +903,8 @@ class cdi_conf_tab(QTabWidget):
 
     def get_disp_config(self):
         conf_map = {}
+        if self.results_dir is not None:
+            conf_map['results_dir'] = '"' + str(self.results_dir).strip() + '"'
         if len(self.energy.text()) > 0:
             conf_map['energy'] = str(self.energy.text())
         if len(self.delta.text()) > 0:
@@ -1322,7 +1324,7 @@ class cdi_conf_tab(QTabWidget):
 
         conf_dir = os.path.join(self.main_win.experiment_dir, 'conf')
         if self.main_win.write_conf(conf_map, conf_dir, 'config_disp'):
-            run_dp.to_vtk(self.main_win.experiment_dir, self.results_dir)
+            run_dp.to_vtk(self.main_win.experiment_dir)
 
 
     def rec_default(self):

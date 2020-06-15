@@ -27,6 +27,7 @@ requirements:
     - xrayutilities
     - parse
     - mayavi
+    - psutil
 
 
 about:
