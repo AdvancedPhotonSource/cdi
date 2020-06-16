@@ -8,6 +8,7 @@ Welcome to reccdi's documentation!
    about
    installation
    configuration
+   experiment_space
    how_to_use
    for_developers
 
