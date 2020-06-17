@@ -13,6 +13,7 @@ import tifffile as tf
 import pylibconfig2 as cfg
 import numpy as np
 import os
+
 import logging
 import stat
 from functools import reduce
@@ -561,15 +562,19 @@ def get_gpu_load(mem_size, ids):
 
 def get_gpu_distribution(runs, available):
     all_avail = reduce((lambda x,y: x+y), available)
-    while runs < all_avail:
+    distributed = [0] * len(available)
+    sum_distr = 0
+    while runs > sum_distr and all_avail > 0:
        # balance distribution
        for i in range(len(available)):
           if available[i] > 0:
              available[i] -= 1
              all_avail -= 1
-             if all_avail == runs:
+             distributed[i] += 1
+             sum_distr += 1
+             if sum_distr == runs:
                 break
-    return available
+    return distributed
 
 
 #https://stackoverflow.com/questions/51503672/decorator-for-timeit-timeit-method/51503837#51503837

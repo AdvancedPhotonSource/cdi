@@ -1,3 +1,22 @@
+# #########################################################################
+# Copyright (c) , UChicago Argonne, LLC. All rights reserved.             #
+#                                                                         #
+# See LICENSE file.                                                       #
+# #########################################################################
+
+"""
+This user script create experiment directory space and copies configuration files.
+
+After the script is executed the experiment directory will contain "conf" subdirectory with configuration files, copies of files from given directory.
+"""
+
+__author__ = "Ross Harder"
+__copyright__ = "Copyright (c), UChicago Argonne, LLC."
+__docformat__ = 'restructuredtext en'
+__all__ = ['copy_conf',
+           'setup_rundirs',
+           'main']
+
 import argparse
 import pylibconfig2 as cfg
 import sys
@@ -9,6 +28,20 @@ import glob
 
 ######################################################################
 def copy_conf(src, dest):
+    """
+    Copies configuration files from src directory to dest directory.
+
+    Parameters
+    ----------
+    src : str
+        source directory containing configuration files
+    dest : str
+        directory where the files will be saved
+    
+    Returns
+    -------
+    nothing
+    """
     try:
         main_conf = os.path.join(src, 'config_prep')
         shutil.copy(main_conf, dest)
@@ -24,6 +57,26 @@ def copy_conf(src, dest):
 
 ######################################################################
 def setup_rundirs(prefix, scan, conf_dir, **kwargs):
+    """
+    Concludes the experiment directory, creates main configuration files, and calls function to copy other configuration files.
+
+    Parameters
+    ----------
+    prefix : str
+        prefix to name of the experiment/data reconstruction
+    scan : str
+        a range of scans to prepare data from
+    conf_dir : str
+        directory from where the configuration files will be copied
+    specfile : str
+        optional, from kwargs, specfile configuration to write to config file
+    copy_prep : bool
+        optional, from kwargs, if sets to true, the prepared file is also copied
+        
+    Returns
+    -------
+    nothing
+    """
     id = prefix + '_' + scan
 
     if not os.path.isdir(conf_dir):
