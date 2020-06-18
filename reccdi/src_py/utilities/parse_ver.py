@@ -262,7 +262,9 @@ def ver_config_rec(fname):
             metrics_options = ['chi', 'sharpness', 'summed_phase', 'area']
             for metric in ga_metrics:
                 if metric not in metrics_options:
-                    print ("ga_metrics list can include only following strings: 'chi', 'sharpness', 'summed_phase', 'area'")
+                    print ('non supported metric option used:', metric)
+                    print ('ga_metrics list can include only following strings: "chi", "sharpness", "summed_phase", "area"')
+                    return False
         except AttributeError:
             pass
         except:
@@ -274,17 +276,15 @@ def ver_config_rec(fname):
             if not issubclass(type(ga_breed_modes), list):
                 print (ga_breed_modes + ' is not a list')
                 return False
-            breed_options = ['none', 'sqrt_ab', 'max_all', 'Dhalf', 'Dhalf-best', 'dsqrt', 'pixel_switch',\
-                             'b_pa', '2ab_a_b', '2a-b_pa', 'sqrt_ab_pa', 'sqrt_ab_pa_recip', 'sqrt_ab_recip',\
-                             'max_ab', 'max_ab_pa', 'min_ab_pa', 'avg_ab', 'avg_ab_pa', 'sqrt_abg',
-                             'sqrt_abg_pa', 'max_abg','max_abg_pa', 'avg_abg', 'avg_abg_pa', 'avg_sqrt']
+            breed_options = ['none', 'sqrt_ab', 'dsqrt', 'pixel_switch', 'b_pa', '2ab_a_b', '2a_b_pa', 'sqrt_ab_pa',\
+'sqrt_ab_pa_recip', 'sqrt_ab_recip', 'max_ab', 'max_ab_pa', 'min_ab_pa', 'avg_ab', 'avg_ab_pa']
             for breed in ga_breed_modes:
                 if breed not in breed_options:
-                    print ("ga_breed_modes list can include only following strings: 'none', 'sqrt_ab', 'max_all',\
-                           'Dhalf', 'Dhalf-best', 'dsqrt', 'pixel_switch',\
-                           'b_pa', '2ab_a_b', '2a-b_pa', 'sqrt_ab_pa', 'sqrt_ab_pa_recip', 'sqrt_ab_recip',\
-                           'max_ab', 'max_ab_pa', 'min_ab_pa', 'avg_ab', 'avg_ab_pa', 'sqrt_abg',\
-                           'sqrt_abg_pa', 'max_abg','max_abg_pa', 'avg_abg', 'avg_abg_pa', 'avg_sqrt'")
+                    print ('non supported breed mode used:', breed)		
+                    print ('ga_breed_modes list can include only following strings: “none”, “sqrt_ab”, “dsqrt”,\
+“pixel_switch”, “b_pa”, “2ab_a_b”, “2a_b_pa”, “sqrt_ab_pa”, “sqrt_ab_pa_recip”, “sqrt_ab_recip”,\
+“max_ab”, “max_ab_pa”, “min_ab_pa”, “avg_ab”, “avg_ab_pa”')
+                    return False
         except AttributeError:
             pass
         except:

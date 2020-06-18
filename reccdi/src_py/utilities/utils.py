@@ -420,9 +420,9 @@ def sum_phase_tight_support(arr):
 def get_metric(image, errs):
     metric = {}
     metric['chi'] = errs[-1]
-    metric['sharpness'] = sum(sum(sum(pow(abs(image), 4))))
-    metric['summed_phase'] = sum(sum(sum_phase_tight_support(image)))
-    metric['area'] = sum(sum(sum(shrink_wrap(image, .2, .5))))
+    metric['sharpness'] = np.sum(pow(abs(image), 4)).item()
+    metric['summed_phase'] = np.sum(sum_phase_tight_support(image)).item()
+    metric['area'] = np.sum(shrink_wrap(image, .2, .5)).item()
     return metric
 
 

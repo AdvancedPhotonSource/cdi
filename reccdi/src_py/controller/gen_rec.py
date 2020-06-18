@@ -127,7 +127,7 @@ class Generation:
         # ranks keeps indexes of reconstructions from best to worst
         # for most of the metric types the minimum of the metric is best, but for
         # 'summed_phase' and 'area' it is oposite, so reversing the order
-        ranks = np.argsort(rank_property)
+        ranks = np.argsort(rank_property).tolist()
         if metric == 'summed_phase' or metric == 'area':
             ranks.reverse()
          

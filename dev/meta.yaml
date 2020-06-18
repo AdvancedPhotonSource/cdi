@@ -1,6 +1,6 @@
 package:
   name: reccdi
-  version: "1.25"
+  version: "1.26"
 
 source:
   path: .

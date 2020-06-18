@@ -257,7 +257,7 @@ GA
 
 - ga_breed_modes:
 | optional, a list of breeding modes applied to breed consecutive generation. If not defined, or shorter that number of generations, the mode defaults to "sqrt_ab".
-| supported: "none", "sqrt_ab", "dsqrt", "pixel_switch", "b_pa", "2ab_a_b", "2a-b_pa", "sqrt_ab_pa", "sqrt_ab_pa_recip", "sqrt_ab_recip", "max_ab", "max_ab_pa", "min_ab_pa", "avg_ab", "avg_ab_pa"
+| supported: "none", "sqrt_ab", "dsqrt", "pixel_switch", "b_pa", "2ab_a_b", "2a_b_pa", "sqrt_ab_pa", "sqrt_ab_pa_recip", "sqrt_ab_recip", "max_ab", "max_ab_pa", "min_ab_pa", "avg_ab", "avg_ab_pa"
 | example:
 ::
 

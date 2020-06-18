@@ -56,7 +56,7 @@ ga_breed_modes = ("sqrt_ab", "dsqrt")
                              // defines which breeding mode to use to populate new generation. If "none"
                              // there is no breeding
                              // supported: 'sqrt_ab', 'dsqrt', 'pixel_switch', 'b_pa', '2ab_a_b',
-                             // '2a-b_pa', 'sqrt_ab_pa', 'sqrt_ab_pa_recip', 'sqrt_ab_recip',
+                             // '2a_b_pa', 'sqrt_ab_pa', 'sqrt_ab_pa_recip', 'sqrt_ab_recip',
                              // 'max_ab', 'max_ab_pa', 'min_ab_pa', 'avg_ab', 'avg_ab_pa'
 
 // ga_cullings = (2,1)
