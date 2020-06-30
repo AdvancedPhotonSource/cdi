@@ -690,7 +690,7 @@ def write_plot_errors(save_dir):
     os.chmod(plot_file, st.st_mode | stat.S_IEXEC)
 
 
-def save_results(image, support, coh, errs, reciprocal, flow, iter_array, save_dir, metric=None):
+def save_results(image, support, coh, errs, flow, iter_array, save_dir, metric=None):
     """
     Saves results of reconstruction. Saves the following files: image.np, support.npy, errors.npy, optionally coherence.npy, plot_errors.py, graph.npy, flow.npy, iter_array.npy
     
@@ -737,8 +737,7 @@ def save_results(image, support, coh, errs, reciprocal, flow, iter_array, save_d
     if not coh is None:
         coh_file = os.path.join(save_dir, 'coherence')
         np.save(coh_file, coh)
-#    reciprocal_file = os.path.join(save_dir, 'reciprocal')
-#    np.save(reciprocal_file, reciprocal)
+
     write_plot_errors(save_dir)
 
     graph_dir = os.path.join(save_dir, 'graph')

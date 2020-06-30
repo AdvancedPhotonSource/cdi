@@ -58,8 +58,6 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
         coherence for reconstructed image or None if pcdi inactive
     er : list
         a vector containing errors for each iteration
-    reciprocal : ndarray
-        the array converted to reciprocal space
     flow : ndarray
         info to scientist/developer; a list of functions  that can run in one iterations (excluding inactive features)
     iter_array : ndarray
@@ -78,7 +76,7 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
     except Exception as ex:
         print(str(ex))
         print ('could not import library')
-        return None, None, None, None, None, None, None
+        return None, None, None, None, None, None
 
     # shift data
     data = np.fft.fftshift(data)
@@ -107,7 +105,7 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
         print ('the reconstruction in c++ module encountered problems')
         if ec != -1:  # this error code is returned when device can't be set, the cleanup not needed
             fast_module.cleanup()
-        return None, None, None, None, None, None, None	
+        return None, None, None, None, None, None
 
     er = copy.deepcopy(fast_module.get_errors())
     image_r = np.asarray(fast_module.get_image_r())
@@ -128,12 +126,6 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
     else:
         coherence = None
 
-    reciprocal_r = copy.deepcopy(np.asarray(fast_module.get_reciprocal_r()))
-    reciprocal_i = copy.deepcopy(np.asarray(fast_module.get_reciprocal_i()))
-    reciprocal = reciprocal_r + 1j*reciprocal_i
-    reciprocal = np.reshape(reciprocal, dims[::-1])
-    reciprocal = np.fft.ifftshift(reciprocal)
-
     iter_array = copy.deepcopy(np.asarray(fast_module.get_iter_flow()))
     flow = copy.deepcopy(list(fast_module.get_flow()))
     flow_len = len(flow)
@@ -141,4 +133,4 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
 
     fast_module.cleanup()
     print (' ')
-    return image, support, coherence, er, reciprocal, flow, iter_array
+    return image, support, coherence, er, flow, iter_array

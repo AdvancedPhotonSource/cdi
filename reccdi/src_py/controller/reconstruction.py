@@ -4,7 +4,6 @@
 # See LICENSE file.                                                       #
 # #########################################################################
 
-
 """
 This module controls a single reconstruction process.
 """
@@ -75,10 +74,10 @@ def single_rec(proc, data, conf, config_map, dev, image, support, coh):
         coh_dims = tuple(config_map.partial_coherence_roi)
     except:
         coh_dims = None
-    image, support, coh, er, reciprocal, flow, iter_array = calc.fast_module_reconstruction(proc, dev, conf, data, coh_dims, image, support, coh)
+    image, support, coh, er, flow, iter_array = calc.fast_module_reconstruction(proc, dev, conf, data, coh_dims, image, support, coh)
 
     # errs contain errors for each iteration
-    return image, support, coh, er, reciprocal, flow, iter_array
+    return image, support, coh, er, flow, iter_array
 
 
 def reconstruction(proc, conf_file, datafile, dir, dev):
@@ -140,7 +139,7 @@ def reconstruction(proc, conf_file, datafile, dir, dev):
         support = None
         coh = None
 
-    image, support, coh, errs, recips, flow, iter_array = single_rec(proc, data, conf_file, config_map, dev[0], image, support, coh)
+    image, support, coh, errs, flow, iter_array = single_rec(proc, data, conf_file, config_map, dev[0], image, support, coh)
     if image is None:
         return
 
@@ -150,4 +149,4 @@ def reconstruction(proc, conf_file, datafile, dir, dev):
         filename = conf_file.split('/')[-1]
         save_dir = os.path.join(dir, filename.replace('config_rec', 'results'))
 
-    ut.save_results(image, support, coh, np.asarray(errs), recips, flow, iter_array, save_dir)
+    ut.save_results(image, support, coh, np.asarray(errs), flow, iter_array, save_dir)

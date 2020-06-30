@@ -62,10 +62,10 @@ def single_rec_process(proc, conf, data, coh_dims, req_metric, dirs):
     else:
         prev_image, prev_support, prev_coh = ut.read_results(prev)
     
-    image, support, coh, errs, reciprocal, flow, iter_array = calc.fast_module_reconstruction(proc, gpu, conf, data, coh_dims, prev_image, prev_support, prev_coh)
+    image, support, coh, errs, flow, iter_array = calc.fast_module_reconstruction(proc, gpu, conf, data, coh_dims, prev_image, prev_support, prev_coh)
  
     metric = ut.get_metric(image, errs)
-    ut.save_results(image, support, coh, errs, reciprocal, flow, iter_array, save_dir, metric)
+    ut.save_results(image, support, coh, errs, flow, iter_array, save_dir, metric)
     return metric[req_metric]
     
 
