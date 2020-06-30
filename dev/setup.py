@@ -9,7 +9,7 @@ setup(ext_modules=cythonize(
       author = 'Barbara Frosik, Ross Harder',
       author_email = 'bfrosik@anl.gov',
       url='https://github.com/advancedPhotonSource/cdi',
-      version='1.26',
+      version='1.3',
       packages=setuptools.find_packages(),
       package_data={'reccdi' : ['*.pyx','*.so'], 'reccdi.src_py.cyth' : ['*.pyx','*.so']}
 )
