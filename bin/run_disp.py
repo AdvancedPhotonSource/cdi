@@ -1,3 +1,25 @@
+# #########################################################################
+# Copyright (c) , UChicago Argonne, LLC. All rights reserved.             #
+#                                                                         #
+# See LICENSE file.                                                       #
+# #########################################################################
+
+"""
+This user script processes reconstructed image for visualization.
+
+After the script is executed the experiment directory will contain image.vts file for each reconstructed image in the given directory tree.
+"""
+
+__author__ = "Ross Harder"
+__copyright__ = "Copyright (c), UChicago Argonne, LLC."
+__docformat__ = 'restructuredtext en'
+__all__ = ['save_CX',
+           'save_vtk',
+           'save_vtk_file',
+           'get_conf_dict',
+           'to_vtk',
+           'main']
+
 import reccdi.src_py.utilities.viz_util as vu
 import reccdi.src_py.beamlines.aps_34id.viz as v
 import reccdi.src_py.utilities.utils as ut
@@ -10,6 +32,26 @@ from multiprocessing import Pool, cpu_count
 
 
 def save_CX(conf_dict, image, support, coh, save_dir):
+    """
+    Saves the image and support vts files.
+
+    Parameters
+    ----------
+    conf_dict : dict
+        dictionary containing configured parameters needed for visualization
+    image : array
+        image file in npy format
+    support : array
+        support file in npy format
+    coh : array
+        coherence file in npy format or None
+    save_dir : str
+        a directory where to save the processed vts file
+
+    Returns
+    -------
+    nothing
+    """
     params = v.DispalyParams(conf_dict)
     if support is not None:
         image, support = vu.center(image, support)
@@ -44,8 +86,21 @@ def save_CX(conf_dict, image, support, coh, save_dir):
         viz.clear_direct_arrays()
 
 
-# seems all of this could be consolidated with save_CX.
 def save_vtk(res_dir_conf):
+    """
+    Loads arrays from files in results directory. If reciprocal array exists, it will save reciprocal info in tif format. It calls the save_CX function with the relevant parameters.
+
+    Parameters
+    ----------
+    res_dir_conf : tuple
+        tuple of two elements:
+        res_dir - directory where the results of reconstruction are saved
+        conf_dict - dictionary containing configuration parameters
+
+    Returns
+    -------
+    nothing
+    """
     (res_dir, conf_dict) = res_dir_conf
     try:
         imagefile = os.path.join(res_dir, 'image.npy')
@@ -85,6 +140,20 @@ def save_vtk(res_dir_conf):
 
 
 def save_vtk_file(image_file, conf_dict):
+    """
+    Loads array from given image file. Determines the vts file name and calls savw_CX function to process this  file. The vts file will have the same name as image file, with different extension and will be saved in the same directory.
+
+    Parameters
+    ----------
+    image_file : str
+        name of file in npy format containing reconstructrd image
+    conf_dir : str
+        dictionary containing configuration parameters
+
+    Returns
+    -------
+    nothing
+    """
     image_file_name = image_file.split('/')[-1]
     image_file_name = image_file_name[0:-4]
     conf_dict['image_name'] = image_file_name
@@ -94,6 +163,19 @@ def save_vtk_file(image_file, conf_dict):
 
 
 def get_conf_dict(experiment_dir):
+    """
+    Reads configuration files and creates dictionary with parameters that are needed for visualization.
+
+    Parameters
+    ----------
+    experiment_dir : str
+        directory where the experiment files are located
+
+    Returns
+    -------
+    conf_dict : dict
+        a dictionary containing configuration parameters
+    """
     if not os.path.isdir(experiment_dir):
         print("Please provide a valid experiment directory")
         return
@@ -145,12 +227,19 @@ def get_conf_dict(experiment_dir):
     return conf_dict
 
 
-# This is the first thing called by main
-# reads the config_disp file into a dictionary
-# Gets the binning param from config_data
-# Gets GPU list from config_rec
-# in principle I think all of this could go to DisplayParams?
 def to_vtk(experiment_dir, image_file=None):
+    """
+    If the image_file parameter is defined, the file is processed and vts file saved. Otherwise this function determines root directory with results that should be processed for visualization. Multiple images will be processed concurrently.
+
+    Parameters
+    ----------
+    conf_dir : str
+        directory where the file will be saved
+
+    Returns
+    -------
+    nothing
+    """
     conf_dict = get_conf_dict(experiment_dir)
     if image_file is not None:
         save_vtk_file(image_file, conf_dict)

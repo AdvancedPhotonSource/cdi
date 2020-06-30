@@ -1,3 +1,24 @@
+# #########################################################################
+# Copyright (c) , UChicago Argonne, LLC. All rights reserved.             #
+#                                                                         #
+# See LICENSE file.                                                       #
+# #########################################################################
+
+"""
+This user script manages reconstruction(s).
+
+Depending on configuration it starts either single reconstruction, GA, or multiple reconstructions. In multiple reconstruction scenario or split scans the script runs concurrent reconstructions.
+"""
+
+__author__ = "Barbara Frosik"
+__copyright__ = "Copyright (c), UChicago Argonne, LLC."
+__docformat__ = 'restructuredtext en'
+__all__ = ['interrupt_thread',
+           'rec_process',
+           'get_gpu_use',
+           'manage_reconstruction',
+           'main']
+
 import sys
 import signal
 import os
@@ -39,6 +60,30 @@ def interrupt_thread():
 
 
 def rec_process(proc, conf_file, datafile, dir, gpus, r, q):
+    """
+    Calls the reconstruction function in a module identified by parameter. After the reconstruction is finished, it enqueues th eprocess id wit associated list of gpus.
+
+    Parameters
+    ----------
+    proc : str
+        processing library, chices are cpu, cuda, opencl
+    conf_file : str
+        configuration file with reconstruction parameters
+    datafile : str
+        name of file containing data
+    dir : str
+        parent directory to the <prefix>/results, or results directory
+    gpus : list
+       a list of gpus that will be used for reconstruction
+    r : str
+       a string indentifying the module to use for reconstruction
+    q : Queue
+       a queue that returns tuple of procees id and associated gpu list after the reconstruction process is done
+
+    Returns
+    -------
+    nothing
+    """
     if r == 'g':
         gen_rec.reconstruction(proc, conf_file, datafile, dir, gpus)
     elif r == 'm':
@@ -49,6 +94,25 @@ def rec_process(proc, conf_file, datafile, dir, gpus, r, q):
 
 
 def get_gpu_use(devices, no_dir, no_rec, data_shape):
+    """
+    Determines the use case, available GPUs that match configured devices, and selects the optimal distribution of reconstructions on available devices.
+
+    Parameters
+    ----------
+    devices : list
+        list of configured GPU ids to use for reconstructions. If -1, operating system is assigning it
+    no_dir : int
+        number of directories to run independent reconstructions
+    no_rec : int
+        configured number of reconstructions to run in each directory
+    data_shape : tuple
+        shape of data array, needed to estimate how many reconstructions will fit into available memory
+
+    Returns
+    -------
+    gpu_use : list
+        a list of int indicating number of runs per consecuitive GPUs
+    """
     from functools import reduce
 				
     if sys.platform == 'darwin':
@@ -81,11 +145,24 @@ def get_gpu_use(devices, no_dir, no_rec, data_shape):
 
 def manage_reconstruction(proc, experiment_dir, rec_id=None):
     """
-    This function starts the interruption discovery thread and the recontruction thread.
-
+    This function starts the interruption discovery process and continues the recontruction processing.
+    
     It reads configuration file defined as <experiment_dir>/conf/config_rec.
-    If multiple generations are configured, it will start reconstruction from "reconstruction_multi"
-    script, otherwise from "reconstruction" script.
+    If multiple generations are configured, or separate scans are discovered, it will start concurrent reconstructions.
+    It creates image.npy file for each successful reconstruction.
+
+    Parameters
+    ----------
+    proc : str
+        processing library, choices are: cpu, cuda, opencl
+    experiment_dir : str
+        directory where the experiment files are loacted
+    rec_id : str
+        optional, if given, alternate configuration file will be used for reconstruction, (i.e. <rec_id>_config_rec)
+
+    Returns
+    -------
+    nothing
     """
     if os.path.exists('stopfile'):
         os.remove('stopfile')

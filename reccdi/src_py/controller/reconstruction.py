@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 # #########################################################################
 # Copyright (c) , UChicago Argonne, LLC. All rights reserved.             #
 #                                                                         #
@@ -9,12 +6,7 @@
 
 
 """
-Please make sure the installation :ref:`pre-requisite-reference-label` are met.
-This module controls the reconstruction process. The user has to provide parameters such as type of processor, data, and configuration.
-The processor specifies which library will be used by CFM (Calc Fast Module) that performs the processor intensive calculations. The module
-can be run on cpu, or gpu. Depending on the gpu hardware and library, one can use opencl or cuda library.
-The module starts the data preparation routines, calls for reconstruction using the CFM, and prepares the reconstructed data for
-visualization.
+This module controls a single reconstruction process.
 """
 
 import numpy as np
@@ -27,19 +19,19 @@ import reccdi.src_py.controller.reconstruction_multi as multi
 __author__ = "Barbara Frosik"
 __copyright__ = "Copyright (c) 2016, UChicago Argonne, LLC."
 __docformat__ = 'restructuredtext en'
-__all__ = ['read_config',
+__all__ = ['single_rec',
            'reconstruction']
 
 
 def single_rec(proc, data, conf, config_map, dev, image, support, coh):
 
     """
-    This function starts and returns results of reconstruction. The parameters must be initialized.
+    This function starts reconstruction and returns results.
 
     Parameters
     ----------
     proc : str
-        a string indicating the processor type
+        a string indicating the processor type (cpu, cuda or opencl)
 
     data : numpy array
         data array
@@ -48,30 +40,36 @@ def single_rec(proc, data, conf, config_map, dev, image, support, coh):
         configuration file name
 
     config_map : dict
-        parsed configuration
+        parsed configuration with reconstruction parameters
+        
+    dev : int
+        id defining the GPU this reconstruction will be utilizing, or -1 if running cpu or the gpu assignment is left to OS
 
     image : numpy array
-        reconstructed image for further reconstruction, or None for initial
+        reconstructed image for further reconstruction, or None if initial
 
     support : numpy array
-        support of reconstructed image, or None
+        support of previous reconstructed image, or None
 
     coh : numpy array
-        coherence of reconstructed images, or None
+        coherence of previous reconstructed images, or None
 
     Returns
     -------
     image : numpy array
         reconstructed image
-
     support : numpy array
         support of reconstructed images
-
     coh : numpy array
         coherence of reconstructed images
-
-    errs : list
-        list of errors (should we take the last error?)
+    er : list
+        a vector containing errors for each iteration
+    reciprocal : ndarray
+        the array converted to reciprocal space
+    flow : ndarray
+        info to scientist/developer; a list of functions  that can run in one iterations (excluding inactive features)
+    iter_array : ndarray
+        info to scientist/developer; an array of 0s and 1s, 1 meaning the function in flow will be executed in iteration, 0 otherwise
     """
     try:
         coh_dims = tuple(config_map.partial_coherence_roi)
@@ -85,25 +83,28 @@ def single_rec(proc, data, conf, config_map, dev, image, support, coh):
 
 def reconstruction(proc, conf_file, datafile, dir, dev):
     """
-    This function starts the reconstruction. It checks whether it is continuation of reconstruction defined by
-    configuration. If continuation, the arrays of image, support, coherence are read from cont_directory,
-    otherwise, they are initialized to None. After the arrays are initialized, they are passed for the reconstruction.
-    The results are saved in the configured directory.
+    Controls single reconstruction.
+    
+    This function checks whether the reconstruction is continuation or initial reconstruction. If continuation, the arrays of image, support, coherence are read from cont_directory, otherwise they are initialized to None.
+    It starts thr reconstruction and saves results.
 
     Parameters
     ----------
     proc : str
-        a string indicating the processor type (cpu, opencl, cuda)
+        a string indicating the processor type (cpu, cuda or opencl)
 
-    data : numpy array
-        data array
+    conf_file : str
+        configuration file name
 
-    conf_info : str
-        configuration file name or experiment directory. If directory, the configuration file is
-        defined as <experiment dir>/conf/config_rec
+    datafile : str
+        data file name
 
-    config_map : dict
-        parsed configuration
+    dir : str
+        a parent directory that holds the reconstructions. It can be experiment directory or scan directory.
+
+    dev : int
+        id defining the GPU this reconstruction will be utilizing, or -1 if running cpu or the gpu assignment is left to OS
+
 
     Returns
     -------

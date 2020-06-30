@@ -1,19 +1,34 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 # #########################################################################
 # Copyright (c) , UChicago Argonne, LLC. All rights reserved.             #
 #                                                                         #
 # See LICENSE file.                                                       #
 # #########################################################################
 
+"""
+This module encapsulates diffractometer.
+"""
+
 __author__ = "Ross Harder"
 __docformat__ = 'restructuredtext en'
-__all__ = ['getdiffclass']
-
+__all__ = ['getdiffclass',
+           'Diffractometer.__init__']
+           
 
 ##################################################################
 def getdiffclass(diffname, **args):
+    """
+    Returns instance of diffractometer class with given diffractometer name.
+
+    Parameters
+    ----------
+    diffname : str
+        diffractometer name
+         
+    Returns
+    -------
+    c : Diffractometer
+        Diffractometer subclass with given name
+    """
     for cls in Diffractometer.__subclasses__():
         if cls.name == diffname.strip():
             c = cls()
@@ -29,6 +44,9 @@ class Diffractometer(object):
 
 
 class Diffractometer_34idc(Diffractometer):
+    """
+    Subclass of Diffractometer. Encapsulates "34idc" diffractometer.
+    """
     name = "34idc"
     sampleaxes = ('y+', 'z-', 'y+')  # in xrayutilities notation
     detectoraxes = ('y+', 'x-')

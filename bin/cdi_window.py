@@ -1,3 +1,21 @@
+# #########################################################################
+# Copyright (c) , UChicago Argonne, LLC. All rights reserved.             #
+#                                                                         #
+# See LICENSE file.                                                       #
+# #########################################################################
+
+"""
+This is GUI that allows user to configure and run experiment.
+"""
+
+__author__ = "Barbara Frosik"
+__copyright__ = "Copyright (c), UChicago Argonne, LLC."
+__docformat__ = 'restructuredtext en'
+__all__ = ['select_file',
+           'select_dir',
+           'msg_window',
+           'main']
+
 import sys
 import os
 import shutil
@@ -16,6 +34,19 @@ import reccdi.src_py.beamlines.aps_34id.diffractometer as dif
 import reccdi.src_py.beamlines.aps_34id.detectors as det
 
 def select_file(start_dir):
+    """
+    Shows dialog interface allowing user to select file from file system.
+
+    Parameters
+    ----------
+    start_dir : str
+        directory where to start selecting the file
+
+    Returns
+    -------
+    str
+        name of selected file or None
+    """
     dialog = QFileDialog(None, 'select dir', start_dir)
     dialog.setFileMode(QFileDialog.ExistingFile)
     dialog.setSidebarUrls([QUrl.fromLocalFile(start_dir)])
@@ -26,6 +57,19 @@ def select_file(start_dir):
 
 
 def select_dir(start_dir):
+    """
+    Shows dialog interface allowing user to select directory from file system.
+
+    Parameters
+    ----------
+    start_dir : str
+        directory where to start selecting
+
+    Returns
+    -------
+    str
+        name of selected directory or None
+    """
     dialog = QFileDialog(None, 'select dir', start_dir)
     dialog.setFileMode(QFileDialog.DirectoryOnly)
     dialog.setSidebarUrls([QUrl.fromLocalFile(start_dir)])
@@ -36,6 +80,18 @@ def select_dir(start_dir):
 
 
 def msg_window(text):
+    """
+    Shows message with requested information (text)).
+
+    Parameters
+    ----------
+    text : str
+        string that will show on the screen
+
+    Returns
+    -------
+    noting
+    """
     msg = QMessageBox()
     msg.setIcon(QMessageBox.Information)
     msg.setText(text)
@@ -45,6 +101,17 @@ def msg_window(text):
 
 class cdi_gui(QWidget):
     def __init__(self, parent=None):
+        """
+        Constructor, initializes GUI.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        noting
+        """
         super(cdi_gui, self).__init__(parent)
         self.exp_id = None
         self.experiment_dir = None
@@ -90,6 +157,18 @@ class cdi_gui(QWidget):
 
 
     def set_spec_file(self):
+        """
+        Calls selection dialog. The selected spec file is parsed.
+        The specfile is saved in config.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        noting
+        """
         self.specfile = select_file(os.getcwd())
         if self.specfile is not None:
             self.spec_file_button.setStyleSheet("Text-align:left")
@@ -103,6 +182,17 @@ class cdi_gui(QWidget):
 
 
     def run_everything(self):
+        """
+        Runs everything.py user script in bin directory.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         if not self.is_exp_exists():
             msg_window('the experiment has not been created yet')
         elif not self.is_exp_set():
@@ -115,6 +205,19 @@ class cdi_gui(QWidget):
 
 
     def is_exp_exists(self):
+        """
+        Determines if minimum information for creating the experiment space exists, i.e the working directory and experiment id must be set.
+        Resolves the experiment name, and create experiment directory if it does not exist.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        boolean
+            True if experiment exists, False otherwise
+        """
         if self.exp_id is None:
             return False
         if self.working_dir is None:
@@ -129,6 +232,18 @@ class cdi_gui(QWidget):
 
 
     def is_exp_set(self):
+        """
+        The GUI can be used to load an experiment, and then change the parameters, such id or scan. This function will return True if information in class are the same as in the GUI.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        boolean
+            True if experiment has been set, False otherwise
+        """
         if self.exp_id is None:
             return False
         if self.working_dir is None:
@@ -141,6 +256,17 @@ class cdi_gui(QWidget):
 
 
     def load_conf_dir(self):
+        """
+        It shows the select dialog for user to select directory to load configuration from configuration files in that directory. If no configuration files are found user will see info message.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         load_dir = select_dir(os.getcwd())
         missing = 0
         if load_dir is not None:
@@ -180,6 +306,17 @@ class cdi_gui(QWidget):
 
 
     def set_working_dir(self):
+        """
+        It shows the select dialog for user to select working directory. If the selected directory does not exist user will see info message.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         self.working_dir = select_dir(os.getcwd())
         if self.working_dir is not None:
             self.set_work_dir_button.setStyleSheet("Text-align:left")
@@ -191,6 +328,18 @@ class cdi_gui(QWidget):
 
 
     def load_main(self, load_dir):
+        """
+        It reads 'config' file from the given directory, parses all parameters, verifies, and sets the display in window and class members to parsed values.
+
+        Parameters
+        ----------
+        load_dir : str
+            a directory to load the main configuration from
+
+        Returns
+        -------
+        nothing
+        """
         conf = os.path.join(load_dir, 'config')
         try:
             conf_map = ut.read_config(conf)
@@ -239,18 +388,40 @@ class cdi_gui(QWidget):
 
 
     def update_rec_configs_choice(self):
-            # this will update the configuration choices in reconstruction tab
-            # fill out the config_id choice bar by reading configuration files names
-            rec_ids = []
-            for file in os.listdir(os.path.join(self.experiment_dir, 'conf')):
-                if file.endswith('_config_rec'):
-                    rec_ids.append(file[0:len(file)-len('_config_rec')])
-            if len(rec_ids) > 0:
-                self.t.rec_id.addItems(rec_ids)
-                self.t.rec_id.show()
+        """
+        Looks for alternate reconstruction configurations, and updates window with that information.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
+        # this will update the configuration choices in reconstruction tab
+        # fill out the config_id choice bar by reading configuration files names
+        rec_ids = []
+        for file in os.listdir(os.path.join(self.experiment_dir, 'conf')):
+            if file.endswith('_config_rec'):
+                rec_ids.append(file[0:len(file)-len('_config_rec')])
+        if len(rec_ids) > 0:
+            self.t.rec_id.addItems(rec_ids)
+            self.t.rec_id.show()
 
 
     def assure_experiment_dir(self):
+        """
+        It creates experiment directory, and experiment configuration directory if they dp not exist.
+
+        Parameters
+        ----------
+        nothing
+
+        Returns
+        -------
+        nothing
+        """
         if not os.path.exists(self.experiment_dir):
             os.makedirs(self.experiment_dir)
         experiment_conf_dir = os.path.join(self.experiment_dir, 'conf')
@@ -261,6 +432,17 @@ class cdi_gui(QWidget):
 
 
     def set_experiment(self):
+        """
+        Reads the parameters in the window, and sets the experiment to this values, i.e. creates experiment directory, and saves all configuration files with parameters from window.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         self.id = str(self.Id_widget.text()).strip()
         if self.id == '' or self.working_dir is None:
             msg_window('id and working directory must be entered')
@@ -321,6 +503,22 @@ class cdi_gui(QWidget):
 
 
     def write_conf(self, conf_map, dir, file):
+        """
+        It creates configuration file from the parameters included in dictionary, verifies, and saves in the configuration directory.
+
+        Parameters
+        ----------
+        conf_map : dict
+            dictionary containing configuration parameters
+        dir : str
+            a directory where the configuration file will be saved
+        file : str
+            name of the configuration file to save
+
+        Returns
+        -------
+        nothing
+        """
         # create "temp" file first, verify it, and if ok, copy to a configuration file
         if not os.path.exists(dir):
             os.makedirs(dir)
@@ -364,7 +562,13 @@ class cdi_gui(QWidget):
         return True
 
 class cdi_conf_tab(QTabWidget):
+    """
+    The main window contains four tabs, each tab holding parameters for different part of processing. The tabs are as follows: prep (prepare data), data (format data), rec (reconstruction), disp (visualization). This class holds holds the tabs.
+    """
     def __init__(self, main_win, parent=None):
+        """
+        Constructor, initializes the tabs.
+        """
         super(cdi_conf_tab, self).__init__(parent)
         self.main_win = main_win
         self.tab1 = QWidget()
@@ -388,6 +592,17 @@ class cdi_conf_tab(QTabWidget):
 
 
     def tab1UI(self):
+        """
+        Creates and initializes the 'prep' tab.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         self.script = None
         self.imported_script = False
         layout = QFormLayout()
@@ -433,6 +648,18 @@ class cdi_conf_tab(QTabWidget):
 
 
     def load_prep(self, layout):
+        """
+        Loads additional fields in the 'prep' tab when the prep type selected is different than 34-IDC.
+
+        Parameters
+        ----------
+        layout : QFormLayout
+            layout to add the wigets
+
+        Returns
+        -------
+        nothing
+        """
         for i in reversed(range(layout.count())):
             layout.itemAt(i).widget().deleteLater()
 
@@ -452,6 +679,17 @@ class cdi_conf_tab(QTabWidget):
 
 
     def tab2UI(self):
+        """
+        Creates and initializes the 'data' tab.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         layout = QFormLayout()
         self.aliens = QLineEdit()
         layout.addRow("aliens", self.aliens)
@@ -479,6 +717,17 @@ class cdi_conf_tab(QTabWidget):
 
 
     def tab3UI(self):
+        """
+        Creates and initializes the 'reconstruction' tab.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         self.mult_rec_conf = False
         self.old_conf_id = ''
         layout = QVBoxLayout()
@@ -539,6 +788,18 @@ class cdi_conf_tab(QTabWidget):
 
 
     def toggle_cont(self, layout):
+        """
+        Invoked when the 'cont' checkbox is selected, indicating this reconstruction is continuation.
+
+        Parameters
+        ----------
+        layout : QFormLayout
+            a layout to add the continue dir
+            
+        Returns
+        -------
+        nothing
+        """
         cb_label = layout.labelForField(self.cont)
         if self.cont.isChecked():
             self.cont_dir = QLineEdit()
@@ -567,6 +828,18 @@ class cdi_conf_tab(QTabWidget):
 
 
     def toggle_conf(self):
+        """
+        Invoked when the configuration to use in the reconstruction was changed, i.e. alternate config was selected or main. This will bring the parameters from the previous config to be saved, and the new ones retrieved and showed in window.
+
+        Parameters
+        ----------
+        layout : QFormLayout
+            a layout to add the continue dir
+            
+        Returns
+        -------
+        nothing
+        """
         # save the configuration file before updating the incoming config
         if self.old_conf_id == '':
             conf_file = 'config_rec'
@@ -594,6 +867,17 @@ class cdi_conf_tab(QTabWidget):
 
 
     def tab4UI(self):
+        """
+        Creates and initializes the 'disp' tab.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         layout = QFormLayout()
         self.result_dir_button = QPushButton()
         layout.addRow("results directory", self.result_dir_button)
@@ -640,6 +924,18 @@ class cdi_conf_tab(QTabWidget):
 
 
     def load_prep_tab(self, conf):
+        """
+        It verifies given configuration file, reads the parameters, and fills out the window.
+
+        Parameters
+        ----------
+        conf : str
+            configuration file (config_prep)
+
+        Returns
+        -------
+        nothing
+        """
         if not os.path.isfile(conf):
             msg_window('info: the load directory does not contain config_prep file')
             return
@@ -703,6 +999,18 @@ class cdi_conf_tab(QTabWidget):
 
 
     def load_data_tab(self, conf):
+        """
+        It verifies given configuration file, reads the parameters, and fills out the window.
+
+        Parameters
+        ----------
+        conf : str
+            configuration file (config_data)
+
+        Returns
+        -------
+        nothing
+        """
         if not os.path.isfile(conf):
             msg_window('info: the load directory does not contain config_data file')
             return
@@ -738,6 +1046,18 @@ class cdi_conf_tab(QTabWidget):
 
 
     def load_rec_tab(self, conf):
+        """
+        It verifies given configuration file, reads the parameters, and fills out the window.
+
+        Parameters
+        ----------
+        conf : str
+            configuration file (config_rec)
+
+        Returns
+        -------
+        nothing
+        """
         if not os.path.isfile(conf):
             msg_window('info: the load directory does not contain config_rec file')
             return
@@ -775,6 +1095,18 @@ class cdi_conf_tab(QTabWidget):
 
 
     def load_disp_tab(self, conf):
+        """
+        It verifies given configuration file, reads the parameters, and fills out the window.
+
+        Parameters
+        ----------
+        conf : str
+            configuration file (config_disp)
+
+        Returns
+        -------
+        nothing
+        """
         if not os.path.isfile(conf):
             msg_window('info: the load directory does not contain config_disp file')
             return
@@ -837,6 +1169,18 @@ class cdi_conf_tab(QTabWidget):
 
 
     def get_prep_config(self):
+        """
+        It reads parameters related to preparation from the window and adds them to dictionary.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        conf_map : dict
+            contains parameters read from window
+        """
         conf_map = {}
         if self.data_dir is not None:
             conf_map['data_dir'] = '"' + str(self.data_dir).strip() + '"'
@@ -864,6 +1208,18 @@ class cdi_conf_tab(QTabWidget):
 
 
     def get_data_config(self):
+        """
+        It reads parameters related to formatting data from the window and adds them to dictionary.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        conf_map : dict
+            contains parameters read from window
+        """
         conf_map = {}
         if len(self.aliens.text()) > 0:
             if os.path.isfile(str(self.aliens.text()).strip()):
@@ -883,6 +1239,18 @@ class cdi_conf_tab(QTabWidget):
 
 
     def get_rec_config(self):
+        """
+        It reads parameters related to reconstruction from the window and adds them to dictionary.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        conf_map : dict
+            contains parameters read from window
+        """
         conf_map = {}
         if len(self.reconstructions.text()) > 0:
             conf_map['reconstructions'] = str(self.reconstructions.text())
@@ -902,6 +1270,18 @@ class cdi_conf_tab(QTabWidget):
 
 
     def get_disp_config(self):
+        """
+        It reads parameters related to visualization from the window and adds them to dictionary.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        conf_map : dict
+            contains parameters read from window
+        """
         conf_map = {}
         if self.results_dir is not None:
             conf_map['results_dir'] = '"' + str(self.results_dir).strip() + '"'
@@ -930,6 +1310,18 @@ class cdi_conf_tab(QTabWidget):
 
 
     def load_prep_conf(self):
+        """
+        TODO: combine all load conf files in one function
+        It display a select dialog for user to select a configuration file for preparation. When selected, the parameters from that file will be loaded to the window.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         prep_file = select_file(os.getcwd())
         if prep_file is not None:
             self.load_prep_tab(prep_file)
@@ -941,6 +1333,17 @@ class cdi_conf_tab(QTabWidget):
 
 
     def load_data_conf(self):
+        """
+        It display a select dialog for user to select a configuration file. When selected, the parameters from that file will be loaded to the window.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         data_file = select_file(os.getcwd())
         if data_file is not None:
             self.load_data_tab(data_file)
@@ -954,6 +1357,17 @@ class cdi_conf_tab(QTabWidget):
             msg_window('please select valid data config file')
 
     def load_rec_conf_dir(self):
+        """
+        It display a select dialog for user to select a configuration file. When selected, the parameters from that file will be loaded to the window.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         rec_file = select_file(os.getcwd())
         if rec_file is not None:
             self.load_rec_tab(rec_file)
@@ -968,6 +1382,17 @@ class cdi_conf_tab(QTabWidget):
 
 
     def load_disp_conf(self):
+        """
+        It display a select dialog for user to select a configuration file. When selected, the parameters from that file will be loaded to the window.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         disp_file = select_file(os.getcwd())
         if disp_file is not None:
             self.load_disp_tab(disp_file)
@@ -983,10 +1408,32 @@ class cdi_conf_tab(QTabWidget):
 
 
     def set_overriden(self, item):
+        """
+        Helper function that will set the text color to black.
+
+        Parameters
+        ----------
+        item : widget
+
+        Returns
+        -------
+        nothing
+        """
         item.setStyleSheet('color: black')
 
 
     def parse_spec(self):
+        """
+        Calls utility function to parse spec file. Displas the parsed parameters in the window with blue text.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         if not self.main_win.is_exp_exists():
             # do not parse on initial assignment
             return
@@ -1020,6 +1467,17 @@ class cdi_conf_tab(QTabWidget):
 
 
     def set_dark_file(self):
+        """
+        It display a select dialog for user to select a darkfield file.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         self.darkfield_filename = select_file(self.darkfield_filename)
         if self.darkfield_filename is not None:
             self.dark_file_button.setStyleSheet("Text-align:left")
@@ -1029,6 +1487,17 @@ class cdi_conf_tab(QTabWidget):
 
 
     def set_white_file(self):
+        """
+        It display a select dialog for user to select a whitefield file.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         self.whitefield_filename = select_file(self.whitefield_filename)
         if self.whitefield_filename is not None:
             self.white_file_button.setStyleSheet("Text-align:left")
@@ -1038,6 +1507,17 @@ class cdi_conf_tab(QTabWidget):
 
 
     def set_data_dir(self):
+        """
+        It display a select dialog for user to select a directory with raw data file.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         self.data_dir = select_dir(self.data_dir)
         if self.data_dir is not None:
             self.data_dir_button.setStyleSheet("Text-align:left")
@@ -1047,6 +1527,17 @@ class cdi_conf_tab(QTabWidget):
 
 
     def set_prep_file(self):
+        """
+        It display a select dialog for user to select a prepared data file.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         self.prep_file = select_file(self.main_win.working_dir)
         if self.prep_file is not None:
             selected = str(self.prep_file)
@@ -1060,6 +1551,17 @@ class cdi_conf_tab(QTabWidget):
 
 
     def set_prep_script(self):
+        """
+        It display a select dialog for user to select a user provided script.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         self.script = select_file(self.main_win.working_dir)
         if self.script is not None:
             self.script_button.setStyleSheet("Text-align:left")
@@ -1072,6 +1574,18 @@ class cdi_conf_tab(QTabWidget):
 
 
     def prepare(self):
+        """
+        There is a choice for the user to obtain prepare data. User can use a script written for the 34-IDC beamline, if applies,or can get the prepared file by copying already prepared file from file system. Another option is to use own script.
+        This function determines the choice and calls appropriate function.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         if not self.main_win.is_exp_exists():
             msg_window('the experiment has not been created yet')
         elif not self.main_win.is_exp_set():
@@ -1087,6 +1601,17 @@ class cdi_conf_tab(QTabWidget):
 
 
     def prepare_custom(self, conf_map):
+        """
+        Determines custom script, module, and parameters for the script, adds import to the module, and calls the custom script.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         # determine script directory and script name
         if self.script is None:
             msg_window("script not defined")
@@ -1148,6 +1673,17 @@ class cdi_conf_tab(QTabWidget):
 
 
     def prepare_34id(self, conf_map):
+        """
+        Reads the parameters needed by prep script. Saves the config_prep configuration file with parameters from the window and runs the prep script.
+        
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         # for 34idc prep data directory is needed
         if self.data_dir is None:
             msg_window('cannot prepare data for 34idc, need data directory')
@@ -1182,6 +1718,17 @@ class cdi_conf_tab(QTabWidget):
 
 
     def prepare_copy(self, conf_map):
+        """
+        Reads the parameters needed by prep script. Saves the config_prep configuration file with parameters from the window and runs the prep script.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         # save the file as experiment prep file
         prep_dir = os.path.join(self.main_win.experiment_dir, 'prep')
         if not os.path.exists(prep_dir):
@@ -1194,6 +1741,17 @@ class cdi_conf_tab(QTabWidget):
 
 
     def format_data(self):
+        """
+        Reads the parameters needed by format data script. Saves the config_data configuration file with parameters from the window and runs the format script.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         if not self.main_win.is_exp_exists():
             msg_window('the experiment has not been created yet')
         elif not self.main_win.is_exp_set():
@@ -1212,6 +1770,17 @@ class cdi_conf_tab(QTabWidget):
 
 
     def reconstruction(self):
+        """
+        Reads the parameters needed by reconstruction script. Saves the config_rec configuration file with parameters from the window and runs the reconstruction script.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         if not self.main_win.is_exp_exists():
             msg_window('the experiment has not been created yet')
         elif not self.main_win.is_exp_set():
@@ -1240,6 +1809,17 @@ class cdi_conf_tab(QTabWidget):
 
 
     def init_results_dir(self):
+        """
+        Results directory is a parameter in display tab. It defines a directory tree that the display script will search for reconstructed image files and will process them for visualization. This function initializes it in typical situation to experiment directory. In case of active genetic algorithm it will be initialized to the generation directory with best results, and in case of alternate reconstruction configuration, it will be initialized to the last directory where the results were saved.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         # if alternate configuration was chosen in reconstruction tab, use it in results_dir
         if self.old_conf_id == '':
             res_file = 'results'
@@ -1267,6 +1847,17 @@ class cdi_conf_tab(QTabWidget):
 
 
     def set_results_dir(self):
+        """
+        Results directory is a parameter in display tab. It defines a directory tree that the display script will search for reconstructed image files and will process them for visualization. This function displays the dialog selection window for the user to select the results directory.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         if self.main_win.is_exp_exists():
 
             self.results_dir = os.path.join(self.main_win.experiment_dir, 'results')
@@ -1281,6 +1872,17 @@ class cdi_conf_tab(QTabWidget):
 
 
     def display(self):
+        """
+        Reads the parameters needed by format display script. Saves the config_disp configuration file with parameters from the window and runs the display script.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         if not self.main_win.is_exp_exists():
             msg_window('the experiment has not been created yet')
             return
@@ -1328,6 +1930,17 @@ class cdi_conf_tab(QTabWidget):
 
 
     def rec_default(self):
+        """
+        Sets the basic parameters in the reconstruction tab main part to hardcoded defaults.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         if  self.main_win.working_dir is None or self.main_win.id is None or \
             len(self.main_win.working_dir) == 0 or len(self.main_win.id) == 0:
             msg_window('Working Directory or Reconstruction ID not configured')
@@ -1340,14 +1953,41 @@ class cdi_conf_tab(QTabWidget):
 
 
 class Feature(object):
+    """
+    This is a parent class to concrete feature classes.
+    """
     def __init__(self):
+        """
+        Constructor, each feature object contains QWidget.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         self.stack = QWidget()
 
 
     def stackUI(self, item, feats):
+        """
+        Used by all sub-classes (features) when initialized.
+
+        Parameters
+        ----------
+        item : item from QListWidget
+            item represents a feature
+        feats : Features object
+            Features object is a composition of features
+
+        Returns
+        -------
+        nothing
+        """
         layout = QFormLayout()
         self.active = QCheckBox("active")
-#        self.active.setChecked(True)
         layout.addWidget(self.active)
         self.toggle(layout, item, feats)
         self.stack.setLayout(layout)
@@ -1355,6 +1995,20 @@ class Feature(object):
 
 
     def toggle(self, layout, item, feats):
+        """
+        Used by sub-classes (features) when a feature is activated or deactivated.
+
+        Parameters
+        ----------
+        item : item from QListWidget
+            item represents a feature
+        feats : Features object
+            Features object is a composition of features
+
+        Returns
+        -------
+        nothing
+        """
         if self.active.isChecked():
             self.fill_active(layout)
 
@@ -1368,27 +2022,91 @@ class Feature(object):
                 layout.itemAt(i).widget().setParent(None)
             item.setForeground(QColor('grey'));
 
+
     def fill_active(self, layout):
+        """
+        This function is overriden in concrete class. It displays the feature's parameters when the feature becomes active.
+
+        Parameters
+        ----------
+        layout : Layout widget
+            a layout with the feature
+
+        Returns
+        -------
+        nothing
+        """
         pass
 
 
     def rec_default(self):
+        """
+        This function is overriden in concrete class. It sets feature's parameters to hardcoded default values.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         pass
 
 
     def add_config(self, conf_map):
+        """
+        This function calls all of the subclasses to add feature's parameters to dictionary.
+
+        Parameters
+        ----------
+        conf_map : dict
+            contains parameters for reconstruction
+
+        Returns
+        -------
+        nothing
+        """
         if self.active.isChecked():
             self.add_feat_conf(conf_map)
 
+
     def add_feat_conf(self, conf_map):
+        """
+        This function is overriden in concrete class. It adds feature's parameters to dictionary.
+
+        Parameters
+        ----------
+        conf_map : dict
+            contains parameters for reconstruction
+
+        Returns
+        -------
+        nothing
+        """
         pass
 
 
     def init_config(self, conf_map):
+        """
+        This function is overriden in concrete class. It sets feature's parameters to parameters in dictionary and displays in the window.
+
+        Parameters
+        ----------
+        conf_map : dict
+            contains parameters for reconstruction
+
+        Returns
+        -------
+        nothing
+        """
         pass
 
 
 class GA(Feature):
+    """
+    This class encapsulates GA feature.
+    """
     def __init__(self):
         super(GA, self).__init__()
         self.id = 'GA'
@@ -1399,6 +2117,18 @@ class GA(Feature):
 
 
     def init_config(self, conf_map):
+        """
+        This function sets GA feature's parameters to parameters in dictionary and displays in the window.
+
+        Parameters
+        ----------
+        conf_map : dict
+            contains parameters for reconstruction
+
+        Returns
+        -------
+        nothing
+        """
         try:
             gens = conf_map.generations
             self.active.setChecked(True)
@@ -1433,6 +2163,18 @@ class GA(Feature):
 
 
     def fill_active(self, layout):
+        """
+        This function displays the feature's parameters when the feature becomes active.
+
+        Parameters
+        ----------
+        layout : Layout widget
+            a layout with the feature
+
+        Returns
+        -------
+        nothing
+        """
         self.generations = QLineEdit()
         layout.addRow("generations", self.generations)
         self.metrics = QLineEdit()
@@ -1450,6 +2192,17 @@ class GA(Feature):
 
 
     def rec_default(self):
+        """
+        This function sets GA feature's parameters to hardcoded default values.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         self.generations.setText('5')
         self.metrics.setText('("chi","chi","area","chi","sharpness")')
         self.breed_modes.setText('("sqrt_ab","sqrt_ab","avg_ab","max_ab_pa","sqrt_ab")')
@@ -1461,6 +2214,18 @@ class GA(Feature):
 
 
     def add_feat_conf(self, conf_map):
+        """
+        This function adds GA feature's parameters to dictionary.
+
+        Parameters
+        ----------
+        conf_map : dict
+            contains parameters for reconstruction
+
+        Returns
+        -------
+        nothing
+        """
         conf_map['generations'] = str(self.generations.text())
         conf_map['ga_metrics'] = str(self.metrics.text()).replace('\n','')
         conf_map['ga_breed_modes'] = str(self.breed_modes.text()).replace('\n','')
@@ -1471,12 +2236,27 @@ class GA(Feature):
 
 
 class low_resolution(Feature):
+    """
+    This class encapsulates low resolution feature.
+    """
     def __init__(self):
         super(low_resolution, self).__init__()
         self.id = 'low resolution'
 
 
     def init_config(self, conf_map):
+        """
+        This function sets low resolution feature's parameters to parameters in dictionary and displays in the window.
+
+        Parameters
+        ----------
+        conf_map : dict
+            contains parameters for reconstruction
+
+        Returns
+        -------
+        nothing
+        """
         try:
             triggers = conf_map.resolution_trigger
             self.active.setChecked(True)
@@ -1495,6 +2275,18 @@ class low_resolution(Feature):
 
 
     def fill_active(self, layout):
+        """
+        This function displays the feature's parameters when the feature becomes active.
+
+        Parameters
+        ----------
+        layout : Layout widget
+            a layout with the feature
+
+        Returns
+        -------
+        nothing
+        """
         self.res_triggers = QLineEdit()
         layout.addRow("low resolution triggers", self.res_triggers)
         self.sigma_range = QLineEdit()
@@ -1504,25 +2296,62 @@ class low_resolution(Feature):
 
 
     def rec_default(self):
-        #TODO add to accept fractions in trigger, so the default will be (.5,1)
+        """
+        This function sets low resolution feature's parameters to hardcoded default values.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         self.res_triggers.setText('(0, 1, 320)')
         self.sigma_range.setText('(2.0)')
         self.det_range.setText('(.7)')
 
 
     def add_feat_conf(self, conf_map):
+        """
+        This function adds low resolution feature's parameters to dictionary.
+
+        Parameters
+        ----------
+        conf_map : dict
+            contains parameters for reconstruction
+
+        Returns
+        -------
+        nothing
+        """
         conf_map['resolution_trigger'] = str(self.res_triggers.text()).replace('\n','')
         conf_map['iter_res_sigma_range'] = str(self.sigma_range.text()).replace('\n','')
         conf_map['iter_res_det_range'] = str(self.det_range.text()).replace('\n','')
 
 
 class amplitude_support(Feature):
+    """
+    This class encapsulates support feature.
+    """
     def __init__(self):
         super(amplitude_support, self).__init__()
         self.id = 'amplitude support'
 
 
     def init_config(self, conf_map):
+        """
+        This function sets support feature's parameters to parameters in dictionary and displays in the window.
+
+        Parameters
+        ----------
+        conf_map : dict
+            contains parameters for reconstruction
+
+        Returns
+        -------
+        nothing
+        """
         try:
             triggers = conf_map.amp_support_trigger
             self.active.setChecked(True)
@@ -1549,6 +2378,18 @@ class amplitude_support(Feature):
 
 
     def fill_active(self, layout):
+        """
+        This function displays the feature's parameters when the feature becomes active.
+
+        Parameters
+        ----------
+        layout : Layout widget
+            a layout with the feature
+
+        Returns
+        -------
+        nothing
+        """
         self.support_triggers = QLineEdit()
         layout.addRow("support triggers", self.support_triggers)
         self.support_type = QLineEdit()
@@ -1562,6 +2403,17 @@ class amplitude_support(Feature):
 
 
     def rec_default(self):
+        """
+        This function sets support feature's parameters to hardcoded default values.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         self.support_triggers.setText('(1,1)')
         self.support_type.setText('GAUSS')
         self.support_area.setText('(.5,.5,.5)')
@@ -1570,6 +2422,18 @@ class amplitude_support(Feature):
 
 
     def add_feat_conf(self, conf_map):
+        """
+        This function adds support feature's parameters to dictionary.
+
+        Parameters
+        ----------
+        conf_map : dict
+            contains parameters for reconstruction
+
+        Returns
+        -------
+        nothing
+        """
         conf_map['amp_support_trigger'] = str(self.support_triggers.text()).replace('\n','')
         conf_map['support_type'] = '"' + str(self.support_type.text()) + '"'
         conf_map['support_threshold'] = str(self.threshold.text())
@@ -1578,12 +2442,27 @@ class amplitude_support(Feature):
 
 
 class phase_support(Feature):
+    """
+    This class encapsulates phase support feature.
+    """
     def __init__(self):
         super(phase_support, self).__init__()
         self.id = 'phase support'
 
 
     def init_config(self, conf_map):
+        """
+        This function sets phase support feature's parameters to parameters in dictionary and displays in the window.
+
+        Parameters
+        ----------
+        conf_map : dict
+            contains parameters for reconstruction
+
+        Returns
+        -------
+        nothing
+        """
         try:
             triggers = conf_map.phase_support_trigger
             self.active.setChecked(True)
@@ -1602,6 +2481,18 @@ class phase_support(Feature):
 
 
     def fill_active(self, layout):
+        """
+        This function displays the feature's parameters when the feature becomes active.
+
+        Parameters
+        ----------
+        layout : Layout widget
+            a layout with the feature
+
+        Returns
+        -------
+        nothing
+        """
         self.phase_triggers = QLineEdit()
         layout.addRow("phase support triggers", self.phase_triggers)
         self.phase_min = QLineEdit()
@@ -1611,24 +2502,62 @@ class phase_support(Feature):
 
 
     def rec_default(self):
+        """
+        This function sets phase support feature's parameters to hardcoded default values.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         self.phase_triggers.setText('(0,1,20)')
         self.phase_min.setText('-1.57')
         self.phase_max.setText('1.57')
 
 
     def add_feat_conf(self, conf_map):
+        """
+        This function adds phase support feature's parameters to dictionary.
+
+        Parameters
+        ----------
+        conf_map : dict
+            contains parameters for reconstruction
+
+        Returns
+        -------
+        nothing
+        """
         conf_map['phase_support_trigger'] = str(self.phase_triggers.text()).replace('\n','')
         conf_map['phase_min'] = str(self.phase_min.text())
         conf_map['phase_max'] = str(self.phase_max.text())
 
 
 class pcdi(Feature):
+    """
+    This class encapsulates pcdi feature.
+    """
     def __init__(self):
         super(pcdi, self).__init__()
         self.id = 'pcdi'
 
 
     def init_config(self, conf_map):
+        """
+        This function sets pcdi feature's parameters to parameters in dictionary and displays in the window.
+
+        Parameters
+        ----------
+        conf_map : dict
+            contains parameters for reconstruction
+
+        Returns
+        -------
+        nothing
+        """
         try:
             triggers = conf_map.pcdi_trigger
             self.active.setChecked(True)
@@ -1655,6 +2584,18 @@ class pcdi(Feature):
 
 
     def fill_active(self, layout):
+        """
+        This function displays the feature's parameters when the feature becomes active.
+
+        Parameters
+        ----------
+        layout : Layout widget
+            a layout with the feature
+
+        Returns
+        -------
+        nothing
+        """
         self.pcdi_triggers = QLineEdit()
         layout.addRow("pcdi triggers", self.pcdi_triggers)
         self.pcdi_type = QLineEdit()
@@ -1668,6 +2609,17 @@ class pcdi(Feature):
 
 
     def rec_default(self):
+        """
+        This function sets pcdi feature's parameters to hardcoded default values.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         self.pcdi_triggers.setText('(50,50)')
         self.pcdi_type.setText('LUCY')
         self.pcdi_iter.setText('20')
@@ -1676,6 +2628,18 @@ class pcdi(Feature):
 
 
     def add_feat_conf(self, conf_map):
+        """
+        This function adds pcdi feature's parameters to dictionary.
+
+        Parameters
+        ----------
+        conf_map : dict
+            contains parameters for reconstruction
+
+        Returns
+        -------
+        nothing
+        """
         conf_map['pcdi_trigger'] = str(self.pcdi_triggers.text()).replace('\n','')
         conf_map['partial_coherence_type'] = '"' + str(self.pcdi_type.text()) + '"'
         conf_map['partial_coherence_iteration_num'] = str(self.pcdi_iter.text())
@@ -1684,12 +2648,27 @@ class pcdi(Feature):
 
 
 class twin(Feature):
+    """
+    This class encapsulates twin feature.
+    """
     def __init__(self):
         super(twin, self).__init__()
         self.id = 'twin'
 
 
     def init_config(self, conf_map):
+        """
+        This function sets twin feature's parameters to parameters in dictionary and displays in the window.
+
+        Parameters
+        ----------
+        conf_map : dict
+            contains parameters for reconstruction
+
+        Returns
+        -------
+        nothing
+        """
         try:
             triggers = conf_map.twin_trigger
             self.active.setChecked(True)
@@ -1704,6 +2683,18 @@ class twin(Feature):
 
 
     def fill_active(self, layout):
+        """
+        This function displays the feature's parameters when the feature becomes active.
+
+        Parameters
+        ----------
+        layout : Layout widget
+            a layout with the feature
+
+        Returns
+        -------
+        nothing
+        """
         self.twin_triggers = QLineEdit()
         layout.addRow("twin triggers", self.twin_triggers)
         self.twin_halves = QLineEdit()
@@ -1711,22 +2702,60 @@ class twin(Feature):
 
 
     def rec_default(self):
+        """
+        This function sets twin feature's parameters to hardcoded default values.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         self.twin_triggers.setText('(2)')
         self.twin_halves.setText('(0,0)')
 
 
     def add_feat_conf(self, conf_map):
+        """
+        This function adds twin feature's parameters to dictionary.
+
+        Parameters
+        ----------
+        conf_map : dict
+            contains parameters for reconstruction
+
+        Returns
+        -------
+        nothing
+        """
         conf_map['twin_trigger'] = str(self.twin_triggers.text()).replace('\n','')
         conf_map['twin_halves'] = str(self.twin_halves.text()).replace('\n','')
 
 
 class average(Feature):
+    """
+    This class encapsulates average feature.
+    """
     def __init__(self):
         super(average, self).__init__()
         self.id = 'average'
 
 
     def init_config(self, conf_map):
+        """
+        This function sets average feature's parameters to parameters in dictionary and displays in the window.
+
+        Parameters
+        ----------
+        conf_map : dict
+            contains parameters for reconstruction
+
+        Returns
+        -------
+        nothing
+        """
         try:
             triggers = conf_map.average_trigger
             self.active.setChecked(True)
@@ -1737,25 +2766,75 @@ class average(Feature):
 
 
     def fill_active(self, layout):
+        """
+        This function displays the feature's parameters when the feature becomes active.
+
+        Parameters
+        ----------
+        layout : Layout widget
+            a layout with the feature
+
+        Returns
+        -------
+        nothing
+        """
         self.average_triggers = QLineEdit()
         layout.addRow("average triggers", self.average_triggers)
 
 
     def rec_default(self):
+        """
+        This function sets average feature's parameters to hardcoded default values.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         self.average_triggers.setText('(-400,1)')
 
 
     def add_feat_conf(self, conf_map):
+        """
+        This function adds average feature's parameters to dictionary.
+
+        Parameters
+        ----------
+        conf_map : dict
+            contains parameters for reconstruction
+
+        Returns
+        -------
+        nothing
+        """
         conf_map['average_trigger'] = str(self.average_triggers.text()).replace('\n','')
 
 
 class progress(Feature):
+    """
+    This class encapsulates progress feature.
+    """
     def __init__(self):
         super(progress, self).__init__()
         self.id = 'progress'
 
 
     def init_config(self, conf_map):
+        """
+        This function sets progress feature's parameters to parameters in dictionary and displays in the window.
+
+        Parameters
+        ----------
+        conf_map : dict
+            contains parameters for reconstruction
+
+        Returns
+        -------
+        nothing
+        """
         try:
             triggers = conf_map.progress_trigger
             self.active.setChecked(True)
@@ -1766,21 +2845,62 @@ class progress(Feature):
 
 
     def fill_active(self, layout):
+        """
+        This function displays the feature's parameters when the feature becomes active.
+
+        Parameters
+        ----------
+        layout : Layout widget
+            a layout with the feature
+
+        Returns
+        -------
+        nothing
+        """
         self.progress_triggers = QLineEdit()
         layout.addRow("progress triggers", self.progress_triggers)
 
 
     def rec_default(self):
+        """
+        This function sets progress feature's parameters to hardcoded default values.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         self.progress_triggers.setText('(0,20)')
 
 
     def add_feat_conf(self, conf_map):
+        """
+        This function adds progress feature's parameters to dictionary.
+
+        Parameters
+        ----------
+        conf_map : dict
+            contains parameters for reconstruction
+
+        Returns
+        -------
+        nothing
+        """
         conf_map['progress_trigger'] = str(self.progress_triggers.text()).replace('\n','')
 
 
 
 class Features(QWidget):
+    """
+    This class is composition of all feature classes.
+    """
     def __init__(self, tab, layout):
+        """
+        Constructor, creates all concrete feature objects, and displays in window.
+        """
         super(Features, self).__init__()
         feature_ids = ['GA', 'low resolution', 'amplitude support', 'phase support', 'pcdi', 'twin', 'average', 'progress']
         self.leftlist = QListWidget()
@@ -1811,6 +2931,9 @@ class Features(QWidget):
 
 
 def main():
+    """
+    Starts GUI application.
+    """
     app = QApplication(sys.argv)
     ex = cdi_gui()
     ex.show()

@@ -5,32 +5,67 @@
 # #########################################################################
 
 """
-Please make sure the installation :ref:`pre-requisite-reference-label` are met.
-This module is a suite of utility mehods.
+This module is a suite of utility functions.
 """
 
 import tifffile as tf
 import pylibconfig2 as cfg
 import numpy as np
 import os
-
 import logging
 import stat
 from functools import reduce
 
 __author__ = "Barbara Frosik"
-__copyright__ = "Copyright (c) 2016, UChicago Argonne, LLC."
+__copyright__ = "Copyright (c), UChicago Argonne, LLC."
 __docformat__ = 'restructuredtext en'
-__all__ = ['read_tif',
-           'get_opencl_dim',
+__all__ = ['get_logger',
+           'read_tif',
+           'save_tif',
+           'read_config',
+           'get_good_dim',
            'binning',
            'get_centered',
+           'get_centered_both',
+           'get_zero_padded_centered',
            'adjust_dimensions',
            'crop_center',
-           'flip']
+           'get_norm',
+           'flip',
+           'gaussian',
+           'gauss_conv_fft',
+           'shrink_wrap',
+           'read_results',
+           'zero_phase',
+           'sum_phase_tight_support',
+           'get_metric',
+           'save_metrics',
+           'write_plot_errors',
+           'save_results',
+           'sub_pixel_shift',
+           'arr_property',
+           'get_gpu_load',
+           'get_gpu_distribution',
+           'measure' ]
 
 
 def get_logger(name, ldir=''):
+    """
+    Creates looger instance that will write to default.log file in a given directory.
+
+    Parameters
+    ----------
+    name : str
+        logger name
+
+    ldir : str
+        directory where to create log file
+
+   Returns
+    -------
+    logger : logger
+        logger object from logging module
+    """
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
     log_file = os.path.join(ldir, 'default.log')
@@ -44,37 +79,53 @@ def get_logger(name, ldir=''):
 
 def read_tif(filename):
     """
-    This method reads tif type file containing experiment data and returns the data as array.
+    This method reads tif type file and returns the data as array.
+    
     Parameters
     ----------
     filename : str
-        a filename containing the experiment data
+        tif format file name
+        
     Returns
     -------
-    data : array
-        an array containing the experiment data
+    data : ndarray
+        an array containing the data parsed from the file
     """
-
-
     ar = tf.imread(filename).transpose()
     return ar
 
 
-def save_tif(arr, tif_file):
-    tf.imsave(tif_file, arr.transpose().astype(np.float32))
+def save_tif(arr, filename):
+    """
+    This method saves array in tif format file.
+    
+    Parameters
+    ----------
+    arr : ndarray
+        array to save
+    filename : str
+        tif format file name
+        
+    Returns
+    -------
+    nothing
+    """
+    tf.imsave(filename, arr.transpose().astype(np.float32))
 
 
 def read_config(config):
     """
-    This function gets configuration file. It checks if the file exists and parses it into a map.
+    This function gets configuration file. It checks if the file exists and parses it into an object.
+    
     Parameters
     ----------
     config : str
         configuration file name, including path
+        
     Returns
     -------
-    config_map : dict
-        a map containing parsed configuration, None if the given file does not exist
+    config_map : Config object
+        a Config containing parsed configuration, None if the given file does not exist
     """
     if os.path.isfile(config):
         with open(config, 'r') as f:
@@ -86,21 +137,18 @@ def read_config(config):
 
 def get_good_dim(dim):
     """
-    This function calculates the dimension supported by opencl library (i.e. is multiplier of 2,3, or 5) and is closest to the
-    given starting dimension, and spaced by the given step.
-    If the dimension is not supported the function adds step value and verifies the new dimension. It iterates until it finds
-    supported value.
+    This function calculates the dimension supported by opencl library (i.e. is multiplier of 2, 3, or 5) and is closest to the given starting dimension.
+    If the dimension is not supported the function adds 1 and verifies the new dimension. It iterates until it finds supported value.
+    
     Parameters
     ----------
     dim : int
-        a dimension that needs to be tranformed to one that is supported by the opencl library, if it is not already
+        initial dimension
 
-    step : int
-        a delta to increase the dimension
     Returns
     -------
-    dim : int
-        a dimension that is supported by the opencl library, and closest to the original dimension by n*step
+    new_dim : int
+        a dimension that is supported by the opencl library, and closest to the original dimension
     """
 
     def is_correct(x):
@@ -126,19 +174,20 @@ def get_good_dim(dim):
 def binning(array, binsizes):
     """
     This function does the binning of the array. The array is binned in each dimension by the corresponding binsizes elements.
-    If binsizes list is shorter than the array dimensions, the remaining dimensions are not binned. The elements in
-    a bucket are summed.
+    If binsizes list is shorter than the array dimensions, the remaining dimensions are not binned.
+    
     Parameters
     ----------
-    array : array
+    array : ndarray
         the original array to be binned
 
     binsizes : list
-        a list defining binning buckets for corresponding dimensions
+        a list defining binning factors for corresponding dimensions
+        
     Returns
     -------
-    array : array
-        the binned array
+    binned_array : ndarray
+        binned array
     """
 
     data_dims = array.shape
@@ -160,21 +209,22 @@ def binning(array, binsizes):
     return binned_array
 
 
-
 def get_centered(arr, center_shift):
     """
-    This function finds a greatest value in the array, and puts it in a center of a new array. If center_shift is
-    not zeros, the array will be shifted accordingly. The shifted elements are rolled into the other end of array.
+    This function finds maximum value in the array, and puts it in a center of a new array. If center_shift is not zeros, the array will be shifted accordingly. The shifted elements are rolled into the other end of array.
+    
     Parameters
     ----------
     arr : array
         the original array to be centered
+        
     center_shift : list
         a list defining shift of the center
+        
     Returns
     -------
-    array : array
-        the centered array
+    ndarray
+        centered array
     """
     max_coordinates = list(np.unravel_index(np.argmax(arr), arr.shape))
     max_coordinates = np.add(max_coordinates, center_shift)
@@ -188,18 +238,20 @@ def get_centered(arr, center_shift):
 
 def get_centered_both(arr, support):
     """
-    This function finds a greatest value in the array, and puts it in a center of a new array. If center_shift is
-    not zeros, the array will be shifted accordingly. The shifted elements are rolled into the other end of array.
+    This function finds maximum value in the array, and puts it in a center of a new array. The support array will be shifted the same way. The shifted elements are rolled into the other end of array.
+    
     Parameters
     ----------
     arr : array
         the original array to be centered
+        
     support : array
-        the associated array shifted the same way centered array is
+        the associated array to be shifted the same way centered array is
+        
     Returns
     -------
-    centered : array
-        the centered array
+    centered, centered_supp : ndarray, ndarray
+        the centered arrays
     """
     max_coordinates = list(np.unravel_index(np.argmax(arr), arr.shape))
     shape = arr.shape
@@ -215,15 +267,18 @@ def get_centered_both(arr, support):
 def get_zero_padded_centered(arr, new_shape):
     """
     This function pads the array with zeros to the new shape with the array in the center.
+    
     Parameters
     ----------
     arr : array
-        the original array to be padded and centered
+        the original array to be padded
+        
     new_shape : tuple
-        a list of new dimensions
+        new dimensions
+        
     Returns
     -------
-    array : array
+    centered : array
         the zero padded centered array
     """
     shape = arr.shape
@@ -243,21 +298,22 @@ def get_zero_padded_centered(arr, new_shape):
 
 def adjust_dimensions(arr, pads):
     """
-    This function adds to or subtracts from each dimension of the array elements defined by pad. If the pad is positive,
-    the array is padded in this dimension. If the pad is negative, the array is cropped.
-    The dimensions of the new array are supported by the opencl library.
+    This function adds to or subtracts from each dimension of the array elements defined by pad. If the pad is positive, the array is padded in this dimension. If the pad is negative, the array is cropped.
+    The dimensions of the new array is then adjusted to be supported by the opencl library.
+    
     Parameters
     ----------
-    arr : array
+    arr : ndarray
         the array to pad/crop
+        
     pad : list
         list of three pad values, for each dimension
+        
     Returns
     -------
-    array : array
+    adjusted : ndarray
         the padded/cropped array
     """
-    # logger = get_logger('adjust_dimensions')
     old_dims = arr.shape
     start = []
     stop = []
@@ -273,8 +329,6 @@ def adjust_dimensions(arr, pads):
             stop.append(last)
 
     cropped = arr[ start[0]:stop[0], start[1]:stop[1], start[2]:stop[2] ]
-    # logger.info('cutting from to ' + str(crop[0]) + ', ' + str(old_dims[0]-crop[1]) + ', ' + str(crop[2]) + ', ' \
-    #             + str(old_dims[1]-crop[3]) + ', ' + str(crop[4]) + ', ' + str(old_dims[2]-crop[5]))
     dims = cropped.shape
     c_vals = []
     new_pad = []
@@ -291,15 +345,27 @@ def adjust_dimensions(arr, pads):
         c_vals.append((0.0, 0.0))
     adjusted = np.pad(cropped, new_pad, 'constant', constant_values=c_vals)
 
-    # logger.info('pads ' + str(new_pad[0]) + ', ' + str(new_pad[1]) + ', ' + str(new_pad[2]) + ', ' + str(new_pad[3]) \
-    #         + ', ' + str(new_pad[4]) + ', ' + str(new_pad[5]))
-    # logger.info('old dim, new dim (' + str(dims[0]) + ',' + str(dims[1]) + ',' + str(dims[2]) + ') (' + str(arr.shape[0]) +\
-    #     ',' + str(arr.shape[1]) + ',' + str(arr.shape[1]) + ')')
-
     return adjusted
 
 
 def crop_center(arr, new_size):
+    """
+    This function crops the array to the new size, leaving the array in the center.
+    The dimensions of the new array is then adjusted to be supported by the opencl library.
+    
+    Parameters
+    ----------
+    arr : ndarray
+        the array to crop
+        
+    new_size : tuple
+        new size
+        
+    Returns
+    -------
+    cropped : ndarray
+        the cropped array
+    """
     size = arr.shape
     cropped = arr
     for i in range(len(size)):
@@ -312,6 +378,19 @@ def crop_center(arr, new_size):
 
 
 def get_norm(arr):
+    """
+    Used in development. Returns array norm.
+    
+    Parameters
+    ----------
+    arr : ndarray
+        the array to calculate norm
+
+    Returns
+    -------
+    float
+        the array norm
+    """
     return sum(sum(sum(abs(arr) ** 2)))
 
 
@@ -331,6 +410,23 @@ def flip(m, axis):
 
 
 def gaussian(shape, sigmas, alpha=1):
+    """
+    Calculates Gaussian distribution grid in ginven dimensions.
+    
+    Parameters
+    ----------
+    shape : tuple
+        shape of the grid
+    sigmas : list
+        sigmas in all dimensions
+    alpha : float
+        a multiplier
+
+    Returns
+    -------
+    grid : ndarray
+        Gaussian distribution grid
+    """
     grid = np.full(shape, 1.0)
     for i in range(len(shape)):
         # prepare indexes for tile and transpose
@@ -353,6 +449,23 @@ def gaussian(shape, sigmas, alpha=1):
 
 
 def gauss_conv_fft(arr, sigmas):
+    """
+    Calculates convolution of array with the Gaussian.
+    
+    A Guassian distribution grid is calculated with the array dimensions. Fourier transform of the array is multiplied by the grid and and inverse transformed. A correction is calculated and applied.
+    
+    Parameters
+    ----------
+    arr : ndarray
+        subject array
+    sigmas : list
+        sigmas in all dimensions
+
+    Returns
+    -------
+    convag : ndarray
+        convolution array
+    """
     arr_sum = np.sum(abs(arr))
     arr_f = np.fft.ifftshift(np.fft.fftn(np.fft.ifftshift(arr)))
     shape = list(arr.shape)
@@ -368,6 +481,28 @@ def gauss_conv_fft(arr, sigmas):
 
 
 def shrink_wrap(arr, threshold, sigma, type='gauss'):
+    """
+    Calculates support array.
+    
+    Parameters
+    ----------
+    arr : ndarray
+        subject array
+        
+    threshold : float
+        support is formed by points above this valuue
+        
+    sigmas : list
+        sigmas in all dimensions
+        
+    type : str
+        a type of algorithm to apply to calculate the support, currently supporting 'gauss'
+
+    Returns
+    -------
+    support : ndarray
+        support array
+    """
     sigmas = [sigma] * len(arr.shape)
     if type == 'gauss':
         convag = gauss_conv_fft(abs(arr), sigmas)
@@ -380,6 +515,19 @@ def shrink_wrap(arr, threshold, sigma, type='gauss'):
 
 
 def read_results(read_dir):
+    """
+    Reads results and returns array representation.
+    
+    Parameters
+    ----------
+    read_dir : str
+        directory to read the results from
+
+    Returns
+    -------
+    image, support, coh : ndarray, ndarray, ndarray (or None)
+        image, support, and coherence arrays
+    """
     try:
         imagefile = os.path.join(read_dir, 'image.npy')
         image = np.load(imagefile)
@@ -402,6 +550,22 @@ def read_results(read_dir):
 
 
 def zero_phase(arr, val=0):
+    """
+    Calculates average phase of the input array bounded by very tight support. Shifts the phases in the array by avarage plus given value.
+    
+    Parameters
+    ----------
+    arr : ndarray
+        array to shift the phase
+        
+    val : float
+        a value to add to shift
+
+    Returns
+    -------
+    ndarray
+        array with modified phase
+    """
     ph = np.angle(arr)
     support = shrink_wrap(abs(arr), .2, .5)  #get just the crystal, i.e very tight support
     avg_ph = np.sum(ph * support)/np.sum(support)
@@ -410,14 +574,44 @@ def zero_phase(arr, val=0):
 
 
 def sum_phase_tight_support(arr):
+    """
+    Calculates average phase of the input array bounded by very tight support. Shifts the phases in the array by avarage plus given value.
+    
+    Parameters
+    ----------
+    arr : ndarray
+        array to shift the phase
+        
+    val : float
+        a value to add to shift
+
+    Returns
+    -------
+    ndarray
+        array with modified phase
+    """
     arr = zero_phase(arr)
     ph = np.arctan2(arr.imag, arr.real)
     support = shrink_wrap(abs(arr), .2, .5)
     return sum( abs(ph * support))
 
 
-
 def get_metric(image, errs):
+    """
+    Callculates array characteristic based on various formulas.
+    
+    Parameters
+    ----------
+    arr : ndarray
+        array to get characteristic
+    errs : list
+        list of "chi" error by iteration
+                
+    Returns
+    -------
+    metric : dict
+        dictionary with all metric
+    """
     metric = {}
     metric['chi'] = errs[-1]
     metric['sharpness'] = np.sum(pow(abs(image), 4)).item()
@@ -427,6 +621,24 @@ def get_metric(image, errs):
 
 
 def save_metrics(errs, dir, metrics=None):
+    """
+    Saves arrays metrics and errors by iterations in text file.
+    
+    Parameters
+    ----------
+    errs : list
+        list of "chi" error by iteration
+        
+    dir : str
+        directory to write the file containing array metrics
+        
+    metrics : dict
+        dictionary with metric type keys, and metric values
+                
+    Returns
+    -------
+    nothing
+    """
     metric_file = os.path.join(dir, 'summary')
     if os.path.isfile(metric_file):
         os.remove(metric_file)
@@ -442,6 +654,24 @@ def save_metrics(errs, dir, metrics=None):
     f.close()
 
 def write_plot_errors(save_dir):
+    """
+    Creates python executable that draw plot of error by iteration. It assumes that the given directory contains "errors.npy" file
+    
+    Parameters
+    ----------
+    errs : list
+        list of "chi" error by iteration
+        
+    dir : str
+        directory to write the file containing array metrics
+        
+    metrics : dict
+        dictionary with metric type keys, and metric values
+                
+    Returns
+    -------
+    nothing
+    """
     plot_file = os.path.join(save_dir, 'plot_errors.py')
     f = open(plot_file, 'w+')
     f.write("#! /usr/bin/env python\n")
@@ -461,6 +691,40 @@ def write_plot_errors(save_dir):
 
 
 def save_results(image, support, coh, errs, reciprocal, flow, iter_array, save_dir, metric=None):
+    """
+    Saves results of reconstruction. Saves the following files: image.np, support.npy, errors.npy, optionally coherence.npy, plot_errors.py, graph.npy, flow.npy, iter_array.npy
+    
+    
+    Parameters
+    ----------
+    image : ndarray
+        reconstructed image array
+        
+    support : ndarray
+        support array related to the image
+        
+    coh : ndarray
+        coherence array when pcdi feature is active, None otherwise
+        
+    errs : ndarray
+        errors "chi" by iterations
+        
+    flow : ndarray
+        for development, contains functions that can be activated in fast module during iteration
+    
+    iter_array : ndarray
+        for development, matrix indicating which function in fast module was active by iteration
+        
+    save_dir : str
+        directory to write the files
+        
+    metrics : dict
+        dictionary with metric type keys, and metric values
+                
+    Returns
+    -------
+    nothing
+    """
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     image_file = os.path.join(save_dir, 'image')
@@ -485,41 +749,27 @@ def save_results(image, support, coh, errs, reciprocal, flow, iter_array, save_d
     iter_array_file = os.path.join(graph_dir, 'iter_array')
     np.save(iter_array_file, iter_array)
 
-    if metric is not None:
-        save_metrics(errs, save_dir, metric)
-    else:
-        save_metrics(errs, save_dir)
-
-
-def save_multiple_results(samples, images, supports, cohs, errs, reciprocals, flows, iter_arrs, save_dir, metrics=None):
-    """
-    This function saves results of multiple reconstructions to directory tree in save_dir.
-    Parameters
-    ----------
-    samples : int
-        number of reconstruction sets results
-    images : list
-        list of numpy arrays containing reconstructed images
-    supports : list
-        list of numpy arrays containing support of reconstructed images
-    cohs : list
-        list of numpy arrays containing coherence of reconstructed images
-    save_dir : str
-        a directory to save the results
-    Returns
-    -------
-    nothing
-    """
-    for i in range(samples):
-        subdir = os.path.join(save_dir, str(i))
-        if metrics is None:
-            save_results(images[i], supports[i], cohs[i], np.asarray(errs[i]), reciprocals[i], flows[i], iter_arrs[i], subdir)
-        else:
-            save_results(images[i], supports[i], cohs[i], np.asarray(errs[i]), reciprocals[i], flows[i], iter_arrs[i], subdir, metrics[i])
+    save_metrics(errs, save_dir, metric)
 
 
 def sub_pixel_shift(arr, row_shift, col_shift, z_shift):
-    # arr is 3D
+    """
+    Shifts pixels in a regularly sampled LR image with a subpixel precision according to local gradient.
+    
+    
+    Parameters
+    ----------
+    arr : ndarray
+        array to shift
+        
+    row_shift, col_shift, z_shift : float, float, float
+        shift in each dimension
+                
+    Returns
+    -------
+    ndarray
+        shifted array
+    """
     buf2ft = np.fft.fftn(arr)
     shape = arr.shape
     Nr = np.fft.ifftshift(np.array(list(range(-int(np.floor(shape[0] / 2)), shape[0] - int(np.floor(shape[0] / 2))))))
@@ -531,6 +781,18 @@ def sub_pixel_shift(arr, row_shift, col_shift, z_shift):
 
 
 def arr_property(arr):
+    """
+    Used only in development. Prints max value of the array and max coordinates.
+    
+    Parameters
+    ----------
+    arr : ndarray
+        array to find max
+        
+    Returns
+    -------
+    nothing
+    """
     arr1 = abs(arr)
     print ('norm', np.sum(pow(abs(arr),2)))
     max_coordinates = list(np.unravel_index(np.argmax(arr1), arr.shape))
@@ -538,6 +800,23 @@ def arr_property(arr):
 
 
 def get_gpu_load(mem_size, ids):
+    """
+    This function is only used when running on Linux OS. The GPUtil module is not supported on mac.
+    This function finds available GPU memory in each GPU that id is included in ids list. It calculates how many reconstruction can fit in each GPU available memory.
+    
+    Parameters
+    ----------
+    mem_size : int
+        array size
+        
+    ids : list
+        list of GPU ids user configured for use
+        
+    Returns
+    -------
+    available : list
+        list of available runs aligned with the GPU id list
+    """
     import GPUtil
 
     gpus = GPUtil.getGPUs()
@@ -561,6 +840,22 @@ def get_gpu_load(mem_size, ids):
 
 
 def get_gpu_distribution(runs, available):
+    """
+    Finds how to distribute the available runs to perform the given number of runs.
+    
+    Parameters
+    ----------
+    runs : int
+        number of reconstruction requested
+        
+    available : list
+        list of available runs aligned with the GPU id list
+        
+    Returns
+    -------
+    distributed : list
+        list of runs aligned with the GPU id list, the runs are equally distributed across the GPUs
+    """
     all_avail = reduce((lambda x,y: x+y), available)
     distributed = [0] * len(available)
     sum_distr = 0

@@ -7,16 +7,29 @@
 # See LICENSE file.                                                       #
 # #########################################################################
 
+"""
+This user script reads raw data, applies correction related to instrument, and saves prepared data.
+
+This script is written for a specific APS beamline. It reads multiple raw data files in each scan directory, applies darkfield and whitefield correction if applicable, creates 3D stack for each scan, then alignes and combines with other scans.
+"""
+
 __author__ = "Ross Harder"
 __docformat__ = 'restructuredtext en'
-__all__ = ['get_dir_list',
-           'get_dark_white',
-           'get_normalized_slice',
+__all__ = ['get_dir_dict2'
            'read_scan',
+           'shift_ftarr',
            'shift',
-           'fit',
-           'prep_data',
-           'prepare']
+           'fast_shift',
+           'shift_to_ref_array',
+           'set_prep'
+           'main',
+           'PrepData.__init__',
+           'PrepData.single_scan',
+           'PrepData.write_split_scan',
+           'PrepData.write_sum_scan',
+           'PrepData.read_align',
+           'PrepData.estimate_nconcurrent',
+           'PrepData.prep_data']
 
 import argparse
 import pylibconfig2 as cfg
@@ -37,6 +50,25 @@ import psutil
 
 ####################################################################################
 def get_dir_dict2(scans, main_map, prep_map):
+    """
+    Finds directories with data files.
+    
+    The names of the directories end with the scan number. Only the directories with a scan range and the ones covered by configuration are included.
+
+    Parameters
+    ----------
+    scans : list
+        list of int, the first element indication first scan, the second, last scan. allowed one element in the list.
+    main_map : config object
+        a configuration object containing experiment main configuration parameters
+    prep_map : config object
+        a configuration object containing experiment prep configuration parameters
+    
+    Returns
+    -------
+    dirs : list
+        list of directories with raw data that will be included in prepared data
+    """
     try:
         min_files = prep_map.min_files
     except:
@@ -85,6 +117,26 @@ def get_dir_dict2(scans, main_map, prep_map):
 
 ###################################################################################
 def read_scan(dir, detector, det_area):
+    """
+    Reads raw data files from scan directory, applies correction, and returns 3D corrected data for a single scan directory.
+    
+    The correction is detector dependent. It can be darkfield and/ot whitefield correction.
+
+    Parameters
+    ----------
+    dir : str
+        directory to read the raw files from
+    detector : str
+        name of detector used to take the images. The detector should have a dedicated class that extends Detector class.
+    det_area : list
+        a list of integer defining detector area in pixels. The list (x0, x1, y0, y1) are as follows: X0, y0 - starting point, x1, y1 - distance.
+        The det_area is typically read from scan file. If not given it will default to detector's entire area.
+
+    Returns
+    -------
+    arr : ndarray
+        3D array containing corrected data for one scan.
+    """
     files = []
     files_dir = {}
     for file in os.listdir(dir):
@@ -133,7 +185,10 @@ def read_scan(dir, detector, det_area):
 
 ###################################################################################
 def shift_ftarr(ftarr, shifty):
-    # pass the FT of the fftshifted array you want to shift
+    """
+    Not used
+    """
+# pass the FT of the fftshifted array you want to shift
     # you get back the actual array, not the FT.
     dims = ftarr.shape
     r = []
@@ -149,6 +204,9 @@ def shift_ftarr(ftarr, shifty):
 
 ###################################################################################
 def shift(arr, shifty):
+    """
+    Not used
+    """
     # you get back the actual array, not the FT.
     dims = arr.shape
     # scipy does normalize ffts!
@@ -169,6 +227,22 @@ def shift(arr, shifty):
 # supposedly this is faster than np.roll or scipy interpolation shift.
 # https://stackoverflow.com/questions/30399534/shift-elements-in-a-numpy-array
 def fast_shift(arr, shifty, fill_val=0):
+    """
+    Shifts array by given numbers for shift in each dimension.
+
+    Parameters
+    ----------
+    arr : array
+        array to shift
+    shifty : list
+        a list of integer to shift the array in each dimension
+    fill_val : float
+        values to fill emptied space
+    Returns
+    -------
+    result : array
+        shifted array
+    """
     dims = arr.shape
     result = np.ones_like(arr)
     result *= fill_val
@@ -191,9 +265,22 @@ def fast_shift(arr, shifty, fill_val=0):
 
 
 ###################################################################################
-# returns an array shifted to align with ref, only single pixel resolution
-# pass fft of ref array to save doing that a lot.
 def shift_to_ref_array(fft_ref, array):
+    """
+    Returns an array shifted to align with ref, only single pixel resolution pass fft of ref array to save doing that a lot.
+
+    Parameters
+    ----------
+    fft_ref : array
+        Fourier transform of reference array
+    array : array
+        array to align with reference array
+
+    Returns
+    -------
+    shifted_array : array
+        array shifted to be aligned with reference array
+    """
     # get cross correlation and pixel shift
     fft_array = np.fft.fftn(array)
     cross_correlation = np.fft.ifftn(fft_ref * np.conj(fft_array))
@@ -217,8 +304,23 @@ def shift_to_ref_array(fft_ref, array):
 
 ###################################################################################
 class PrepData:
+    """
+    This class contains fields needed for the data preparation, parsed from configuration file. The class uses helper functions to prepare the data.
 
+    """
     def __init__(self, experiment_dir, *args):
+        """
+        Creates PrepData instance. Sets fields to configuration parameters.
+
+        Parameters
+        ----------
+        experiment_dir : str
+            directory where the files for the experiment processing are created
+
+        Returns
+        -------
+        PrepData object
+        """
         # move specfile to main config since many things need it.
         # think maybe have each program load main config and it's specific one.
         try:
@@ -306,6 +408,9 @@ class PrepData:
 
     ########################################
     def single_scan(self):
+        """
+        Not used
+        """
         # handle the easy case of a single scan
         arr = read_scan(self.dirs[scan], self.detector, self.roi)
         prep_data_dir = os.path.join(self.experiment_dir, 'prep')
@@ -316,6 +421,20 @@ class PrepData:
 
     ########################################
     def write_split_scan(self, scan_arrs):
+        """
+        This function is used when the scans are treated as separate data, i.e the "separate_scans" configuration parameter is set to true.
+        
+        Prepared data for ech scan is saved in <experiment_dir>/<scan_dir>/prep
+
+        Parameters
+        ----------
+        scan_arrs : list of arrays
+            list of prepared data, each for a scan
+
+        Returns
+        -------
+        nothing
+        """
         n = 0
         for scan in scan_arrs:
             # write array.  filename based on scan number (scan_arrs[n][0])
@@ -329,6 +448,18 @@ class PrepData:
     ########################################
     # Scan arrs is a list of tuples containing scan number and the array
     def write_sum_scan(self, scan_arrs):
+        """
+        Sums the 3D data from all scans and saves the data in <experiment_dir>/prep.
+
+        Parameters
+        ----------
+        scan_arrs : list of arrays
+            list of prepared data, each for a scan
+
+        Returns
+        -------
+        nothing
+        """
         prep_data_dir = os.path.join(self.experiment_dir, 'prep')
         data_file = os.path.join(prep_data_dir, 'prep_data.tif')
         temp_file = os.path.join(prep_data_dir, 'temp.tif')
@@ -354,6 +485,21 @@ class PrepData:
 
     ########################################
     def read_align(self, scan):  # this can have only single argument for Pool.
+        """
+        Aligns scan with reference array.  Referrence array is field of this class.
+
+        Parameters
+        ----------
+        scan : list
+            list containing scan number and directory to the raw data
+
+        Returns
+        -------
+        scan[0] : int
+            scan number that was aligned
+        aligned_array : array
+            aligned array
+        """
         scan_arr = read_scan(scan[1], self.detector, self.roi)
         shifted_arr = shift_to_ref_array(self.fft_refarr, scan_arr)
         aligned_arr = np.abs(shifted_arr)
@@ -362,6 +508,17 @@ class PrepData:
 
     ########################################
     def estimate_nconcurrent(self):
+        """
+        Estimates number of processes the prep can be run on. Determined by number of available cpus and size of array
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        number of processes
+        """
         # guess this takes about 11 arrays to complete a single data set!
         # counting complex arrs as 2 arrays
         # fastshift should be more efficient
@@ -381,6 +538,17 @@ class PrepData:
     ########################################
     # Pooling the read and align since that takes a while for each array
     def prep_data(self):
+        """
+        Creates prep_data.tif file in <experiment_dir>/prep directory or multiple prep_data.tif in <experiment_dir>/<scan_<scan_no>>/prep directories.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         self.scan_list = list(self.dirs)
         # scan_list is used for writing arrays if separate scans
         # because dirs.keys gets the arrays popped out.
@@ -423,6 +591,19 @@ class PrepData:
 #################################################################################
 
 def set_prep(experiment_dir):
+    """
+    Reads the configuration files and accrdingly creates prep_data.tif file in <experiment_dir>/prep directory or multiple prep_data.tif in <experiment_dir>/<scan_<scan_no>>/prep directories.
+
+    Parameters
+    ----------
+    experimnent_dir : str
+        directory with experiment files
+
+    Returns
+    -------
+    experimnent_dir : str
+        directory with experiment files
+    """
     prep_conf = os.path.join(experiment_dir, 'conf/config_prep')
     if os.path.isfile(prep_conf):
         p = PrepData(experiment_dir)

@@ -7,10 +7,7 @@
 
 """
 This module controls the reconstruction process. The user has to provide parameters such as type of processor, data, and configuration.
-The processor specifies which library will be used by CFM (Calc Fast Module) that performs the processor intensive calculations. The module
-can be run on cpu, or gpu. Depending on the gpu hardware and library, one can use opencl or cuda library.
-The module starts the data preparation routines, calls for reconstruction using the CFM, and prepares the reconstructed data for
-visualization.
+The processor specifies which library will be used by FM (Fast Module) that performs the processor intensive calculations. The module can be run on cpu, or gpu. Depending on the gpu hardware and library, one can use opencl or cuda library.
 """
 
 import numpy as np
@@ -35,31 +32,38 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
     Parameters
     ----------
     proc : str
-        a string indicating the processor type
+        a string indicating the processor type/library, chices are: cpu, cuda, opencl
     device : int
         device id assigned to this reconstruction
-    conf : dict
-        configuration map
-    data : array
-        a 3D np array containing pre-processed experiment data
+    conf : str
+        configuration file name containing reconstruction parameters
+    data : ndarray
+        np array containing pre-processed, formatted experiment data
     coh_dims : tuple
         shape of coherence array
-    image : numpy array
-        initial image for reconstruction or None
-    support : numpy array
-        support corresponding to image or None
-    coherence : numpy array
-       coherence corresponding to image
+    image : ndarray
+        initial image to continue reconstruction or None if random initial image
+    support : ndarray
+        support corresponding to image if continuation or None
+    coherence : ndarray
+       coherence corresponding to image if continuation and active pcdi feature or None
+       
     Returns
     -------
-    image : numpy array
+    image : ndarray
         reconstructed image
-    support : numpy array
+    support : ndarray
         support for reconstructed image
-    coherence : numpy array
-        coherence for reconstructed image
+    coherence : ndarray
+        coherence for reconstructed image or None if pcdi inactive
     er : list
         a vector containing errors for each iteration
+    reciprocal : ndarray
+        the array converted to reciprocal space
+    flow : ndarray
+        info to scientist/developer; a list of functions  that can run in one iterations (excluding inactive features)
+    iter_array : ndarray
+        info to scientist/developer; an array of 0s and 1s, 1 meaning the function in flow will be executed in iteration, 0 otherwise
     """
     try:
         if proc == 'cpu':

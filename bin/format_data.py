@@ -19,23 +19,23 @@ import reccdi.src_py.utilities.parse_ver as ver
 __author__ = "Barbara Frosik"
 __copyright__ = "Copyright (c) 2016, UChicago Argonne, LLC."
 __docformat__ = 'restructuredtext en'
-__all__ = ['prep']
+__all__ = ['prep',
+           'data',
+           'main']
 
 
 def prep(fname, conf_info):
     """
-    This function prepares raw data for reconstruction. It uses configured parameters. The preparation consists of the following steps:
-    1. clearing the noise - the values below an amplitude threshold are set to zero
-    2. removing the "aliens" - aliens are areas that are effect of interference. The area is manually set in a configuration file
-    after inspecting the data.
-    3. binning - adding amplitudes of several consecutive points. Binning can be done in any dimension.
-    4. amplitudes are set to sqrt
-    5. cropping and padding. If the adjust_dimention is negative in any dimension, the array is cropped in this dimension.
+    This function formats data for reconstruction. It uses configured parameters. The preparation consists of the following steps:
+    1. removing the "aliens" - aliens are areas that are effect of interference. The area is manually set in a configuration file after inspecting the data. It could be also a mask file of the same dimensions that data.
+    2. clearing the noise - the values below an amplitude threshold are set to zero
+    3. amplitudes are set to sqrt
+    4. cropping and padding. If the adjust_dimention is negative in any dimension, the array is cropped in this dimension.
     The cropping is followed by padding in the dimensions that have positive adjust dimension. After adjusting, the dimensions
     are adjusted further to find the smallest dimension that is supported by opencl library (multiplier of 2, 3, and 5).
-    6. centering - finding the greatest amplitude and locating it at a center of new array. If shift center is defined, the
-    center will be shifted accordingly. The shifted elements are rolled into the other end of array.
-    The modified data is then saved in data directory.
+    5. centering - finding the greatest amplitude and locating it at a center of new array. If shift center is defined, the center will be shifted accordingly.
+    6. binning - adding amplitudes of several consecutive points. Binning can be done in any dimension.
+    The modified data is then saved in data directory as data.tif.
     Parameters
     ----------
     fname : str
@@ -169,6 +169,18 @@ def prep(fname, conf_info):
     
     
 def data(experiment_dir):
+    """
+    For each prepared data in an experiment directory structure formats the data according to configured parameters and saves in the experiment space.
+
+    Parameters
+    ----------
+    experiment_dir : str
+        directory where the experiment processing files are saved
+
+    Returns
+    -------
+    nothing
+    """
     print ('formating data')
     prep_file = os.path.join(experiment_dir, 'prep', 'prep_data.tif')
     if os.path.isfile(prep_file):

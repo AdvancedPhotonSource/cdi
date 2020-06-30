@@ -4,6 +4,10 @@
 # See LICENSE file.                                                       #
 # #########################################################################
 
+"""
+This module parses experiment related measurements saved in a spec file.
+"""
+
 __author__ = "Ross Harder"
 __docformat__ = 'restructuredtext en'
 __all__ = ['parse_spec',
@@ -12,6 +16,21 @@ __all__ = ['parse_spec',
 from xrayutilities.io import spec as spec
 
 def parse_spec(specfile, scan):
+    """
+    Reads parameters necessary to run visualization from spec file for given scan.
+
+    Parameters
+    ----------
+    specfile : str
+        spec file name
+         
+    scan : int
+        scan number to use to recover the saved measurements
+
+    Returns
+    -------
+    delta, gamma, theta, phi, chi, scanmot, scanmot_del, detdist, detector_name, energy
+    """
     print ('parsing spec')
     # Scan numbers start at one but the list is 0 indexed
     ss = spec.SPECFile(specfile)[scan - 1]
@@ -38,6 +57,24 @@ def parse_spec(specfile, scan):
 
 
 def get_det_from_spec(specfile, scan):
+    """
+    Reads detector area and detector name from spec file for given scan.
+
+    Parameters
+    ----------
+    specfile : str
+        spec file name
+         
+    scan : int
+        scan number to use to recover the saved measurements
+
+    Returns
+    -------
+    detector_name : str
+        detector name
+    det_area : list
+        detector area
+    """
     # Scan numbers start at one but the list is 0 indexed
     ss = spec.SPECFile(specfile)[scan - 1]
     # Stuff from the header

@@ -20,14 +20,25 @@ import reccdi.src_py.beamlines.aps_34id.diffractometer as diff
 __author__ = "Ross Harder"
 __copyright__ = "Copyright (c) 2016, UChicago Argonne, LLC."
 __docformat__ = 'restructuredtext en'
+__all__ = ['DispalyParams.__init__',
+           'CXDViz.__init__',
+           'CXDViz.set_geometry',
+           'CXDViz.update_dirspace',
+           'CXDViz.update_recipspace',
+           'CXDViz.clear_direct_arrays',
+           'CXDViz.clear_recip_arrays',
+           'CXDViz.add_ds_array',
+           'CXDViz.add_rs_array',
+           'CXDViz.get_ds_structured_grid',
+           'CXDViz.get_rs_structured_grid',
+           'CXDViz.write_directspace',
+           'CXDViz.write_recipspace']
 
 
 class DispalyParams:
     """
-      This class encapsulates parameters defining image display. The parameters are
-    read from config file on construction or whereever they may exist.  This class is
-    basically an information agglomerator for the viz generation.
-      Might want to do something like Detector and Diffractometer where we subclass this.
+      This class encapsulates parameters defining image display. The parameters are read from config file on construction.
+      This class is basically an information agglomerator for the viz generation.
     """
 
     def __init__(self, config):
@@ -36,7 +47,7 @@ class DispalyParams:
 
         Parameters
         ----------
-        conf : str
+        config : str
             configuration file name
 
         Returns
@@ -195,6 +206,9 @@ class DispalyParams:
 
 
 class CXDViz:
+    """
+      This class does viz generation. It uses tvtk package for that purpose.
+    """
     cropx = 0.5
     cropy = 0.5
     cropz = 0.5
@@ -202,14 +216,31 @@ class CXDViz:
     recip_arrs = {}
 
     def __init__(self):
+        """
+        The constructor creates objects assisting with visualization.
+        """
         self.imd = tvtk.ImageData()
         self.sg = tvtk.StructuredGrid()
         self.recipsg = tvtk.StructuredGrid()
 
 
-    # def set_geometry(self, lam, delta, gamma, dpx, dpy, dth):
     # @measure
     def set_geometry(self, p, shape):
+        """
+        Sets geometry.
+
+        Parameters
+        ----------
+        p : DispalyParams object
+            this object contains configuration parameters
+            
+        shape : tuple
+            shape of reconstructed array
+
+        Returns
+        -------
+        nothing
+        """
         self.params = p
         # DisplayParams is not expected to do any modifications of params (units, etc)
         px = p.pixel[0] * p.binning[0]
@@ -285,6 +316,18 @@ class CXDViz:
 
 
     def update_dirspace(self, shape):
+        """
+        Updates direct space grid.
+
+        Parameters
+        ----------
+        shape : tuple
+            shape of reconstructed array
+
+        Returns
+        -------
+        nothing
+        """
         dims = list(shape)
         self.dxdir = 1.0 / shape[0]
         self.dydir = 1.0 / shape[1]
@@ -304,6 +347,18 @@ class CXDViz:
 
 
     def update_recipspace(self, shape):
+        """
+        Updates reciprocal space grid.
+
+        Parameters
+        ----------
+        shape : tuple
+            shape of reconstructed array
+
+        Returns
+        -------
+        nothing
+        """
         dims = list(shape)
         q = np.mgrid[0:dims[0], 0:dims[1], 0:dims[2]]
 

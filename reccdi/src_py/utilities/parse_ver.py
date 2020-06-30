@@ -1,12 +1,8 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 # #########################################################################
 # Copyright (c) , UChicago Argonne, LLC. All rights reserved.             #
 #                                                                         #
 # See LICENSE file.                                                       #
 # #########################################################################
-
 
 """
 verification of configuration files
@@ -15,8 +11,35 @@ verification of configuration files
 import reccdi.src_py.utilities.utils as ut
 import os
 
+__author__ = "Barbara Frosik"
+__copyright__ = "Copyright (c) 2016, UChicago Argonne, LLC."
+__docformat__ = 'restructuredtext en'
+__all__ = ['ver_list_int',
+           'ver_list_float',
+           'ver_config',
+           'ver_config_rec',
+           'ver_config_data',
+           'ver_config_prep',
+           'ver_config_disp']
+           
 
 def ver_list_int(param_name, param_value):
+    """
+    This function verifies if all elements in a given list are int.
+
+    Parameters
+    ----------
+    param_name : str
+        the parameter being evaluated
+
+    param_value : list
+        the list to evaluate for int values
+
+    Returns
+    -------
+    eval : boolean
+        True if all elements are int, False otherwise
+    """
     if not issubclass(type(param_value), list):
         print (param_name + ' is not a list')
         return False
@@ -28,6 +51,22 @@ def ver_list_int(param_name, param_value):
 
 
 def ver_list_float(param_name, param_value):
+    """
+    This function verifies if all elements in a given list are float.
+
+    Parameters
+    ----------
+    param_name : str
+        the parameter being evaluated
+
+    param_value : list
+        the list to evaluate for float values
+
+    Returns
+    -------
+    eval : boolean
+        True if all elements are float, False otherwise
+    """
     if not issubclass(type(param_value), list):
         print (param_name + ' is not a list')
         return False
@@ -39,14 +78,13 @@ def ver_list_float(param_name, param_value):
 
 
 def ver_config(fname):
-
     """
-    This function verifies config file
+    This function verifies experiment main config file
 
     Parameters
     ----------
-    conf_info : str
-        configuration file
+    fname : str
+        configuration file name
 
     Returns
     -------
@@ -114,14 +152,13 @@ def ver_config(fname):
 
 
 def ver_config_rec(fname):
-
     """
-    This function verifies config_rec file
+    This function verifies experiment config_rec file
 
     Parameters
     ----------
-    conf_info : str
-        configuration file
+    fname : str
+        configuration file name
 
     Returns
     -------
@@ -538,14 +575,13 @@ def ver_config_rec(fname):
 
 
 def ver_config_data(fname):
-
     """
-    This function verifies config_data file
+    This function verifies experiment config_data file
 
     Parameters
     ----------
-    conf_info : str
-        configuration file
+    fname : str
+        configuration file name
 
     Returns
     -------
@@ -626,14 +662,13 @@ def ver_config_data(fname):
 
 
 def ver_config_prep(fname):
-
     """
-    This function verifies config_prep file
+    This function verifies experiment config_prep file
 
     Parameters
     ----------
-    conf_info : str
-        configuration file
+    fname : str
+        configuration file name
 
     Returns
     -------
@@ -724,14 +759,13 @@ def ver_config_prep(fname):
 
 
 def ver_config_disp(fname):
-
     """
-    This function verifies config_disp file
+    This function verifies experiment config_disp file
 
     Parameters
     ----------
-    conf_info : str
-        configuration file
+    fname : str
+        configuration file name
 
     Returns
     -------

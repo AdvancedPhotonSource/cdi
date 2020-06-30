@@ -1,13 +1,46 @@
+# #########################################################################
+# Copyright (c) , UChicago Argonne, LLC. All rights reserved.             #
+#                                                                         #
+# See LICENSE file.                                                       #
+# #########################################################################
+
+"""
+This user script create experiment directory space.
+
+After the script is executed the experiment directory will contain "conf" subdirectory with configuration files. The initial configuration files contain all parameters, but most of them are commented out to clock the functionality.
+"""
+
+__author__ = "Barbara Frosik"
+__copyright__ = "Copyright (c), UChicago Argonne, LLC."
+__docformat__ = 'restructuredtext en'
+__all__ = ['create_conf_prep',
+           'create_conf_data',
+           'create_conf_rec',
+           'create_conf_disp',
+           'create_exp',
+           'main']
+
 import argparse
 import pylibconfig2 as cfg
 import sys
 import os
 import reccdi.src_py.utilities.parse_ver as ver
 import shutil
-import glob
 
 
 def create_conf_prep(conf_dir):
+    """
+    Creates a "config_prep" file with some parameters commented out.
+
+    Parameters
+    ----------
+    conf_dir : str
+        directory where the file will be saved
+
+    Returns
+    -------
+    nothing
+    """
     conf_file_name = os.path.join(conf_dir, 'config_prep')
     f = open(conf_file_name, "w+")
 
@@ -25,6 +58,18 @@ def create_conf_prep(conf_dir):
 
 
 def create_conf_data(conf_dir):
+    """
+    Creates a "config_data" file with some parameters commented out.
+
+    Parameters
+    ----------
+    conf_dir : str
+        directory where the file will be saved
+
+    Returns
+    -------
+    nothing
+    """
     conf_file_name = os.path.join(conf_dir, 'config_data')
     f = open(conf_file_name, "w+")
     
@@ -39,6 +84,18 @@ def create_conf_data(conf_dir):
 
 
 def create_conf_rec(conf_dir):
+    """
+    Creates a "config_rec" file with some parameters commented out.
+
+    Parameters
+    ----------
+    conf_dir : str
+        directory where the file will be saved
+
+    Returns
+    -------
+    nothing
+    """
     conf_file_name = os.path.join(conf_dir, 'config_rec')
     f = open(conf_file_name, "w+")
 
@@ -81,6 +138,18 @@ def create_conf_rec(conf_dir):
 
    
 def create_conf_disp(conf_dir):
+    """
+    Creates a "config_disp" file with some parameters commented out.
+
+    Parameters
+    ----------
+    conf_dir : str
+        directory where the file will be saved
+
+    Returns
+    -------
+    nothing
+    """
     conf_file_name = os.path.join(conf_dir, 'config_disp')
     f = open(conf_file_name, "w+")
     
@@ -105,6 +174,27 @@ def create_conf_disp(conf_dir):
 
 
 def create_exp(prefix, scan, working_dir, specfile=None):
+    """
+    Concludes experiment name, creates directory, and "conf" subdirectory with initial configuration files.
+
+    Parameters
+    ----------
+    prefix : str
+        a literal ID of the experiment
+    scan : str
+        string indicating scan number, or scan range
+        ex1: 5
+        ex2: 67 - 89
+    working_dir : str
+        directory where the file will be saved
+    specfile : str
+        optional, name of specfile that was saved during the experiment
+
+    Returns
+    -------
+    experiment_dir : str
+        directory where the new experiment is located
+    """
     id = prefix + '_' + scan
 
     if not os.path.isdir(working_dir):

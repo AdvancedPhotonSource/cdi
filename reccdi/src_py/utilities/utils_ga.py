@@ -1,7 +1,3 @@
-
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 # #########################################################################
 # Copyright (c) , UChicago Argonne, LLC. All rights reserved.             #
 #                                                                         #
@@ -9,8 +5,7 @@
 # #########################################################################
 
 """
-Please make sure the installation :ref:`pre-requisite-reference-label` are met.
-This module is a suite of utility mehods.
+Utility functions used by GA (genetic algorithm) processing.
 """
 
 import numpy as np
@@ -20,15 +15,34 @@ import reccdi.src_py.utilities.utils as ut
 __author__ = "Barbara Frosik"
 __copyright__ = "Copyright (c) 2016, UChicago Argonne, LLC."
 __docformat__ = 'restructuredtext en'
-__all__ = ['get_array_from_tif',
-           'get_opencl_dim',
-           'binning',
-           'get_centered',
-           'adjust_dimensions',
-           'crop_center',
-           'flip']
+__all__ = ['cross_correlation',
+           'conj_reflect',
+           'check_get_conj_reflect',
+           'dftups',
+           'dftregistration',
+           'register_3d_reconstruction',
+           'print_max',
+           'zero_phase',
+           'zero_phase_cc',
+           'align_arrays']
 
 def cross_correlation(a, b):
+    """
+    This function computes cross correlation of two arrays.
+
+    Parameters
+    ----------
+    a : ndarray
+        input array for cross correlation
+
+    b : ndarray
+        input array for cross correlation
+
+    Returns
+    -------
+    ndarray
+        cross correlation array
+    """
     A = np.fft.ifftshift(np.fft.fftn(np.fft.fftshift(conj_reflect(a))))
     B = np.fft.ifftshift(np.fft.fftn(np.fft.fftshift(b)))
     CC = A * B
@@ -36,11 +50,40 @@ def cross_correlation(a, b):
 
 
 def conj_reflect(arr):
+    """
+    This function computes conjugate reflection of array.
+
+    Parameters
+    ----------
+    a : ndarray
+        input array
+
+    Returns
+    -------
+    ndarray
+        conjugate reflection array
+    """
     F = np.fft.ifftshift(np.fft.fftn(np.fft.fftshift(arr)))
     return np.fft.ifftshift(np.fft.ifftn(np.fft.fftshift(np.conj(F))))
 
 
 def check_get_conj_reflect(arr1, arr2):
+    """
+    It returns the array of interest or conjugate reflection of that array depending whether it is reflection of the reference array.
+
+    Parameters
+    ----------
+    arr1 : ndarray
+        reference array
+
+    arr2 : ndarray
+        array of interest
+
+    Returns
+    -------
+    ndarray
+        arr2 or conjugate reflection of it
+    """
     support1 = ut.shrink_wrap(abs(arr1), .1, .1)
     support2 = ut.shrink_wrap(abs(arr2), .1, .1)
     cc1 = cross_correlation(support1, ut.shrink_wrap(conj_reflect(arr2), .1, .1))
@@ -52,6 +95,27 @@ def check_get_conj_reflect(arr1, arr2):
 
 
 def dftups(arr, nor=-1, noc=-1, usfac=2, roff=0, coff=0):
+    """
+    Upsample DFT by array multiplies.
+
+    Parameters
+    ----------
+    arr : ndarray
+        the subject of upsampling array
+
+    nor, noc : int, int
+        Number of pixels in the output upsampled DFT, in units of upsampled pixels
+        
+    usfac : int
+        Upsampling factor (default usfac = 1)
+        
+    roff, coff : int, int
+        Row and column offsets, allow to shift the output array to a region of interest on the DFT
+    Returns
+    -------
+    ndarray
+        upsampled array
+    """
     # arr is 2D
     [nr,nc] = arr.shape
     if nor < 0:
@@ -80,12 +144,27 @@ def dftups(arr, nor=-1, noc=-1, usfac=2, roff=0, coff=0):
 
 
 def dftregistration(ref_arr, arr, usfac=2):
-    #arrays are 2D
-    # based on Matlab dftregistration by Manuel Guizar (Portions of this code were taken from code written by
-    # Ann M. Kowalczyk and James R. Fienup.
+    """
+    Efficient subpixel image registration by crosscorrelation. Based on Matlab dftregistration by Manuel Guizar (Portions of this code were taken from code written by Ann M. Kowalczyk and James R. Fienup.)
+    
+    Parameters
+    ----------
+    ref_arr : 2D ndarray
+        Fourier transform of reference image
+
+    arr : 2D ndarray
+        Fourier transform of image to register
+        
+    usfac : int
+        Upsampling factor
+        
+    Returns
+    -------
+    row_shift, col_shift : float, float
+        pixel shifts between images
+    """
     if usfac < 2:
         print ('usfac less than 2 not supported')
-        # will throw exception
         return
     # First upsample by a factor of 2 to obtain initial estimate
     # Embed Fourier data in a 2x larger array
@@ -133,6 +212,22 @@ def dftregistration(ref_arr, arr, usfac=2):
 
 
 def register_3d_reconstruction(ref_arr, arr):
+    """
+    Finds pixel shifts between reconstructed images
+    
+    Parameters
+    ----------
+    ref_arr : ndarray
+        Fourier transform of reference image
+
+    arr : ndarray
+        Fourier transform of image to register
+        
+    Returns
+    -------
+    shift_2, shift_1, shift_0 : float, float
+        pixel shifts between images
+    """
     r_shift_2, c_shift_2 = dftregistration(np.fft.fft2(np.sum(ref_arr, 2)), np.fft.fft2(np.sum(arr, 2)), 100)
     r_shift_1, c_shift_1 = dftregistration(np.fft.fft2(np.sum(ref_arr, 1)), np.fft.fft2(np.sum(arr, 1)), 100)
     r_shift_0, c_shift_0 = dftregistration(np.fft.fft2(np.sum(ref_arr, 0)), np.fft.fft2(np.sum(arr, 0)), 100)
@@ -144,10 +239,39 @@ def register_3d_reconstruction(ref_arr, arr):
 
 
 def print_max(arr):
+    """
+    Not used by reccdi, but helpful during development.
+    Prints arrays maximum coordinates and value.
+    
+    Parameters
+    ----------
+    arr : ndarray
+        array to find the max
+        
+    Returns
+    -------
+    nothing
+    """
     max_coord = list(np.unravel_index(np.argmax(abs(arr)), arr.shape))
     print ('max coord, value', abs(arr[max_coord[0],max_coord[1],max_coord[2]]), max_coord)
 
 def zero_phase(arr, val=0):
+    """
+    Adjusts phase accross the array so the relative phase stays intact, but it shifts towards given value.
+    
+    Parameters
+    ----------
+    arr : ndarray
+        array to adjust phase
+        
+    val : float
+        a value to adjust the phase toward
+        
+    Returns
+    -------
+    ndarray
+        input array with adjusted phase
+    """
     ph = np.angle(arr)
     support = ut.shrink_wrap(abs(arr), .2, .5)  #get just the crystal, i.e very tight support
     avg_ph = np.sum(ph * support)/np.sum(support)
@@ -156,6 +280,22 @@ def zero_phase(arr, val=0):
 
 
 def zero_phase_cc(arr1, arr2):
+    """
+    Sets avarage phase in array to reference array.
+    
+    Parameters
+    ----------
+    arr1 : ndarray
+        array to adjust phase
+        
+    arr2 : ndarray
+        reference array
+        
+    Returns
+    -------
+    arr : ndarray
+        input array with adjusted phase
+    """
     # will set array1 avg phase to array2
     c_c = np.conj(arr1) * arr2
     c_c_tot = np.sum(c_c)
@@ -165,48 +305,21 @@ def zero_phase_cc(arr1, arr2):
 
 
 def align_arrays(ref_arr, arr):
+    """
+    Shifts array to align with reference array.
+    
+    Parameters
+    ----------
+    ref_arr : ndarray
+        reference array
+        
+    arr : ndarray
+        array to shift
+        
+    Returns
+    -------
+    arr : ndarray
+        shifted input array, aligned with reference array
+    """
     (shift_2, shift_1, shift_0) = register_3d_reconstruction(abs(ref_arr), abs(arr))
     return ut.sub_pixel_shift(arr, shift_2, shift_1, shift_0)
-
-# ref_arr = np.load('/home/phoebus/BFROSIK/temp/test/A_78-97/results/image.npy')
-# arr = np.load('/home/phoebus/BFROSIK/temp/test/B_78-97/results/image.npy')
-# l  = align_arrays(ref_arr, arr)
-
-
-def get_arr_characteristic(arr):
-    lev1_norm = sum(abs(arr))
-    sharpness = sum(abs(arr)^4)
-    summed_phase = ut.sum_phase_tight_support(arr)
-    support = ut.shrink_wrap(arr, .2, .5)
-    area = sum(support)
-    gradients = np.gradient(arr)
-    TV = np.zeros(arr.shape)
-    for gr in gradients:
-        TV += abs(gr)
-    return lev1_norm, sharpness, summed_phase, area, TV
-
-
-# def align_iterates(arrs):
-#     #assume arrs[0] is the referrence array
-#     alpha = arrs[0]
-#     for i in range(1, len(arrs)):
-#         arr = check_get_conj_reflect(abs(alpha), abs(arr))
-#         shift_2, shift_1, shift_0 = register_3d_reconstruction(abs(alpha), abs(arr))
-#         arrs[i] = sub_pixel_shift(arr, round(shift_2), round(shift_1), round(shift_2))
-#     return arrs
-
-
-# def test(a,b):
-#     alpha = zero_phase(a, 0)
-#     beta = zero_phase(b, 0)
-#     alpha = check_get_conj_reflect(beta, alpha)
-#     alpha_s = align_arrays(beta, alpha)
-#     alpha_s = zero_phase(alpha_s, 0)
-#     ph_alpha = np.angle(alpha_s)
-#     beta = zero_phase_cc(beta, alpha_s)
-#     ph_beta = np.angle(beta)
-#     beta = np.sqrt(abs(alpha_s) * abs(beta)) * np.exp(0.5j * (ph_beta + ph_alpha))
-#
-# a = np.load('/home/phoebus/BFROSIK/temp/test/A_78-97/results/image.npy')
-# b = np.load('/home/phoebus/BFROSIK/temp/test/B_78-97/results/image.npy')
-# test(a, b)

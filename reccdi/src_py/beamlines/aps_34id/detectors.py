@@ -1,22 +1,40 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-import numpy as np
-# import tifffile as tif
-import reccdi.src_py.utilities.utils as ut
-
 # #########################################################################
 # Copyright (c) , UChicago Argonne, LLC. All rights reserved.             #
 #                                                                         #
 # See LICENSE file.                                                       #
 # #########################################################################
 
+"""
+This module encapsulates detector.
+"""
+
+import numpy as np
+import reccdi.src_py.utilities.utils as ut
+
 __author__ = "Ross Harder"
 __docformat__ = 'restructuredtext en'
-__all__ = ['getdetclass']
+__all__ = ['getdetclass',
+           'Detector.get_frame',
+           'Detector.insert_seam',
+           'Detector.clear_seam',
+           'Detector.get_pixel']
 
 
 ##################################################################
 def getdetclass(detname, **args):
+    """
+    Returns instance of detector class with given detector name.
+
+    Parameters
+    ----------
+    detname : str
+        detector name
+
+    Returns
+    -------
+    c : Detector
+        Detector subclass with given name
+    """
     c = None
     if detname == "default":
         return Detector()
@@ -26,8 +44,6 @@ def getdetclass(detname, **args):
     return c
 
 
-# could start to encapsulate everything about a detector here.  whitefield and dark and other things.  Then we
-# just set the detector in a config file and everything can use it.  maybe add a config_det file to conf?
 class Detector(object):
     name = "default"
 
@@ -35,22 +51,84 @@ class Detector(object):
         pass
 
     def get_frame(self, filename, roi=None):
-        # self.raw_frame=tif.imread(filename)
+        """
+        Reads raw frame from a file, and applies correction for concrete detector.
+
+        Parameters
+        ----------
+        filename : str
+            data file name
+
+        roi : list
+            detector area used to take image. If None the entire detector area will be used.
+
+        Returns
+        -------
+        raw_frame : ndarray
+            frame after instrument correction
+        """
         self.raw_frame = ut.read_tif(filename)
         return self.raw_frame
 
     def insert_seam(self, arr, roi=None):
+        """
+        This function if overriden in concrete detector class. It inserts rows/columns in frame as instrument correction.
+
+        Parameters
+        ----------
+        arr : ndarray
+            frame to insert the correction
+
+        roi : list
+            detector area used to take image. If None the entire detector area will be used.
+
+        Returns
+        -------
+        arr : ndarray
+            frame after instrument correction
+        """
         return arr
 
     def clear_seam(self, arr, roi=None):
+        """
+        This function if overriden in concrete detector class. It removes rows/columns from frame as instrument correction.
+
+        Parameters
+        ----------
+        arr : ndarray
+            frame to remove the correction
+
+        roi : list
+            detector area used to take image. If None the entire detector area will be used.
+
+        Returns
+        -------
+        arr : ndarray
+            frame after instrument correction
+        """
         return arr
 
     def get_pixel(self):
+        """
+        This function if overriden in concrete detector class. It returns pixel size applicable to concrete detector.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        tuple
+            size of pixel
+        """
         pass
 
 
 ############################################################################
 class Detector_34idcTIM1(Detector):
+    """
+    Subclass of Detector. Encapsulates "34idcTIM1:" detector.
+    """
     name = "34idcTIM1:"
     dims = (256, 256)
     pixel = (55.0e-6, 55e-6)
@@ -64,8 +142,18 @@ class Detector_34idcTIM1(Detector):
 
     # not meant to be called from outside, because a det might not have one.
     def load_darkfield(self):
+        """
+        Reads darkfield file and save the frame as class member.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         try:
-            # self.darkfield=tif.imread(self.darkfield_filename)
             self.darkfield = ut.read_tif(self.darkfield_filename)
         except:
             print("Darkfield filename not set for TIM1")
@@ -79,7 +167,25 @@ class Detector_34idcTIM1(Detector):
 
     # TIM1 only needs bad pixels deleted.  Even that is optional.
     def get_frame(self, filename, roi=(0, 256, 0, 256), Imult=1.0):
+        """
+        Reads raw frame from a file, and applies correction for 34idcTIM1 detector, i.e. darkfield.
 
+        Parameters
+        ----------
+        filename : str
+            data file name
+
+        roi : list
+            detector area used to take image. If None the entire detector area will be used.
+            
+        Imult : float
+            value to fill the sem with
+
+        Returns
+        -------
+        frame : ndarray
+            frame after correction
+        """
         if not type(self.darkfield) == np.ndarray:
             self.load_darkfield()
 
@@ -96,10 +202,25 @@ class Detector_34idcTIM1(Detector):
 
 
     def get_pixel(self):
+        """
+        Returns pixel size of 34idcTIM1 detector.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        tuple
+            size of pixel
+        """
         return self.pixel
 
 ############################################################################
 class Detector_34idcTIM2(Detector):
+    """
+    Subclass of Detector. Encapsulates "34idcTIM2:" detector.
+    """
     name = "34idcTIM2:"
     dims = (512, 512)
     pixel = (55.0e-6, 55e-6)
@@ -115,6 +236,17 @@ class Detector_34idcTIM2(Detector):
 
     # not meant to be called from outside, because a det might not have one.
     def load_whitefield(self):
+        """
+        Reads whitefield file and save the frame as class member.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         try:
             self.whitefield = ut.read_tif(self.whitefield_filename)
         except:
@@ -123,6 +255,17 @@ class Detector_34idcTIM2(Detector):
 
     # not meant to be called from outside, because a det might not have one.
     def load_darkfield(self):
+        """
+        Reads darkfield file and save the frame as class member.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         try:
             self.darkfield = ut.read_tif(self.darkfield_filename)
         except:
@@ -136,6 +279,25 @@ class Detector_34idcTIM2(Detector):
             raise
 
     def get_frame(self, filename, roi=(0, 512, 0, 512), Imult=1e5):
+        """
+        Reads raw frame from a file, and applies correction for 34idcTIM2 detector, i.e. darkfield, whitefield, and seam.
+
+        Parameters
+        ----------
+        filename : str
+            data file name
+
+        roi : list
+            detector area used to take image. If None the entire detector area will be used.
+            
+        Imult : float
+            value to fill the sem with
+
+        Returns
+        -------
+        frame : ndarray
+            frame after correction
+        """
         # roi is start,size,start,size
         # will be in imageJ coords, so might need to transpose,or just switch x-y
         # divide whitefield
@@ -160,6 +322,22 @@ class Detector_34idcTIM2(Detector):
 
     # frame here can also be a 3D array.
     def insert_seam(self, arr, roi):
+        """
+        Inserts rows/columns correction in a frame for 34idcTIM2 detector.
+
+        Parameters
+        ----------
+        arr : ndarray
+            raw frame
+
+        roi : list
+            detector area used to take image. If None the entire detector area will be used.
+
+        Returns
+        -------
+        frame : ndarray
+            frame after insering rows/columns
+        """
         # Need to break this out.  When aligning multi scans the insert will mess up the aligns
         # or maybe we just need to re-blank the seams after the aligns?
         # I can't decide if the seams are a detriment to the alignment.  might need to try some.
@@ -193,26 +371,54 @@ class Detector_34idcTIM2(Detector):
     # into the seam.  Found that alignment of data sets was best done with the seam inserted.
     # For instance.
     def clear_seam(self, arr, roi):
+        """
+        Removes rows/columns correction from a frame for 34idcTIM2 detector.
+
+        Parameters
+        ----------
+        arr : ndarray
+            frame to remove seam
+
+        roi : list
+            detector area used to take image. If None the entire detector area will be used.
+
+        Returns
+        -------
+        arr : ndarray
+            frame after removing rows/columns
+        """
         # modify the slices if 256 is in roi
-            try:
-                i1 = s1range.index(256)  # if not in range try will except
-                if i1 != 0:
-                    s1[0] = slice(i1, i1 + 4)
-                    arr[tuple(s1)] = 0
-            except:
-                pass
-                #print("no clear on dim0")
-            try:
-                i2 = s2range.index(256)
-                if i2 != 0:
-                    s2[1] = slice(i2, i2 + 5)
-                    arr[tuple(s2)] = 0
-            except:
-                pass
-                #print("no clear on dim1")
+        try:
+            i1 = s1range.index(256)  # if not in range try will except
+            if i1 != 0:
+                s1[0] = slice(i1, i1 + 4)
+                arr[tuple(s1)] = 0
+        except:
+            pass
+            #print("no clear on dim0")
+        try:
+            i2 = s2range.index(256)
+            if i2 != 0:
+                s2[1] = slice(i2, i2 + 5)
+                arr[tuple(s2)] = 0
+        except:
+            pass
+            #print("no clear on dim1")
             
-            return arr
+        return arr
 
 
     def get_pixel(self):
+        """
+        Returns pixel size of 34idcTIM2 detector.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        tuple
+            size of pixel
+        """
         return self.pixel

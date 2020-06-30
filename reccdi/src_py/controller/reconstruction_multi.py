@@ -1,20 +1,11 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 # #########################################################################
 # Copyright (c) , UChicago Argonne, LLC. All rights reserved.             #
 #                                                                         #
 # See LICENSE file.                                                       #
 # #########################################################################
 
-
 """
-Please make sure the installation :ref:`pre-requisite-reference-label` are met.
-This module controls the reconstruction process. The user has to provide parameters such as type of processor, data, and configuration.
-The processor specifies which library will be used by CFM (Calc Fast Module) that performs the processor intensive calculations. The module
-can be run on cpu, or gpu. Depending on the gpu hardware and library, one can use opencl or cuda library.
-The module starts the data preparation routines, calls for reconstruction using the CFM, and prepares the reconstructed data for
-visualization.
+This module controls the multi reconstruction process.
 """
 
 import os
@@ -28,21 +19,20 @@ from functools import partial
 __author__ = "Barbara Frosik"
 __copyright__ = "Copyright (c) 2016, UChicago Argonne, LLC."
 __docformat__ = 'restructuredtext en'
-__all__ = ['read_config',
+__all__ = ['single_rec_process',
+           'assign_gpu',
+           'multi_rec',
            'reconstruction']
 
 
 def single_rec_process(proc, conf, data, coh_dims, req_metric, dirs):
     """
-    This function runs in the reconstruction palarellized by Pool.
+    This function runs a single reconstruction process.
 
     Parameters
     ----------
     proc : str
         string defining library used 'cpu' or 'opencl' or 'cuda'
-
-    device : int
-        device allocated to this reconstruction or -1 if not configured
 
     conf : str
         configuration file
@@ -52,27 +42,17 @@ def single_rec_process(proc, conf, data, coh_dims, req_metric, dirs):
 
     coh_dims : tuple
         shape of coherence array
-
-    prev_image : numpy array or None
-        previously reconstructed image (if continuation or genetic algorithm) or None
-
-    prev_support : numpy array or None
-        support of previously reconstructed image (if continuation or genetic algorithm) or None
-
-    prev_coh : numpy array or None
-        coherence of previously reconstructed image (if continuation or genetic algorithm) or None
+        
+    req_metric : str
+        defines metric that will be used if GA is utilized
+        
+    dirs : list
+        tuple of two elements: directory that contain results of previous run or None, and directory where the results of this processing will be saved
 
     Returns
     -------
-    image : numpy array
-        reconstructed image
-
-    support : numpy array
-        support of reconstructed image
-
-    coherence : coherence of reconstructed image
-
-    error : list containing errors for iterations
+    metric : float
+        a calculated characteristic of the image array defined by the metric
     """
     (prev, save_dir) = dirs
     if prev is None:
@@ -90,21 +70,35 @@ def single_rec_process(proc, conf, data, coh_dims, req_metric, dirs):
     
 
 def assign_gpu(*args):
-   q = args[0]
-   global gpu
-   gpu = q.get()
+    """
+    This function dequeues GPU id from given queue and makes it global, thus associating it with the process.
+
+    Parameters
+    ----------
+    q : Queue
+        a queue holding GPU ids assigned to consequitive processes
+
+    Returns
+    -------
+    nothing
+    """
+    q = args[0]
+    global gpu
+    gpu = q.get()
 
 
 def multi_rec(save_dir, proc, data, conf, config_map, devices, prev_dirs, metric='chi'):
 
     """
-    This function controls the multiple reconstructions. It invokes a loop to execute parallel resconstructions,
-    wait for all reconstructions to deliver results, and store te results.
+    This function controls the multiple reconstructions.
 
     Parameters
     ----------
+    save_dir : str
+        a directory where the subdirectories will be created to save all the results for multiple reconstructions
+        
     proc : str
-        a string indicating the processor type
+        a string indicating the processor type (cpu, cuda or opencl)
 
     data : numpy array
         data array
@@ -115,28 +109,21 @@ def multi_rec(save_dir, proc, data, conf, config_map, devices, prev_dirs, metric
     config_map : dict
         parsed configuration
 
-    images : list
-        list of numpy arrays containing reconstructed images for further reconstruction, or None for initial
+    devices : list
+        list of GPUs available for this reconstructions
 
-    supports : list
-        list of numpy arrays containing support of reconstructed images, or None
+    previous_dirs : list
+        list directories that hols results of previous reconstructions if it is continuation
 
-    cohs : list
-        list of numpy arrays containing coherence of reconstructed images, or None
+    metric : str
+        a metric defining algorithm by which to evaluate the image array
 
     Returns
     -------
-    images : list
-        list of numpy arrays containing reconstructed images
-
-    supports : list
-        list of numpy arrays containing support of reconstructed images
-
-    cohs : list
-        list of numpy arrays containing coherence of reconstructed images
-
-    errs : list
-        list of lists of errors (now each element is another list by iterations, but should we take the last error?)
+    save_dirs : list
+        list of directories where to save results
+    evals : list
+        list of evaluation results of image arrays
     """
     evals = []
     def collect_result(result):
@@ -170,31 +157,25 @@ def multi_rec(save_dir, proc, data, conf, config_map, devices, prev_dirs, metric
 
 
 def reconstruction(proc, conf_file, datafile, dir, devices):
-#    proc, datafile, dir, conf_file, devices
     """
-    This function starts the reconstruction. It checks whether it is continuation of reconstruction defined by
-    configuration. If continuation, the lists contaning arrays of images, supports, coherence for multiple reconstructions
-    are read from cont_directory, otherwise, they are initialized to None.
-    After the lists are initialized, they are passed for the multi-reconstruction.
-    The results are saved in the configured directory.
+    This function controls multiple reconstructions.
 
     Parameters
     ----------
-    reconstructions : int
-        number of reconstructions
-
     proc : str
-        a string indicating the processor type (cpu, opencl, cuda)
+        processor to run on (cpu, opencl, or cuda)
 
-    data : numpy array
-        data array
+    conf_file : str
+        configuration file with reconstruction parameters
 
-    conf_info : str
-        configuration file name or experiment directory. If directory, the configuration file is
-        defined as <experiment dir>/conf/config_rec
+    datafile : str
+        name of the file with initial data
 
-    config_map : dict
-        parsed configuration
+    dir : str
+        a parent directory that holds the reconstructions. It can be experiment directory or scan directory.
+
+    devices : list
+        list of GPUs available for this reconstructions
 
     Returns
     -------

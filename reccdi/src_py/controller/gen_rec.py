@@ -1,4 +1,3 @@
-
 # #########################################################################
 # Copyright (c) , UChicago Argonne, LLC. All rights reserved.             #
 #                                                                         #
@@ -24,15 +23,23 @@ import time
 __author__ = "Barbara Frosik"
 __copyright__ = "Copyright (c) 2016, UChicago Argonne, LLC."
 __docformat__ = 'restructuredtext en'
-__all__ = ['read_config',
-           'reconstruction']
+__all__ = [ 'Generation.next_gen',
+            'Generation.get_data',
+            'Generation.get_gmask',
+            'Generation.order,'
+            'Generation.breed_one',
+            'Generation.breed',
+            'reconstruction']
 
 
 class Generation:
     """
-    This class holds fields relevant to generations according to configuration.
+    This class holds fields relevant to generations according to configuration and encapsulates generation functionality.
     """
     def __init__(self, config_map):
+        """
+        Constructor, parses GA parameters from configuration file and saves as class members.
+        """
         self.current_gen = 0
         try:
             self.generations = config_map.generations
@@ -104,9 +111,33 @@ class Generation:
 
 
     def next_gen(self):
+        """
+        Advances to the next generation.
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        nothing
+        """
         self.current_gen += 1
 
     def get_data(self, data):
+        """
+        If low resolution feature is enabled (i.e. when ga_low_resolution_sigmas parameter is defined) the data is modified in each generation that has the sigma provided in the ga_low_resolution_sigmas list. The data is multiplied by gaussian distribution calculated using the defined sigma.
+        
+        Parameters
+        ----------
+        data : ndarray
+            experiment data array, prepared and formatted
+
+        Returns
+        -------
+        data : ndarray
+            modified data
+        """
         if self.current_gen >= self.low_resolution_generations:
             return data
         else:
@@ -115,6 +146,19 @@ class Generation:
 
 
     def get_gmask(self, shape):
+        """
+        It calculates the gaussian distribution for low resolution generations.
+
+        Parameters
+        ----------
+        shape : tuple
+            shape of the data array
+
+        Returns
+        -------
+        mask : ndarray
+            array of the same size as data containing Gaussian distribution accross all dimensions for low resolution generations, or array of 1s for other generations.
+        """
         if self.low_resolution_alg == 'GAUSS':
             if self.sigmas[self.current_gen] < 1.0:
                 ut.gaussian(shape, self.sigmas[self.current_gen])
@@ -122,12 +166,26 @@ class Generation:
                 return np.ones(shape)
 
 
-    def order(self, dirs, rank_property):
+    def order(self, dirs, evals):
+        """
+        Orders results in generation directory in subdirectories numbered from 0 and up, the best result stored in the '0' subdirectory. The ranking is done by numbers in evals list, which are the results of the generation's metric to the image array.
+
+        Parameters
+        ----------
+        dirs : list
+            list of directories where the reconstruction results files are saved
+        evals : list
+            list of evaluation of the results in the directories from the dirs list. The evaluation is a number calculated for metric configured for this generation
+        
+        Returns
+        -------
+        nothing
+        """
         metric = self.metrics[self.current_gen]
         # ranks keeps indexes of reconstructions from best to worst
         # for most of the metric types the minimum of the metric is best, but for
         # 'summed_phase' and 'area' it is oposite, so reversing the order
-        ranks = np.argsort(rank_property).tolist()
+        ranks = np.argsort(evals).tolist()
         if metric == 'summed_phase' or metric == 'area':
             ranks.reverse()
          
@@ -149,8 +207,24 @@ class Generation:
 
 
     def breed_one(self, alpha, breed_mode, dirs):
-        (child_dir, breed_dir) = dirs
-        image_file = os.path.join(child_dir, 'image.npy')
+        """
+        Aligns the image to breed from with the alpha image, and applies breed formula, to obtain a 'child' image.
+
+        Parameters
+        ----------
+        alpha : ndarray
+            the best image in the generation
+        breed_mode : str
+            literal defining the breeding process
+        dirs : tuple
+            a tuple containing two elements: directory where the image to breed from is stored, a 'parent', and a directory where the bred image, a 'child', will be stored.
+            
+        Returns
+        -------
+        nothing
+        """
+        (parent_dir, breed_dir) = dirs
+        image_file = os.path.join(parent_dir, 'image.npy')
         beta = np.load(image_file)
         beta = gut.zero_phase(beta, 0)
         alpha = gut.check_get_conj_reflect(beta, alpha)
@@ -222,55 +296,48 @@ class Generation:
 
     def breed(self, breed_dir, dirs):
         """
-        This function ranks the multiple reconstruction. It breeds next generation by combining the reconstructed
-        images, centered
-        For each combined image the support is calculated and coherence is set to None.
-        The number of bred images matches the number of reconstructions.
+        Breeds next generation.
+        
+        Removes worst results from previous generation if configured, ans breeds according to the breeding mode. The breeding is processed concurrently.
 
         Parameters
         ----------
-        images : list
-            ordered (best to worst) list of images arrays
-
-        supports : list
-            list of supports arrays
-
+        breed_dir : str
+            a directory where subdirectories with 'child' images will be created
+        dirs : tuple
+            list of directories where the image to breed from is stored, a 'parent', ordered from best to worst
+            
         Returns
         -------
-        child_images : list
-            list of bred images
-        child_supports : list
-            list of calculated supports corresponding to child_images
-        child_cohs : list
-            list of child coherence, set to None
+        breed_dirs : list
+            list of directories containing 'child' images
         """
         breed_mode = self.breed_modes[self.current_gen]
         if breed_mode == 'none':
             return dirs
             
         print ('breeding generation ', (self.current_gen + 1))
-        child_dirs = dirs
         
         if self.worst_remove_no is not None:
-            child_dirs = child_dirs[0:len(child_dirs)-self.worst_remove_no[self.current_gen]]
+            dirs = dirs[0:len(dirs)-self.worst_remove_no[self.current_gen]]
 
-        alpha = np.load(os.path.join(child_dirs[0], 'image.npy'))
+        alpha = np.load(os.path.join(dirs[0], 'image.npy'))
         alpha = gut.zero_phase(alpha, 0)
         # assign breed directory for each bred child
         iterable = []
         breed_dirs = []
-        for i in range (len(child_dirs)):
+        for i in range (len(dirs)):
             breed_dirs.append(os.path.join(breed_dir, str(i)))
-            iterable.append((child_dirs[i], breed_dirs[i]))
+            iterable.append((dirs[i], breed_dirs[i]))
 
 	# copy the alpha to the first breeding sub-dir
         if not os.path.exists(breed_dirs[0]):
             os.makedirs(breed_dirs[0])
 
-        shutil.copyfile(os.path.join(child_dirs[0], 'image.npy'), os.path.join(breed_dirs[0], 'image.npy'))
-        shutil.copyfile(os.path.join(child_dirs[0], 'support.npy'), os.path.join(breed_dirs[0], 'support.npy'))
+        shutil.copyfile(os.path.join(dirs[0], 'image.npy'), os.path.join(breed_dirs[0], 'image.npy'))
+        shutil.copyfile(os.path.join(dirs[0], 'support.npy'), os.path.join(breed_dirs[0], 'support.npy'))
 
-        no_processes = min(len(child_dirs), mp.cpu_count())
+        no_processes = min(len(dirs), mp.cpu_count())
         func = partial(self.breed_one, alpha, breed_mode)
         with mp.Pool(processes = no_processes) as pool:
             pool.map_async(func, iterable[1:])
@@ -291,16 +358,16 @@ def reconstruction(proc, conf_file, datafile, dir, devices):
         processor to run on (cpu, opencl, or cuda)
 
     conf_file : str
-        configuration file
+        configuration file with reconstruction parameters
 
-    data : str
+    datafile : str
         name of the file with initial data
 
     dir : str
-        a directory 
+        a parent directory that holds the generations. It can be experiment directory or scan directory.
 
     devices : list
-        list of GPUs
+        list of GPUs available for this reconstructions
 
     Returns
     -------
