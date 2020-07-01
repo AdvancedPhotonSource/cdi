@@ -100,12 +100,13 @@ Conda Build
 
     cp dev/meta.yaml .
     cp dev/build.sh .
+    cp dev/setup.py .
 | when running build for Mac remove the "gputil" line form meta.yaml file in requirements/run section.
 
 - run conda build:
 ::
 
-    conda build -c conda-forge -c frosik -c defaults .
+    conda build -c conda-forge -c bfrosik -c defaults .
 
 - upload build to anaconda cloud
 
