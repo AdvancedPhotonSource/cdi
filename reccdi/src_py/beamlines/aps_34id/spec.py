@@ -33,22 +33,53 @@ def parse_spec(specfile, scan):
     """
     print ('parsing spec')
     # Scan numbers start at one but the list is 0 indexed
-    ss = spec.SPECFile(specfile)[scan - 1]
+    try:
+        ss = spec.SPECFile(specfile)[scan - 1]
+    except:
+        return None,None,None,None,None,None,None,None,None,None
 
     # Stuff from the header
-    detector_name = str(ss.getheader_element('UIMDET'))
-    command = ss.command.split()
-    scanmot = command[1]
-    scanmot_del = (float(command[3]) - float(command[2])) / int(command[4])
+    try:
+        detector_name = str(ss.getheader_element('UIMDET'))
+    except:
+        detector_name = None
+    try:
+        command = ss.command.split()
+        scanmot = command[1]
+        scanmot_del = (float(command[3]) - float(command[2])) / int(command[4])
+    except:
+        scanmot = None
+        scanmot_del = None
 
     # Motor stuff from the header
-    delta = ss.init_motor_pos['INIT_MOPO_Delta']
-    gamma = ss.init_motor_pos['INIT_MOPO_Gamma']
-    theta = ss.init_motor_pos['INIT_MOPO_Theta']
-    phi = ss.init_motor_pos['INIT_MOPO_Phi']
-    chi = ss.init_motor_pos['INIT_MOPO_Chi']
-    detdist = ss.init_motor_pos['INIT_MOPO_camdist']
-    energy = ss.init_motor_pos['INIT_MOPO_Energy']
+    try:
+        delta = ss.init_motor_pos['INIT_MOPO_Delta']
+    except:
+        delta = None
+    try:
+        gamma = ss.init_motor_pos['INIT_MOPO_Gamma']
+    except:
+        gamma = None
+    try:
+        theta = ss.init_motor_pos['INIT_MOPO_Theta']
+    except:
+        theta = None
+    try:
+        phi = ss.init_motor_pos['INIT_MOPO_Phi']
+    except:
+        phi = None
+    try:
+        chi = ss.init_motor_pos['INIT_MOPO_Chi']
+    except:
+        chi = None
+    try:
+        detdist = ss.init_motor_pos['INIT_MOPO_camdist']
+    except:
+        detdist = None
+    try:
+        energy = ss.init_motor_pos['INIT_MOPO_Energy']
+    except:
+        energy = None
 
     # returning the scan motor name as well.  Sometimes we scan things
     # other than theta.  So we need to expand the capability of the display

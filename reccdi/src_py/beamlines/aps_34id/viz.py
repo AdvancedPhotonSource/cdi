@@ -12,7 +12,7 @@ import math as m
 from tvtk.api import tvtk
 import xrayutilities.experiment as xuexp
 import reccdi.src_py.utilities.utils as ut
-#from reccdi.src_py.utilities.utils import measure
+# from reccdi.src_py.utilities.utils import measure
 import reccdi.src_py.beamlines.aps_34id.spec as sput
 import reccdi.src_py.beamlines.aps_34id.detectors as det
 import reccdi.src_py.beamlines.aps_34id.diffractometer as diff
@@ -59,44 +59,36 @@ class DispalyParams:
             specfile = config['specfile']
             last_scan = config['last_scan']
             # get stuff from the spec file.
-            delta, gamma, th, phi, chi, scanmot, scanmot_del, detdist, detector, energy = sput.parse_spec(specfile,
-                                                                                                          last_scan)
-            self.delta = delta
-            self.gamma = gamma
-            self.th = th
-            self.phi = phi
-            self.chi = chi
-            self.detdist = detdist
-            self.energy = energy
-            self.scanmot = scanmot
-            self.scanmot_del = scanmot_del
-            self.detector = detector
-            # should do something that loops through required attributes and sets them from
-            # config if they are present.  like we did in detector for prep.
-            # might do this and the subclass thing.
-        except Exception as e:
+            self.delta, self.gamma, self.th, self.phi, self.chi, self.scanmot, self.scanmot_del, self.detdist, self.detector, self.energy = sput.parse_spec(
+                specfile, last_scan)
+        except:
             pass
         # override the parsed parameters with entries in config file
         try:
             self.energy = config['energy']
         except KeyError:
-            pass
+            if self.energy is None:
+                print('energy not in spec, please configure')
         try:
             self.delta = config['delta']
         except KeyError:
-            pass
+            if self.delta is None:
+                print('delta not in spec, please configure')
         try:
             self.gamma = config['gamma']
         except KeyError:
-            pass
+            if self.gamma is None:
+                print('gamma not in spec, please configure')
         try:
             self.detdist = config['detdist']
         except KeyError:
-            pass
+            if self.detdist is None:
+                print('detdist not in spec, please configure')
         try:
             self.th = config['theta']
         except KeyError:
-            pass
+            if self.th is None:
+                print('theta not in spec, please configure')
         try:
             self.diffractometer = config['diffractometer']
             self.diffractometer_obj = diff.getdiffclass(self.diffractometer)  # will return None if not defined
@@ -147,16 +139,19 @@ class DispalyParams:
         try:
             self.scanmot = config['scanmot']
         except KeyError:
-            pass
+            if self.scanmot is None:
+                print('scanmot not in spec, please configure')
         try:
             self.scanmot_del = config['scanmot_del']
         except KeyError:
-            pass
+            if self.scanmot_del is None:
+                print('scanmot_del not in spec, please configure')
 
         try:
             self.detector = config['detector']
         except KeyError:
-            pass
+            if self.detector is None:
+                print('detector name not in spec, please configure')
         try:
             self.detector_obj = det.getdetclass(self.detector)
         except:
@@ -222,7 +217,6 @@ class CXDViz:
         self.imd = tvtk.ImageData()
         self.sg = tvtk.StructuredGrid()
         self.recipsg = tvtk.StructuredGrid()
-
 
     # @measure
     def set_geometry(self, p, shape):
@@ -314,7 +308,6 @@ class CXDViz:
         self.dirspace_uptodate = 0
         self.recipspace_uptodate = 0
 
-
     def update_dirspace(self, shape):
         """
         Updates direct space grid.
@@ -345,7 +338,6 @@ class CXDViz:
 
         self.dirspace_uptodate = 1
 
-
     def update_recipspace(self, shape):
         """
         Updates reciprocal space grid.
@@ -368,16 +360,13 @@ class CXDViz:
         self.recip_coords = np.dot(self.Trecip, q).transpose()
         self.recipspace_uptodate = 1
 
-
     def clear_direct_arrays(self):
         self.dir_arrs.clear()
-
 
     def clear_recip_arrays(self):
         self.recip_arrs.clear()
 
-
-#    @measure
+    #    @measure
     def add_ds_array(self, array, name, logentry=None):
 
         # Need to add something to ensure arrays are all the same dimension.
@@ -392,7 +381,8 @@ class CXDViz:
             self.update_dirspace(array.shape)
 
 
-#    @measure
+        #    @measure
+
     def add_rs_array(self, array, name, logentry=None):
 
         # Need to add something to ensure arrays are all the same dimension.
@@ -405,7 +395,6 @@ class CXDViz:
         self.recip_arrs[name] = array
         if (not self.recipspace_uptodate):
             self.update_recipspace(array.shape)
-
 
     def get_ds_structured_grid(self, **args):
         arr0 = self.dir_arrs[list(self.dir_arrs.keys())[0]]
@@ -421,7 +410,6 @@ class CXDViz:
         self.sg.extent = 0, dims[2] - 1, 0, dims[1] - 1, 0, dims[0] - 1
         return self.sg
 
-
     def get_rs_structured_grid(self, **args):
         arr0 = self.recip_arrs[list(self.recip_arrs.keys())[0]]
         dims = list(arr0.shape)
@@ -436,7 +424,6 @@ class CXDViz:
         self.recipsg.extent = 0, dims[2] - 1, 0, dims[1] - 1, 0, dims[0] - 1
         return self.recipsg
 
-
     def write_directspace(self, filename, **args):
         sgwriter = tvtk.XMLStructuredGridWriter()
         # sgwriter.file_type = 'binary'
@@ -447,7 +434,6 @@ class CXDViz:
         sgwriter.set_input_data(self.get_ds_structured_grid())
         sgwriter.write()
         print('saved file', filename)
-
 
     def write_recipspace(self, filename, **args):
         sgwriter = tvtk.XMLStructuredGridWriter()
@@ -460,7 +446,7 @@ class CXDViz:
         sgwriter.write()
         print('saved file', filename)
 
-#Save until we finally give up in pyevtk
+# Save until we finally give up in pyevtk
 #  @measure
 #  def write_directspace_pyevtk(self, filename, **args):
 #    print(self.dir_arrs.keys())

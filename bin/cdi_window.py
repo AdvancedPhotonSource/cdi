@@ -1443,24 +1443,30 @@ class cdi_conf_tab(QTabWidget):
             self.roi.setText(str(roi))
             self.roi.setStyleSheet('color: blue')
             delta, gamma, theta, phi, chi, scanmot, scanmot_del, detdist, detector_name, energy = spec.parse_spec(self.main_win.specfile, last_scan)
-            self.energy.setText(str(energy))
-            self.energy.setStyleSheet('color: blue')
-            self.delta.setText(str(delta))
-            self.delta.setStyleSheet('color: blue')
-            self.gamma.setText(str(gamma))
-            self.gamma.setStyleSheet('color: blue')
-            self.theta.setText(str(theta))
-            self.theta.setStyleSheet('color: blue')
-            self.detdist.setText(str(detdist))
-            self.detdist.setStyleSheet('color: blue')
-            try:
-                detObj = det.getdetclass(detector_name)
-                pixel = detObj.get_pixel()
-                self.pixel.setText(str(pixel))
-                self.pixel.setStyleSheet('color: blue')
-            except:
-                self.pixel.setText('')
-                msg_window('pixel cannot be determined from detector')
+            if energy is not None:
+                self.energy.setText(str(energy))
+                self.energy.setStyleSheet('color: blue')
+            if delta is not None:
+                self.delta.setText(str(delta))
+                self.delta.setStyleSheet('color: blue')
+            if gamma is not None:
+                self.gamma.setText(str(gamma))
+                self.gamma.setStyleSheet('color: blue')
+            if theta is not None:
+                self.theta.setText(str(theta))
+                self.theta.setStyleSheet('color: blue')
+            if detdist is not None:
+                self.detdist.setText(str(detdist))
+                self.detdist.setStyleSheet('color: blue')
+            if detector_name is not None:
+                try:
+                    detObj = det.getdetclass(detector_name)
+                    pixel = detObj.get_pixel()
+                    self.pixel.setText(str(pixel))
+                    self.pixel.setStyleSheet('color: blue')
+                except:
+                    self.pixel.setText('')
+                    msg_window('pixel cannot be determined from detector')
         except Exception as e:
             print(str(e))
             msg_window ('error parsing spec')
