@@ -31,11 +31,12 @@ def parse_spec(specfile, scan):
     -------
     delta, gamma, theta, phi, chi, scanmot, scanmot_del, detdist, detector_name, energy
     """
-    print ('parsing spec')
+    # print ('parsing spec')
     # Scan numbers start at one but the list is 0 indexed
     try:
         ss = spec.SPECFile(specfile)[scan - 1]
     except:
+        print ('Could not parse ' + specfile + '. Check if the file exist and permisions.')
         return None,None,None,None,None,None,None,None,None,None
 
     # Stuff from the header

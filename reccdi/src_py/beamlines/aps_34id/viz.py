@@ -94,7 +94,7 @@ class DispalyParams:
             self.diffractometer_obj = diff.getdiffclass(self.diffractometer)  # will return None if not defined
         except KeyError:
             self.diffractometer_obj = None
-            print('diffractometer configuration missed, will use configuration parameters defining diffractometer')
+            print('diffractometer not configured')
         if self.diffractometer_obj is not None:
             # this may not need to be in a try block
             # get attributes out of the diffractometer class and instance
