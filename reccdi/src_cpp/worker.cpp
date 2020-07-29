@@ -181,12 +181,12 @@ int Reconstruction::Iterate()
         if (access("stopfile", F_OK) == 0)
         {
             remove("stopfile");
-            return -2;
+            return -1;
         }
         if (anyTrue<bool>(isNaN(ds_image)))
         {
             printf("the image array has NaN element, quiting this reconstruction process\n");
-            return (uint)(getpid());
+            return -3;
         }
         for (uint i=0; i<iter_flow[current_iteration].size(); i++ )
         {

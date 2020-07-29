@@ -40,7 +40,7 @@ void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vect
         catch (...)
         {
             printf("no gpu with id %d, check configuration\n", device);
-            error_code = -1;
+            error_code = -2;
             return;
         }
         info();
@@ -94,7 +94,7 @@ void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vect
         catch (...)
         {
             printf("no gpu with id %d, check configuration\n", device);
-            error_code = -1;
+            error_code = -2;
             return;
         }
         info();
@@ -140,7 +140,7 @@ void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vect
         catch (...)
         {// leave to the os to assign device
             printf("no gpu with id %d, check configuration\n", device);
-            error_code = -1;
+            error_code = -2;
             return;
         }
         info();
@@ -187,7 +187,7 @@ void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vect
         catch (...)
         {
             printf("no gpu with id %d, check configuration\n", device);
-            error_code = -1;
+            error_code = -2;
             return;
         }
         info();

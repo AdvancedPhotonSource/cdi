@@ -103,8 +103,8 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
 
     if ec < 0:
         print ('the reconstruction in c++ module encountered problems')
-        if ec != -1:  # this error code is returned when device can't be set, the cleanup not needed
-            fast_module.cleanup()
+        # -1 error code is returned when ctl-c, -2 when device can't be set, -2 when NAN is found in image array
+        fast_module.cleanup()
         return None, None, None, None, None, None
 
     er = copy.deepcopy(fast_module.get_errors())
