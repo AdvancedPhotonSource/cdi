@@ -154,7 +154,7 @@ Phase constrain
 | example:
 ::
 
-    phase_min = 1.57
+    phase_max = 1.57
 
 Partial coherence
 +++++++++++++++++
