@@ -561,7 +561,7 @@ class PrepData:
         else:
             self.write_sum_scan([(firstscan, refarr), ])  # this works for single scan as well
 
-        if len(self.dirs) > 1:
+        if len(self.dirs) >= 1:
             self.fft_refarr = np.fft.fftn(refarr)
             # Need to further chunck becauase the result queue needs to hold N arrays.
             # if there are a lot of them and they are big, it runs out of ram.
