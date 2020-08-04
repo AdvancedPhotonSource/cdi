@@ -79,7 +79,7 @@ try{
     af::array abs_amplitudes_2 = pow(abs_amplitudes, 2);
     af::array converged_2 = af::fftConvolve(abs_amplitudes_2, kernel_array);
     af::array converged = sqrt(converged_2);
-    //af::array converged = sqrt(fftConvolve(pow(abs_amplitudes, 2), kernel_array));  // implemented here, but works different than af::fftConvolve
+    //af::array converged = sqrt(convolve(pow(abs_amplitudes, 2), kernel_array));  // implemented here, but works different than af::fftConvolve
 
     //printf("coherence norm %f\n", sum<d_type>(pow(abs(kernel_array), 2)));
     //printf("converged norm %f\n", sum<d_type>(pow(abs(converged), 2)));
