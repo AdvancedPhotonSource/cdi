@@ -77,7 +77,7 @@ af::array PartialCoherence::ApplyPartialCoherence(af::array abs_amplitudes)
 try{
     // apply coherence
     af::array abs_amplitudes_2 = pow(abs_amplitudes, 2);
-    af::array converged_2 = af::fftConvolve(abs_amplitudes_2, kernel_array);
+    af::array converged_2 = af::convolve(abs_amplitudes_2, kernel_array);
     af::array converged = sqrt(converged_2);
     //af::array converged = sqrt(convolve(pow(abs_amplitudes, 2), kernel_array));  // implemented here, but works different than af::fftConvolve
 
@@ -131,11 +131,6 @@ try{
     {
         DeconvLucy(pow(amplitudes, 2), pow(roi_data_abs, 2), iteration_num);
     }
-    else if (algorithm == ALGORITHM_LUCY_PREV)
-    {
-        //    coherence = pow(roi_data_abs, 2);
-        //coherence = DeconvLucy(coherence, pow(roi_data_abs, 2), iteration_num);
-    }
     else
     {
         //prinf("only LUCY algorithm is currently supported");
@@ -184,14 +179,16 @@ try{
     //set it to the last coherence instead
     af::array coherence = kernel_array;
     af::array data_mirror = af::flip(af::flip(af::flip(af::flip(data, 0),1),2),3).copy();
+    af::array convolving = af::array();
+    af::array relative_blurr = af::array();
 
     for (int i = 0; i < iterations; i++)
     {
-        af::array convolve = af::fftConvolve(coherence, data);
-        convolve(convolve == 0) = 1.0;   // added to the algorithm from scikit to prevent division by 0
+        convolving = af::convolve(coherence, data);
+        convolving(convolving == 0) = 1.0;   // added to the algorithm from scikit to prevent division by 0
 
-        af::array relative_blurr = amplitudes/convolve;
-        coherence *= af::fftConvolve(relative_blurr, data_mirror);
+        relative_blurr = amplitudes/convolving;
+        coherence *= af::convolve(relative_blurr, data_mirror);
     }
     coherence = real(coherence);
     d_type coh_sum = sum<d_type>(abs(coherence));
