@@ -23,13 +23,13 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 import importlib
-import format_data as run_dt
-import run_rec as run_rc
-import run_disp as run_dp
-import run_prep_34idc as prep
+#import format_data as run_dt
+#import run_rec as run_rc
+#import run_disp as run_dp
+#import run_prep_34idc as prep
 import reccdi.src_py.utilities.utils as ut
 import reccdi.src_py.utilities.parse_ver as ver
-import reccdi.src_py.beamlines.aps_34id.spec as spec
+#import reccdi.src_py.beamlines.aps_34id.spec as spec
 import reccdi.src_py.beamlines.aps_34id.diffractometer as dif
 import reccdi.src_py.beamlines.aps_34id.detectors as det
 
@@ -1434,6 +1434,8 @@ class cdi_conf_tab(QTabWidget):
         -------
         nothing
         """
+        import reccdi.src_py.beamlines.aps_34id.spec as spec
+
         if not self.main_win.is_exp_exists():
             # do not parse on initial assignment
             return
@@ -1690,6 +1692,8 @@ class cdi_conf_tab(QTabWidget):
         -------
         nothing
         """
+        import run_prep_34idc as prep
+
         # for 34idc prep data directory is needed
         if self.data_dir is None:
             msg_window('cannot prepare data for 34idc, need data directory')
@@ -1758,6 +1762,8 @@ class cdi_conf_tab(QTabWidget):
         -------
         nothing
         """
+        import format_data as run_dt
+
         if not self.main_win.is_exp_exists():
             msg_window('the experiment has not been created yet')
         elif not self.main_win.is_exp_set():
@@ -1787,6 +1793,8 @@ class cdi_conf_tab(QTabWidget):
         -------
         nothing
         """
+        import run_rec as run_rc
+
         if not self.main_win.is_exp_exists():
             msg_window('the experiment has not been created yet')
         elif not self.main_win.is_exp_set():
@@ -1889,6 +1897,8 @@ class cdi_conf_tab(QTabWidget):
         -------
         nothing
         """
+        import run_disp as run_dp
+
         if not self.main_win.is_exp_exists():
             msg_window('the experiment has not been created yet')
             return
