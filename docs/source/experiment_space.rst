@@ -24,7 +24,7 @@ Single reconstruction
 |
 | The directory tree is created by users scripts. Refer to :ref:`use` page for description and explanation how to use the scripts. Below is a sequence of events that produces the experiment directory tree.
 
-- The experiment should be set up with "conf" subdirectory containing configuration files. There are scripts in the bin directory that create the initial experiment space. Refer to :doc:`ui` page for user scripts and to :doc:`configuration` page for configuration files and parameters.
+- The experiment should be set up with "conf" subdirectory containing configuration files. There are scripts in the bin directory that create the initial experiment space. Refer to :doc:`scripts` page for user scripts and to :doc:`configuration` page for configuration files and parameters.
 - The script "run_prep_34idc.py" creates "prep_data.tif" file in "prep" subdirectory. This is a file ready to be formatted.
 - The script "format_data.py" reads the "prep_data.tif" file, formats it, and saves the result in the "data" subdirectory as "data.tif" file. This file is ready for reconstruction.
 - "run_rec.py" script reads "data.tif" file and runs image reconstruction. The results are stored in the "results" subdirectory in "image.npy" file.

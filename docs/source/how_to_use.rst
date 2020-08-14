@@ -5,7 +5,7 @@ Use
 | The scripts in cdi/bin directory provide a complete interface to run entire processing associated with experiment, i.e. data preparation, data formatting, reconstruction, and image visualizasion. The preparation and visualizasion scripts are written for the APS 34-ID-C beamline.
 | For users that want to develop own scrips, the scripts in cdi/bin directory can be used as a starting point. This might be the case if the scripts are customized for a new beamline with regard to preparing data and visualizing image. These scripts can be obtained from GitHub at https://github.com/advancedPhotonSource/cdi/bin
 
-.. _ui:
+.. _scripts:
 
 Scripts
 ####### 
