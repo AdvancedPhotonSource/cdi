@@ -264,7 +264,7 @@ GA
     ga_breed_modes = ("sqrt_ab", "dsqrt", "none")
 
 - ga_cullings:
-| optional, defines how many worst samples to remove in breeding phase for each generation. If not defined, or shorter that number of generations, the culling defaults to 0.
+| optional, defines how many worst samples to remove in a breeding phase for each generation. If not defined for the generation, the culling defaults to 0.
 | example:
 ::
 

@@ -2,43 +2,16 @@
 
 Use
 ===
-
-| The scripts in cdi/bin directory provide a complete interface to run entire processing associated with experiment, i.e. data preparation, data formatting, reconstruction, and image visualization. The same set of python scripts is part of reccdi package, in reccdi/bin directory. User can use the scripts that are part of reccdi package from command line.
-
+| The scripts in cdi/bin directory provide a complete interface to run entire processing associated with experiment, i.e. data preparation, data formatting, reconstruction, and image visualizasion. The preparation and visualizasion scripts are written for the APS 34-ID-C beamline.
 | For users that want to develop own scrips, the scripts in cdi/bin directory can be used as a starting point. This might be the case if the scripts are customized for a new beamline with regard to preparing data and visualizing image. These scripts can be obtained from GitHub at https://github.com/advancedPhotonSource/cdi/bin
 
-.. _setup:
-
-Setting space for experiment
-############################
-| There are multiple ways of creating the space for experiment:
-
-- running create_experiment.py script
-- running setup_34idc.py script
-- using GUI
-
-User Interface
-##############
-| This section describes how to use the user interface scripts.
-| For users that do not need to modify the scripts the easiest way is to invoke scripts in the reccdi package.
-
-| Below is a code snipped that runs reccdi.bin.<script>. User needs create a python file with the content below and replace the <script> with the script name to run.
-  ::
-
-        import sys
-        import reccdi.bin.<script> as sc
-
-        if __name__ == "__main__":
-            sc.main(sys.argv[1:])
-
-
-| The users that want to modify running scripts have to copy the cdi/bin directory from GitHub. 
+.. _ui:
 
 Scripts
 ####### 
 | Below is a list of scripts with description and explanation how to run:
 
-- create experiment.py
+- create_experiment.py
 
   This script creates a new experiment directory with conf subdirectory. The conf contains all configuration files. The files contain all parameters, but most of them commented out to make them inactive. User needs to edit the configuration files and un-comment to use wanted functionality.
   Running this script:
