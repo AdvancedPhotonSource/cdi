@@ -25,7 +25,7 @@ private:
     
     af::array kernel_array;
     af::array roi_amplitudes_prev;
-    af::array roi_data_abs;
+    af::array roi_data_abs_2;
     d_type sum_roi_data;
     af::dim4 roi_dims;
     af::dim4 dims;
@@ -35,7 +35,6 @@ private:
     void TuneLucyCoherence(af::array);
     int GetAlgorithm();
     std::vector<int> GetRoi();
-    af::array fftConvolve(af::array arr, af::array kernel);
 
 public:
     PartialCoherence(Params *params, af::array coherence_array);

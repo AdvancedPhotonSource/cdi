@@ -34,7 +34,7 @@ PartialCoherence::~PartialCoherence()
 {
     kernel_array = af::array();
     roi_amplitudes_prev = af::array();
-    roi_data_abs = af::array();
+    roi_data_abs_2 = af::array();
     roi.clear();
 }
 
@@ -42,24 +42,25 @@ void PartialCoherence::Init(af::array data)
 {
     dims = data.dims();
 
-    af::array data_centered = af::shift(data, dims[0]/2, dims[1]/2, dims[2]/2, dims[3]/2);
-    roi_data_abs =  Utils::CropCenter(data_centered, roi_dims).copy();
+    af::array data_centered_2 = pow(af::shift(data, dims[0]/2, dims[1]/2, dims[2]/2, dims[3]/2), 2);
+    roi_data_abs_2 =  Utils::CropCenter(data_centered_2, roi_dims).copy();
+    //roi_data_abs_2 = pow(Utils::Crop(data, roi_dims).copy(), 2);
     if (normalize)
     {
-        sum_roi_data = sum<d_type>(pow(roi_data_abs, 2));
+        sum_roi_data = sum<d_type>(roi_data_abs_2);
     }
     if (Utils::IsNullArray(kernel_array))
     {
         d_type c = 0.5;
         kernel_array = constant(c, roi_dims);
     }
-    //dim4 kdim = kernel_array.dims();
 }
 
 void PartialCoherence::SetPrevious(af::array abs_amplitudes)
 {
     af::array abs_amplitudes_centered = shift(abs_amplitudes, dims[0]/2, dims[1]/2, dims[2]/2, dims[3]/2);
     roi_amplitudes_prev =  Utils::CropCenter(abs_amplitudes_centered, roi_dims).copy();
+    //roi_amplitudes_prev =  Utils::Crop(abs_amplitudes, roi_dims).copy();
 }
 
 int PartialCoherence::GetAlgorithm()
@@ -84,9 +85,8 @@ try{
     //printf("coherence norm %f\n", sum<d_type>(pow(abs(kernel_array), 2)));
     //printf("converged norm %f\n", sum<d_type>(pow(abs(converged), 2)));
     return converged;
-
-}
-catch(af::exception& e) {
+    }
+    catch(af::exception& e) {
         fprintf(stderr, "%s\n", e.what());
         printf("ApplyPartialCoherence\n");
         throw;
@@ -95,20 +95,23 @@ catch(af::exception& e) {
 
 void PartialCoherence::UpdatePartialCoherence(af::array abs_amplitudes)
 {
-try{
-    af::array abs_amplitudes_centered = shift(abs_amplitudes, dims[0]/2, dims[1]/2, dims[2]/2, dims[3]/2);
-    af::array roi_abs_amplitudes = Utils::CropCenter(abs_amplitudes_centered, roi_dims).copy();
+//    timer::start();
+    try{
+        af::array abs_amplitudes_centered = shift(abs_amplitudes, dims[0]/2, dims[1]/2, dims[2]/2, dims[3]/2);
+        af::array roi_abs_amplitudes = Utils::CropCenter(abs_amplitudes_centered, roi_dims).copy();
+        //af::array roi_abs_amplitudes = Utils::Crop(abs_amplitudes, roi_dims).copy();
 
-    af::array roi_combined_amp = 2*roi_abs_amplitudes - roi_amplitudes_prev;
-    OnTrigger(roi_combined_amp);   // use_2k_1 from matlab program
-    //printf("Updating coherence\n");
+        af::array roi_combined_amp = 2*roi_abs_amplitudes - roi_amplitudes_prev;
+        OnTrigger(roi_combined_amp);   // use_2k_1 from matlab program
+        //printf("Updating coherence\n");
 
-}
-catch(af::exception& e) {
+    }
+    catch(af::exception& e) {
         fprintf(stderr, "%s\n", e.what());
         printf("UpdatePartialCoherence\n");
         throw;
     }
+//    printf("update pc took %g seconds\n", timer::stop());
 }
 
 void PartialCoherence::OnTrigger(af::array arr)
@@ -117,19 +120,17 @@ try{
     // assume calculating coherence across all three dimensions
     af::array amplitudes = arr;
     // if symmetrize data, recalculate roi_array and roi_data - not doing it now, since default to false
+    af::array amplitudes_2 = pow(arr, 2);
     if (normalize)
     {
-        af::array amplitudes_2 = pow(arr, 2);
         d_type sum_ampl = sum<d_type>(amplitudes_2);
         d_type ratio = sum_roi_data/sum_ampl;
-        amplitudes = sqrt(amplitudes_2 * ratio);
+        amplitudes_2 = amplitudes_2 * ratio;
     }
-    
-    af::array coherence;
-    // LUCY deconvolution
+
     if (algorithm == ALGORITHM_LUCY)
     {
-        DeconvLucy(pow(amplitudes, 2), pow(roi_data_abs, 2), iteration_num);
+        DeconvLucy(amplitudes_2, roi_data_abs_2, iteration_num);
     }
     else
     {
@@ -143,37 +144,10 @@ catch(af::exception& e) {
     }
 }
 
-af::array PartialCoherence::fftConvolve(af::array arr, af::array kernel)
-{
-try{
-    af::dim4 dims_input = arr.dims();
-//    af::dim4 dims_kernel = kernel.dims();
-//
-//    int dims_fft_padded [nD];
-//
-//    for(unsigned int i = 0; i < nD; i++)
-//    {
-//        dim_t d = Utils::GetDimension(dims_input[i] + dims_kernel[i] - 1);
-//        dims_fft_padded[i] = Utils::GetDimension(dims_input[i] + dims_kernel[i] - 1);
-//    }
-    
-    d_type pad = 0;
-    af::array kernel_padded = Utils::PadAround(kernel, dims_input, pad);
-
-    uint nD = params->GetNdim();
-    af::array coh_padded = real( Utils::ifft( Utils::fft(arr, nD) * Utils::fft(kernel_padded, nD), nD ) );
-    return coh_padded;
-}
-catch(af::exception& e) {
-        fprintf(stderr, "%s\n", e.what());
-        printf("fftConvolve\n");
-        throw;
-    }
-
-}
 
 void PartialCoherence::DeconvLucy(af::array amplitudes, af::array data, int iterations)
 {
+//printf("amplitudes in Lucy norm %f\n", sum<d_type>(pow(abs(amplitudes), 2)));
 try{
     // implementation based on Python code: https://github.com/scikit-image/scikit-image/blob/master/skimage/restoration/deconvolution.py
     //set it to the last coherence instead
@@ -193,7 +167,7 @@ try{
     coherence = real(coherence);
     d_type coh_sum = sum<d_type>(abs(coherence));
     coherence = abs(coherence)/coh_sum;    
-    //printf("coherence norm ,  %f\n", sum<d_type>(pow(abs(coherence), 2)));
+//    printf("coherence norm ,  %f\n", sum<d_type>(pow(abs(coherence), 2)));
     kernel_array = coherence;
 }
 catch(af::exception& e) {
