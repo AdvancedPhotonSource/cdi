@@ -66,6 +66,28 @@ af::array Utils::CropCenter(af::array arr, af::dim4 roi)
     return arr(seq(beginning[0], ending[0]-1), seq(beginning[1], ending[1]-1), seq(beginning[2], ending[2]-1), seq(beginning[3], ending[3]-1));
 }
 
+
+af::array Utils::CenterCropCenter(af::array arr, af::dim4 roi)
+{
+    dim4 dims = arr.dims();
+    af::array centered = shift(arr, dims[0]/2, dims[1]/2, dims[2]/2, dims[3]/2);
+    af::array cropped = Utils::CropCenter(centered, roi).copy();
+    centered = af::array();
+}
+
+
+af::array Utils::Crop(af::array arr, af::dim4 roi)
+{
+    int beginning[4]; //dim4 contains four dimensions
+    int ending[4];
+    for (int i=0; i<4; i++)
+    {
+        beginning[i] = 0;
+        ending[i] = beginning[i] + roi[i];
+    }
+    return arr(seq(beginning[0], ending[0]-1), seq(beginning[1], ending[1]-1), seq(beginning[2], ending[2]-1), seq(beginning[3], ending[3]-1));
+}
+
 af::array Utils::fftshift(af::array arr)
 {
     return af::shift(arr, ceil(arr.dims()[0]/2)-1, ceil(arr.dims()[1]/2)-1, ceil(arr.dims()[2]/2)-1, ceil(arr.dims()[3]/2)-1);
@@ -197,4 +219,18 @@ std::vector<float> Utils::Linspace(int iter, float start_val, float end_val)
         spaced.push_back(start_val + (end_val - start_val)/iter * i);
     }
     return spaced;
+}
+
+std::vector<d_type> Utils::ToVector(af::array arr)
+{
+    d_type *vec = arr.copy().host<d_type>();
+    std::vector<d_type> v(vec, vec + arr.elements());
+    delete [] vec;
+    return v;
+}
+
+af::array Utils::ToArray(std::vector<d_type> vec, af::dim4 dims)
+{
+    af::array arr(dims, &vec[0]);
+    return arr;
 }

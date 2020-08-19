@@ -33,7 +33,9 @@ public:
     // dimensions.
     // The method returns a cropped array to the given dimensions with the maximum centered and preserved values. 
     static af::array CropCenter(af::array arr, af::dim4 roi);
-    
+    static af::array CenterCropCenter(af::array arr, af::dim4 roi);
+    static af::array Crop(af::array data, af::dim4 roi);
+
     static af::array fftshift(af::array arr);
     static af::array ifftshift(af::array arr);
     static af::array fft(af::array arr, uint nD);
@@ -73,6 +75,9 @@ public:
     static bool IsNullArray(af::array);
     static std::string GetFullFilename(const char * dir, const char * filename);
     static std::vector<float> Linspace(int iter, float start_val, float end_val);
+
+    static std::vector<d_type> ToVector(af::array );
+    static af::array ToArray(std::vector<d_type>, af::dim4 );
 };
 
 #endif /* util_hpp */

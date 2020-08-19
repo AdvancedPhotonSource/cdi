@@ -18,7 +18,6 @@ class PartialCoherence
 {
 private:
     Params * params;
-    std::vector<int> roi;
     int algorithm;
     bool normalize;
     int iteration_num;
@@ -32,9 +31,6 @@ private:
     
     void DeconvLucy(af::array image, af::array filter, int iter_num);
     void OnTrigger(af::array abs_image);
-    void TuneLucyCoherence(af::array);
-    int GetAlgorithm();
-    std::vector<int> GetRoi();
 
 public:
     PartialCoherence(Params *params, af::array coherence_array);
