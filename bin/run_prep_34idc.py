@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 # #########################################################################
 # Copyright (c) , UChicago Argonne, LLC. All rights reserved.             #
@@ -44,7 +43,7 @@ import reccdi.src_py.beamlines.aps_34id.detectors as det
 import reccdi.src_py.utilities.utils as ut
 from multiprocessing import Pool
 from multiprocessing import cpu_count
-import parse
+import re
 import psutil
 
 
@@ -82,17 +81,6 @@ def get_dir_dict2(scans, main_map, prep_map):
     except:
         print('please provide data_dir')
         return
-    try:
-        specfile = main_map.specfile.strip()
-        scandirbase = os.path.basename(specfile).rsplit('.', 1)[0]
-    except:
-        scandirbase = ''
-
-    try:
-        scandirbase = prep_map.scandirbase
-    except:
-        # not sure what to do if there is no scandirbase defined
-        pass
 
     dirs = {}
     for name in os.listdir(data_dir):
@@ -101,17 +89,11 @@ def get_dir_dict2(scans, main_map, prep_map):
             # exclude directories with fewer tif files than min_files
             if len(glob.glob1(subdir, "*.tif")) < min_files and len(glob.glob1(subdir, "*.tiff")) < min_files:
                 continue
-            try:
-                # originally assumed that the last four digits in the scan dir name are the scan number
-                # index = int(name[-4:])
-                # using parse to extract that now.
-                template = "%s%s" % (scandirbase, "_S{}")
-                index = int(parse.parse(template, name)[0])  # if parse fails this will raise exception on []
-                #                print(template, name, scans[0], scans[1], index)
+            last_digits = re.search(r'\d+$', name)
+            if last_digits is not None:
+                index = int(last_digits.group())
                 if index >= scans[0] and index <= scans[1] and not index in exclude_scans:
-                    dirs[index] = subdir
-            except:
-                continue
+                   dirs[index] = subdir
     return dirs
 
 
@@ -140,28 +122,22 @@ def read_scan(dir, detector, det_area):
     files = []
     files_dir = {}
     for file in os.listdir(dir):
-        if file.endswith('tif') or file.endswith('tiff'):
-            fnbase = file.rsplit('.', 1)[0]  # hard to deal with both tif and tiff in parse
-            # it's assumed that the files end with four digits and 'tif' or 'tiff' extension
-            # I wonder if this should also be in detector class?
-            # Or maybe we can capture the filename template from AreaDetector into spec
-            dirbase = os.path.basename(dir).strip()
-            key = parse.parse("%s_{:d}" % dirbase, fnbase)[0]  # this could be faster with parse.compile
-            # key = fnbase[0][-4:]
+        if file.endswith('tif'):
+            fnbase = file[:-4]
+        elif file.endswith('tiff'):
+            fnbase = file[:-4]
+        else:
+            continue
+        last_digits = re.search(r'\d+$', fnbase)
+        if last_digits is not None:
+            key = int(last_digits.group())
             files_dir[key] = file
 
     ordered_keys = sorted(list(files_dir.keys()))
 
     for key in ordered_keys:
         file = files_dir[key]
-        file = os.path.join(dir, file)
-        # Background files for the CCD will need to be handled by the detector class for it.
-        # Will need to figure that out eventually.
-        #        if not os.path.isfile(bg_file):
-        #            bg_file = None
-
-        #        files.append((file, bg_file))
-        files.append(file)
+        files.append(os.path.join(dir, file))
 
     # look at slice0 to find out shape
     n = 0
