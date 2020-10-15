@@ -213,22 +213,17 @@ class CXDViz:
     """
       This class does viz generation. It uses tvtk package for that purpose.
     """
-    cropx = 0.5
-    cropy = 0.5
-    cropz = 0.5
     dir_arrs = {}
     recip_arrs = {}
 
-    def __init__(self):
+    def __init__(self, p):
         """
         The constructor creates objects assisting with visualization.
         """
-        self.imd = tvtk.ImageData()
-        self.sg = tvtk.StructuredGrid()
-        self.recipsg = tvtk.StructuredGrid()
+        self.params = p
 
     # @measure
-    def set_geometry(self, p, shape):
+    def set_geometry(self, shape):
         """
         Sets geometry.
 
@@ -244,7 +239,7 @@ class CXDViz:
         -------
         nothing
         """
-        self.params = p
+        p = self.params
         # DisplayParams is not expected to do any modifications of params (units, etc)
         px = p.pixel[0] * p.binning[0]
         py = p.pixel[1] * p.binning[1]
@@ -316,6 +311,7 @@ class CXDViz:
         self.dirspace_uptodate = 0
         self.recipspace_uptodate = 0
 
+
     def update_dirspace(self, shape):
         """
         Updates direct space grid.
@@ -346,6 +342,7 @@ class CXDViz:
 
         self.dirspace_uptodate = 1
 
+
     def update_recipspace(self, shape):
         """
         Updates reciprocal space grid.
@@ -368,15 +365,17 @@ class CXDViz:
         self.recip_coords = np.dot(self.Trecip, q).transpose()
         self.recipspace_uptodate = 1
 
+
     def clear_direct_arrays(self):
         self.dir_arrs.clear()
+
 
     def clear_recip_arrays(self):
         self.recip_arrs.clear()
 
+
     #    @measure
     def add_ds_array(self, array, name, logentry=None):
-
         # Need to add something to ensure arrays are all the same dimension.
         # Need to add crop of viz output arrays
         if len(array.shape) < 3:
@@ -389,10 +388,8 @@ class CXDViz:
             self.update_dirspace(array.shape)
 
 
-        #    @measure
-
+    #    @measure
     def add_rs_array(self, array, name, logentry=None):
-
         # Need to add something to ensure arrays are all the same dimension.
         # Need to add crop of viz output arrays
         if len(array.shape) < 3:
@@ -404,33 +401,37 @@ class CXDViz:
         if (not self.recipspace_uptodate):
             self.update_recipspace(array.shape)
 
+
     def get_ds_structured_grid(self, **args):
+        sg = tvtk.StructuredGrid()
         arr0 = self.dir_arrs[list(self.dir_arrs.keys())[0]]
         dims = list(arr0.shape)
-        self.sg.points = self.dir_coords
+        sg.points = self.dir_coords
         for a in self.dir_arrs.keys():
             arr = tvtk.DoubleArray()
             arr.from_array(self.dir_arrs[a].ravel())
             arr.name = a
-            self.sg.point_data.add_array(arr)
+            sg.point_data.add_array(arr)
 
-        self.sg.dimensions = (dims[2], dims[1], dims[0])
-        self.sg.extent = 0, dims[2] - 1, 0, dims[1] - 1, 0, dims[0] - 1
-        return self.sg
+        sg.dimensions = (dims[2], dims[1], dims[0])
+        sg.extent = 0, dims[2] - 1, 0, dims[1] - 1, 0, dims[0] - 1
+        return sg
+
 
     def get_rs_structured_grid(self, **args):
+        sg = tvtk.StructuredGrid()
         arr0 = self.recip_arrs[list(self.recip_arrs.keys())[0]]
         dims = list(arr0.shape)
-        self.recipsg.points = self.recip_coords
+        sg.points = self.recip_coords
         for a in self.recip_arrs.keys():
             arr = tvtk.DoubleArray()
             arr.from_array(self.recip_arrs[a].ravel())
             arr.name = a
-            self.recipsg.point_data.add_array(arr)
+            sg.point_data.add_array(arr)
 
-        self.recipsg.dimensions = (dims[2], dims[1], dims[0])
-        self.recipsg.extent = 0, dims[2] - 1, 0, dims[1] - 1, 0, dims[0] - 1
-        return self.recipsg
+        sg.dimensions = (dims[2], dims[1], dims[0])
+        sg.extent = 0, dims[2] - 1, 0, dims[1] - 1, 0, dims[0] - 1
+        return sg
 
     def write_directspace(self, filename, **args):
         sgwriter = tvtk.XMLStructuredGridWriter()

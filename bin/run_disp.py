@@ -57,8 +57,8 @@ def save_CX(conf_dict, image, support, coh, save_dir):
         image, support = vu.center(image, support)
     if 'rampups' in conf_dict:
         image = vu.remove_ramp(image, ups=conf_dict['rampups'])
-    viz = v.CXDViz()
-    viz.set_geometry(params, image.shape)
+    viz = v.CXDViz(params)
+    viz.set_geometry(image.shape)
 
     try:
         image_name = conf_dict['image_name']
