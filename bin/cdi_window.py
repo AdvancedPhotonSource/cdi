@@ -375,6 +375,7 @@ class cdi_gui(QWidget):
             self.specfile = conf_map.specfile
             self.spec_file_button.setStyleSheet("Text-align:left")
             self.spec_file_button.setText(self.specfile)
+            self.t.parse_spec()
         except:
             self.specfile = None
             self.spec_file_button.setText('')
@@ -897,10 +898,16 @@ class cdi_conf_tab(QTabWidget):
         layout.addRow("detdist (mm)", self.detdist)
         self.theta = QLineEdit()
         layout.addRow("theta (deg)", self.theta)
+        self.chi = QLineEdit()
+        layout.addRow("chi (deg)", self.chi)
+        self.phi = QLineEdit()
+        layout.addRow("phi (deg)", self.phi)
         self.scanmot = QLineEdit()
         layout.addRow("scan motor", self.scanmot)
-        self.pixel = QLineEdit()
-        layout.addRow("pixel", self.pixel)
+        self.scanmot_del = QLineEdit()
+        layout.addRow("scan motor delay", self.scanmot_del)
+        self.detector = QLineEdit()
+        layout.addRow("detector", self.detector)
         self.set_disp_conf_from_button = QPushButton("Load disp conf from")
         self.set_disp_conf_from_button.setStyleSheet("background-color:rgb(205,178,102)")
         #layout.addRow(self.set_disp_conf_from_button)
@@ -917,8 +924,11 @@ class cdi_conf_tab(QTabWidget):
         self.gamma.textChanged.connect(lambda: self.set_overriden(self.gamma))
         self.detdist.textChanged.connect(lambda: self.set_overriden(self.detdist))
         self.theta.textChanged.connect(lambda: self.set_overriden(self.theta))
+        self.chi.textChanged.connect(lambda: self.set_overriden(self.chi))
+        self.phi.textChanged.connect(lambda: self.set_overriden(self.phi))
         self.scanmot.textChanged.connect(lambda: self.set_overriden(self.scanmot))
-        self.pixel.textChanged.connect(lambda: self.set_overriden(self.pixel))
+        self.scanmot_del.textChanged.connect(lambda: self.set_overriden(self.scanmot_del))
+        self.detector.textChanged.connect(lambda: self.set_overriden(self.detector))
         self.set_disp_conf_from_button.clicked.connect(self.load_disp_conf)
         self.layout4 = layout
 
@@ -1157,13 +1167,28 @@ class cdi_conf_tab(QTabWidget):
         except AttributeError:
             pass
         try:
+            self.chi.setText(str(conf_map.chi).replace(" ", ""))
+            self.chi.setStyleSheet('color: black')
+        except AttributeError:
+            pass
+        try:
+            self.phi.setText(str(conf_map.phi).replace(" ", ""))
+            self.phi.setStyleSheet('color: black')
+        except AttributeError:
+            pass
+        try:
             self.scanmot.setText(str(conf_map.scanmot).replace(" ", ""))
             self.scanmot.setStyleSheet('color: black')
         except AttributeError:
             pass
         try:
-            self.pixel.setText(str(conf_map.pixel).replace(" ", ""))
-            self.pixel.setStyleSheet('color: black')
+            self.scanmot_del.setText(str(conf_map.scanmot_del).replace(" ", ""))
+            self.scanmot_del.setStyleSheet('color: black')
+        except AttributeError:
+            pass
+        try:
+            self.detector.setText(str(conf_map.detector).replace(" ", ""))
+            self.detector.setStyleSheet('color: black')
         except AttributeError:
             pass
 
@@ -1295,10 +1320,16 @@ class cdi_conf_tab(QTabWidget):
             conf_map['detdist'] = str(self.detdist.text())
         if len(self.theta.text()) > 0:
             conf_map['theta'] = str(self.theta.text())
+        if len(self.chi.text()) > 0:
+            conf_map['chi'] = str(self.chi.text())
+        if len(self.phi.text()) > 0:
+            conf_map['phi'] = str(self.phi.text())
         if len(self.scanmot.text()) > 0:
             conf_map['scanmot'] = '"' + str(self.scanmot.text()) + '"'
-        if len(self.pixel.text()) > 0:
-            conf_map['pixel'] = str(self.pixel.text()).replace('\n', '')
+        if len(self.scanmot_del.text()) > 0:
+            conf_map['scanmot_del'] = str(self.scanmot_del.text())
+        if len(self.detector.text()) > 0:
+            conf_map['detector'] = '"' + str(self.detector.text()) + '"'
         if len(self.diffractometer.text()) > 0:
             conf_map['diffractometer'] = '"' + str(self.diffractometer.text()) + '"'
         if len(self.crop.text()) > 0:
@@ -1457,18 +1488,24 @@ class cdi_conf_tab(QTabWidget):
             if theta is not None:
                 self.theta.setText(str(theta))
                 self.theta.setStyleSheet('color: blue')
+            if chi is not None:
+                self.chi.setText(str(chi))
+                self.chi.setStyleSheet('color: blue')
+            if phi is not None:
+                self.phi.setText(str(phi))
+                self.phi.setStyleSheet('color: blue')
             if detdist is not None:
                 self.detdist.setText(str(detdist))
                 self.detdist.setStyleSheet('color: blue')
+            if scanmot is not None:
+                self.scanmot.setText(str(scanmot))
+                self.scanmot.setStyleSheet('color: blue')
+            if scanmot_del is not None:
+                self.scanmot_del.setText(str(scanmot_del))
+                self.scanmot_del.setStyleSheet('color: blue')
             if detector_name is not None:
-                try:
-                    detObj = det.getdetclass(detector_name)
-                    pixel = detObj.get_pixel()
-                    self.pixel.setText(str(pixel))
-                    self.pixel.setStyleSheet('color: blue')
-                except:
-                    self.pixel.setText('')
-                    msg_window('pixel cannot be determined from detector')
+                self.detector.setText(str(detector_name))
+                self.detector.setStyleSheet('color: blue')
         except Exception as e:
             print(str(e))
             msg_window ('error parsing spec')
@@ -1934,7 +1971,7 @@ class cdi_conf_tab(QTabWidget):
             len(self.gamma.text()) == 0 or \
             len(self.detdist.text()) == 0 or \
             len(self.theta.text()) == 0 or \
-            len(self.pixel.text()) == 0):
+            len(self.detector.text()) == 0):
                 msg_window('Please, enter valid spec file or all detector parameters')
                 return
 

@@ -53,7 +53,6 @@ void Support::UpdateAmp(const af::array ds_image, d_type sig, int iter)
     
     if (sig != last_sigma)
     {
-printf("calculating distribution in support\n");
         distribution = GetDistribution(ds_image.dims(), sig);
     }
 

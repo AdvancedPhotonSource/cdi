@@ -90,6 +90,27 @@ class DispalyParams:
             if self.th is None:
                 print('theta not in spec, please configure')
         try:
+            self.chi = config['chi']
+        except KeyError:
+            if self.chi is None:
+                print('chi not in spec, please configure')
+        try:
+            self.phi = config['phi']
+        except KeyError:
+            if self.phi is None:
+                print('phi not in spec, please configure')
+        try:
+            self.scanmot = config['scanmot']
+        except KeyError:
+            if self.scanmot is None:
+                print('scanmot not in spec, please configure')
+        try:
+            self.scanmot_del = config['scanmot_del']
+        except KeyError:
+            if self.scanmot_del is None:
+                print('scanmot_del not in spec, please configure')
+
+        try:
             self.diffractometer = config['diffractometer']
             self.diffractometer_obj = diff.getdiffclass(self.diffractometer)  # will return None if not defined
         except KeyError:
@@ -104,7 +125,6 @@ class DispalyParams:
             for attr in self.diffractometer_obj.__dict__.keys():
                 if not attr.startswith('__'):
                     self.__dict__[attr] = self.diffractometer_obj.__dict__[attr]
-
         # get attribures out of config, overwriting things from diff object
         try:
             self.sampleaxes = tuple(config['sampleaxes'])
@@ -135,17 +155,6 @@ class DispalyParams:
         for axis in self.sampleaxes_name:
             if axis in config:
                 self.__dict__[axis] = config[axis]
-
-        try:
-            self.scanmot = config['scanmot']
-        except KeyError:
-            if self.scanmot is None:
-                print('scanmot not in spec, please configure')
-        try:
-            self.scanmot_del = config['scanmot_del']
-        except KeyError:
-            if self.scanmot_del is None:
-                print('scanmot_del not in spec, please configure')
 
         try:
             self.detector = config['detector']
@@ -260,7 +269,6 @@ class CXDViz:
         # compute for 4pixel (2x2) detector
         self.qc.init_area(p.pixelorientation[0], p.pixelorientation[1], shape[0], shape[1], 2, 2, distance=detdist,
                           pwidth1=px, pwidth2=py)
-
         # I think q2 will always be (3,2,2,2) (vec, scanarr, px, py)
         # should put some try except around this in case something goes wrong.
         if scanmot == 'en':  # seems en scans always have to be treated differently since init is unique

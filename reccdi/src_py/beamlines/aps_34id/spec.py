@@ -31,12 +31,12 @@ def parse_spec(specfile, scan):
     -------
     delta, gamma, theta, phi, chi, scanmot, scanmot_del, detdist, detector_name, energy
     """
-    # print ('parsing spec')
     # Scan numbers start at one but the list is 0 indexed
     try:
         ss = spec.SPECFile(specfile)[scan - 1]
-    except:
-        print ('Could not parse ' + specfile + '. Check if the file exist and permisions.')
+    except  Exception as ex:
+        print(str(ex))
+        print ('Could not parse ' + specfile )
         return None,None,None,None,None,None,None,None,None,None
 
     # Stuff from the header
@@ -107,14 +107,16 @@ def get_det_from_spec(specfile, scan):
     det_area : list
         detector area
     """
-    # Scan numbers start at one but the list is 0 indexed
-    ss = spec.SPECFile(specfile)[scan - 1]
-    # Stuff from the header
     try:
+    # Scan numbers start at one but the list is 0 indexed
+        ss = spec.SPECFile(specfile)[scan - 1]
+    # Stuff from the header
         detector_name = str(ss.getheader_element('UIMDET'))
         det_area = [int(n) for n in ss.getheader_element('UIMR5').split()]
         return detector_name, det_area
-    except:
+    except  Exception as ex:
+        print(str(ex))
+        print ('Could not parse ' + specfile )
         return None, None
 
 

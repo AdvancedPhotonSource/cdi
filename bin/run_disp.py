@@ -163,13 +163,13 @@ def get_conf_dict(experiment_dir):
     """
     if not os.path.isdir(experiment_dir):
         print("Please provide a valid experiment directory")
-        return
+        return None
     conf_dir = os.path.join(experiment_dir, 'conf')
     conf = os.path.join(conf_dir, 'config_disp')
     # verify configuration file
     if not ver.ver_config_disp(conf):
         print ('incorrect configuration file ' + conf +', cannot parse')
-        return
+        return None
 
     # parse the conf once here and save it in dictionary, it will apply to all images in the directory tree
     conf_dict = {}
@@ -177,10 +177,11 @@ def get_conf_dict(experiment_dir):
         conf_map = ut.read_config(conf)
         items = conf_map.items()
         for item in items:
-            conf_dict[item[0]] = item[1]
+            key = item[0]
+            val = item[1]
+            conf_dict[key] = val
     except:
-        print('cannot parse configuration file ' + conf)
-        return
+        return None
 
     # get specfile and last_scan from the config file and add it to conf_dict
     main_conf = os.path.join(conf_dir, 'config')
@@ -226,12 +227,15 @@ def to_vtk(experiment_dir, image_file=None):
     nothing
     """
     conf_dict = get_conf_dict(experiment_dir)
+    if conf_dict is None:
+        return
     if image_file is not None:
         save_vtk_file(image_file, conf_dict)
     else:
         try:
-            results_dir = conf_dir['results_dir']
-        except:
+            results_dir = conf_dict['results_dir']
+        except  Exception as ex:
+            print(str(ex))
             results_dir = experiment_dir
         # find directories with image.npy file
         dirs = []
