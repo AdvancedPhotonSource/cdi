@@ -64,24 +64,30 @@ def save_CX(conf_dict, image, support, coh, save_dir):
         image_name = conf_dict['image_name']
     except:
         image_name = 'image'
-    viz.add_ds_array(abs(image), "imAmp")
-    viz.add_ds_array(np.angle(image), "imPh")
+    arrays = {"imAmp" : abs(image), "imPh" : np.angle(image)}
+    viz.add_ds_arrays(arrays)
+    # viz.add_ds_array(abs(image), "imAmp")
+    # viz.add_ds_array(np.angle(image), "imPh")
     image_file = os.path.join(save_dir, image_name)
     viz.write_directspace(image_file)
     viz.clear_direct_arrays()
 
     if support is not None:
-        viz.add_ds_array(support, "support")
+        arrays = {"support" : support}
+        viz.add_ds_arrays(arrays)
+        # viz.add_ds_array(support, "support")
         support_file = os.path.join(save_dir, 'support')
         viz.write_directspace(support_file)
         viz.clear_direct_arrays()
 
     if coh is not None:
-        coh = np.fft.fftshift(np.fft.fftn(np.fft.fftshift(coh)))
         coh = ut.get_zero_padded_centered(coh, image.shape)
+        coh = np.fft.fftshift(np.fft.fftn(np.fft.fftshift(coh)))
         coh_file = os.path.join(save_dir, 'coherence')
-        viz.add_ds_array(np.abs(coh), 'cohAmp')
-        viz.add_ds_array(np.angle(coh), 'cohPh')
+        arrays = {"cohAmp" : np.abs(coh), "cohPh" : np.angle(coh)}
+        viz.add_ds_arrays(arrays)
+        # viz.add_ds_array(np.abs(coh), 'cohAmp')
+        # viz.add_ds_array(np.angle(coh), 'cohPh')
         viz.write_directspace(coh_file)
         viz.clear_direct_arrays()
 

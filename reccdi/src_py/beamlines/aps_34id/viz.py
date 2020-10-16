@@ -201,6 +201,8 @@ class DispalyParams:
             self.crop = []
             crop = config['crop']
             for i in range(len(crop)):
+                if crop[i] > 1:
+                    crop[i] = 1.0
                 self.crop.append(crop[i])
             for _ in range(3 - len(self.crop)):
                 self.crop.append(1.0)
@@ -388,7 +390,47 @@ class CXDViz:
             self.update_dirspace(array.shape)
 
 
-    #    @measure
+    def are_same_shapes(self, arrays, shape):
+        for name in arrays.keys():
+            arr_shape = arrays[name].shape
+            for i in range(len(shape)):
+               if arr_shape[i] != shape[i]:
+                   return False
+        return True
+
+
+    def get_crop_points(self, shape):
+        # shape and crop should be 3 long
+        crop_points = []
+        for i in range (len(shape)):
+            cropped_size = int(shape[i] * self.params.crop[i])
+            chopped = int((shape[i] - cropped_size)/2)
+            crop_points.append((chopped, chopped + cropped_size))
+        return crop_points
+            
+            
+    def add_ds_arrays(self, named_arrays, logentry=None):
+        # Need to add something to ensure arrays are all the same dimension.
+        # Need to add crop of viz output arrays
+        names = sorted(list(named_arrays.keys()))
+        shape = named_arrays[names[0]].shape
+        if not self.are_same_shapes(named_arrays, shape):
+            print('arrays in set should have the same shape')
+            return
+        if len(shape) < 3:
+            newdims = list(shape)
+            for i in range(3 - len(newdims)):
+                newdims.append(1)
+            array.shape = tuple(newdims)
+        # find crop beginning and ending
+        [(x1, x2), (y1, y2), (z1, z2)] = self.get_crop_points(shape)
+        for name in named_arrays.keys():
+            self.dir_arrs[name] = named_arrays[name][x1:x2, y1:y2, z1:z2]
+        if (not self.dirspace_uptodate):
+            self.update_dirspace((x2-x1, y2-y1, z2-z1))
+
+
+#    @measure
     def add_rs_array(self, array, name, logentry=None):
         # Need to add something to ensure arrays are all the same dimension.
         # Need to add crop of viz output arrays
