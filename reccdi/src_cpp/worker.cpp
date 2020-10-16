@@ -101,7 +101,7 @@ void Reconstruction::Init(bool first)
     std::map<const char*, fp> flow_ptr_map;
     flow_ptr_map["NextIter"] = &Reconstruction::NextIter;
     flow_ptr_map["ResolutionTrigger"] =  &Reconstruction::ResolutionTrigger;
-    flow_ptr_map["SupportTrigger"] = &Reconstruction::SupportTrigger;
+    flow_ptr_map["ShrinkWrapTrigger"] = &Reconstruction::ShrinkWrapTrigger;
     flow_ptr_map["PhaseTrigger"] = &Reconstruction::PhaseTrigger;
     flow_ptr_map["ToReciprocal"] = &Reconstruction::ToReciprocal;
     flow_ptr_map["PcdiTrigger"] = &Reconstruction::PcdiTrigger;
@@ -223,7 +223,7 @@ void Reconstruction::ResolutionTrigger()
 //    printf("ResolutionTrigger %d\n", (uint)(getpid()));
 }
 
-void Reconstruction::SupportTrigger()
+void Reconstruction::ShrinkWrapTrigger()
 {
     support->UpdateAmp(ds_image.copy(), sig, current_iteration);
 //    printf("SupportTrigger %d\n", (uint)(getpid()));

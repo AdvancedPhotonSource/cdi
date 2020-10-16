@@ -84,7 +84,7 @@ private:
     void Progress();
     void NextIter();
     void ResolutionTrigger();
-    void SupportTrigger();
+    void ShrinkWrapTrigger();
     void PhaseTrigger();
     void ToReciprocal();
     void PcdiTrigger();

@@ -156,13 +156,13 @@ class Detector_34idcTIM1(Detector):
         try:
             self.darkfield = ut.read_tif(self.darkfield_filename)
         except:
-            print("Darkfield filename not set for TIM1")
-            raise
+            print("Darkfield filename not set for TIM1, will not correct")
 
     def get_raw_frame(self, filename):
         try:
             self.raw_frame = ut.read_tif(filename)
         except:
+            print("problem reading raw file ", filename)
             raise
 
     # TIM1 only needs bad pixels deleted.  Even that is optional.
@@ -276,6 +276,7 @@ class Detector_34idcTIM2(Detector):
         try:
             self.raw_frame = ut.read_tif(filename)
         except:
+            print("problem reading raw file ", filename)
             raise
 
     def get_frame(self, filename, roi=(0, 512, 0, 512), Imult=1e5):

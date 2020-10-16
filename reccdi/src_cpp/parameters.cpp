@@ -314,7 +314,7 @@ Params::Params(std::string const & config_file, std::vector<int> data_dim, bool 
     std::vector<int> vec(flow, flow + number_iterations * used_flow_seq.size());
     flow_vec = vec;
 
-    if (root.exists("amp_support_trigger"))
+    if (root.exists("shrink_wrap_trigger"))
     {
         try {
             const Setting &tmp = root["support_area"];
@@ -352,7 +352,7 @@ Params::Params(std::string const & config_file, std::vector<int> data_dim, bool 
         catch ( const SettingNotFoundException &nfex)
         { }
         try {
-            support_alg = algorithm_id_map[cfg.lookup("support_type")];
+            support_alg = algorithm_id_map[cfg.lookup("shrink_wrap_type")];
         }
         catch ( const SettingNotFoundException &nfex)
         { }

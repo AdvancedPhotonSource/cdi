@@ -2383,13 +2383,13 @@ class low_resolution(Feature):
         conf_map['iter_res_det_range'] = str(self.det_range.text()).replace('\n','')
 
 
-class amplitude_support(Feature):
+class shrink_wrap(Feature):
     """
     This class encapsulates support feature.
     """
     def __init__(self):
-        super(amplitude_support, self).__init__()
-        self.id = 'amplitude support'
+        super(shrink_wrap, self).__init__()
+        self.id = 'shrink wrap'
 
 
     def init_config(self, conf_map):
@@ -2406,14 +2406,14 @@ class amplitude_support(Feature):
         nothing
         """
         try:
-            triggers = conf_map.amp_support_trigger
+            triggers = conf_map.shrink_wrap_trigger
             self.active.setChecked(True)
-            self.support_triggers.setText(str(triggers).replace(" ", ""))
+            self.shrink_wrap_triggers.setText(str(triggers).replace(" ", ""))
         except AttributeError:
             self.active.setChecked(False)
             return
         try:
-            self.support_type.setText(str(conf_map.support_type).replace(" ", ""))
+            self.shrink_wrap_type.setText(str(conf_map.shrink_wrap_type).replace(" ", ""))
         except AttributeError:
             pass
         try:
@@ -2443,10 +2443,10 @@ class amplitude_support(Feature):
         -------
         nothing
         """
-        self.support_triggers = QLineEdit()
-        layout.addRow("support triggers", self.support_triggers)
-        self.support_type = QLineEdit()
-        layout.addRow("support algorithm", self.support_type)
+        self.shrink_wrap_triggers = QLineEdit()
+        layout.addRow("shrink wrap triggers", self.shrink_wrap_triggers)
+        self.shrink_wrap_type = QLineEdit()
+        layout.addRow("shrink wrap algorithm", self.shrink_wrap_type)
         self.support_area = QLineEdit()
         layout.addRow("starting support area", self.support_area)
         self.threshold = QLineEdit()
@@ -2467,8 +2467,8 @@ class amplitude_support(Feature):
         -------
         nothing
         """
-        self.support_triggers.setText('(1,1)')
-        self.support_type.setText('GAUSS')
+        self.shrink_wrap_triggers.setText('(1,1)')
+        self.shrink_wrap_type.setText('GAUSS')
         self.support_area.setText('(.5,.5,.5)')
         self.sigma.setText('1.0')
         self.threshold.setText('0.1')
@@ -2487,8 +2487,8 @@ class amplitude_support(Feature):
         -------
         nothing
         """
-        conf_map['amp_support_trigger'] = str(self.support_triggers.text()).replace('\n','')
-        conf_map['support_type'] = '"' + str(self.support_type.text()) + '"'
+        conf_map['shrink_wrap_trigger'] = str(self.shrink_wrap_triggers.text()).replace('\n','')
+        conf_map['shrink_wrap_type'] = '"' + str(self.shrink_wrap_type.text()) + '"'
         conf_map['support_threshold'] = str(self.threshold.text())
         conf_map['support_sigma'] = str(self.sigma.text())
         conf_map['support_area'] = str(self.support_area.text()).replace('\n','')
@@ -2566,7 +2566,7 @@ class phase_support(Feature):
         -------
         nothing
         """
-        self.phase_triggers.setText('(0,1,20)')
+        self.phase_triggers.setText('(0,1,320)')
         self.phase_min.setText('-1.57')
         self.phase_max.setText('1.57')
 
@@ -2677,7 +2677,7 @@ class pcdi(Feature):
         self.pcdi_type.setText('LUCY')
         self.pcdi_iter.setText('20')
         self.pcdi_normalize.setText('true')
-        self.pcdi_roi.setText('(32,32,32)')
+        self.pcdi_roi.setText('(8,8,8)')
 
 
     def add_feat_conf(self, conf_map):
@@ -2847,7 +2847,7 @@ class average(Feature):
         -------
         nothing
         """
-        self.average_triggers.setText('(-400,1)')
+        self.average_triggers.setText('(-50,1)')
 
 
     def add_feat_conf(self, conf_map):
@@ -2955,11 +2955,11 @@ class Features(QWidget):
         Constructor, creates all concrete feature objects, and displays in window.
         """
         super(Features, self).__init__()
-        feature_ids = ['GA', 'low resolution', 'amplitude support', 'phase support', 'pcdi', 'twin', 'average', 'progress']
+        feature_ids = ['GA', 'low resolution', 'shrink wrap', 'phase support', 'pcdi', 'twin', 'average', 'progress']
         self.leftlist = QListWidget()
         self.feature_dir = {'GA' : GA(),
                             'low resolution' : low_resolution(),
-                            'amplitude support' : amplitude_support(),
+                            'shrink wrap' : shrink_wrap(),
                             'phase support' : phase_support(),
                             'pcdi' : pcdi(),
                             'twin' : twin(),

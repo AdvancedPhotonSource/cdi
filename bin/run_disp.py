@@ -196,14 +196,14 @@ def get_conf_dict(experiment_dir):
     if os.path.isfile(main_conf):
         try:
             config_map = ut.read_config(main_conf)
-            scan = config_map.scan
-            last_scan = scan.split('-')[-1]
-            conf_dict['last_scan'] = int(last_scan)
         except:
             print ("info: scan not determined, can't read " + conf + " configuration file")
         try:
             specfile=config_map.specfile
             conf_dict['specfile'] = specfile
+            scan = config_map.scan
+            last_scan = scan.split('-')[-1]
+            conf_dict['last_scan'] = int(last_scan)
         except:
             print("specfile not in main config")
 
