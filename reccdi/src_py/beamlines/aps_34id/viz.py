@@ -208,7 +208,7 @@ class DispalyParams:
                 self.crop.append(1.0)
             crop[0], crop[1] = crop[1], crop[0]
         except KeyError:
-            self.crop = None
+            self.crop = (1.0, 1.0, 1.0)
 
 
 class CXDViz:
