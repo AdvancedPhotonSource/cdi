@@ -392,21 +392,21 @@ def ver_config_rec(fname):
         pass
 
     try:
-        if not ver_list_int('amp_support_trigger', config_map.amp_support_trigger):
+        if not ver_list_int('shrink_wrap_trigger', config_map.shrink_wrap_trigger):
             return False
         else:
             try:
-                support_type = config_map.support_type
-                if type(support_type) != str:
-                    print ('support_type parameter should be string')
+                shrink_wrap_type = config_map.shrink_wrap_type
+                if type(shrink_wrap_type) != str:
+                    print ('shrink_wrap_type parameter should be string')
                     return False
-                if support_type != "GAUSS":
-                    print ('support_type parameter can be configured "GAUSS"')
+                if shrink_wrap_type != "GAUSS":
+                    print ('shrink_wrap_type parameter can be configured "GAUSS"')
                     return False
             except AttributeError:
                 pass
             except:
-                print('support_type parameter parsing error')
+                print('shrink_wrap_type parameter parsing error')
                 return False
 
             try:
