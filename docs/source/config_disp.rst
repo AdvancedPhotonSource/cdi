@@ -20,21 +20,20 @@ Parameters
     rampups = 2
 
 - crop:
-| optional, defaults to the size of the processed array, size to crop the image array to. Can be entered as absolute numbers or fractions.
+| optional, defines a fraction of array at the center that will be subject of visualization. Defaults to (1.0, 1.0, 1.0), i.e. the size of the processed array.
 | example:
 ::
 
-    crop = (120,120,120)
-    crop = (.75, .75, .75)
+    crop = (.5, .5, .5)
 
 - diffractometer:
-| mandatory, name of diffractometer used in experiment. It typically is set to a defined class, but in case of a new diffractometer one can enter the parameters below instead and run the imaging script from a command line (not GUI).
+| mandatory, name of diffractometer used in experiment.
 | example:
 ::
 
     diffractometer = "34idc"
 
-| The following parameters are set in the diffractometer class, but can be set from config if no class has been written yet.  These will override anything set internally. This functionality is supported only by command line scripts, not GUI.
+| The diffractometer typically is set to a defined class, but in case of a new diffractometer a user can enter the following parameters instead. These will override anything set internally. This functionality is supported only by command line scripts, not GUI.
 | example:
 ::
 
