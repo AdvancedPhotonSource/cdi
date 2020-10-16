@@ -78,37 +78,37 @@ Twin
 ++++
 
 - twin_trigger:
-| optional, defines at which iteration to eliminate "twin", i.e. the image under reconstruction is trimmed by zeroing half of the array in x and y dimensions.
+| optional, defines at which iteration to eliminate "twin", i.e. the image under reconstruction is trimmed by preserving a quadrant across x and y dimensions and zeroing the rest of the array.
 | example:
 ::
 
     twin_trigger = (2)
 
 - twin_halves = (0, 0)
-| optional, and only applied when twin_trigger is configured. Defines which half of the array is zeroed out in x and y dimensions, defaults to (0, 0).
+| optional, and only applied when twin_trigger is configured. Defines which quadrant of the array is preserved in x and y dimensions, defaults to (0, 0).
 | Possible choices: (0, 0), (0, 1), (1, 0), (1,1)
 | example:
 ::
 
     twin_halves = (0, 0)
 
-Support
+Shrink wrap
 +++++++
-| Support area is an array that defines region in which the image is meaningful. This area is recalculated at the trigger iteration. The calculation employ an algorithm defined here as support_type.
+| Support area is an array that defines region in which the image is meaningful. This area is recalculated at the trigger iteration shrinking along when the image develops. The calculations employ an algorithm defined here as shrink_wrap_type.
 
-- amp_support_trigger:
+- shrink_wrap_trigger:
 | defines when to update support array using the parameters below.
 | example:
 ::
 
-    amp_support_trigger = (10, 1)
+    shrink_wrap_trigger = (10, 1)
 
-- support_type:
+- shrink_wrap_type:
 | optional, defaults to "GAUSS". Currently only "GAUSS" is supported
 | example:
 ::
 
-    support_type = "GAUSS"
+    shrink_wrap_type = "GAUSS"
 
 - support_threshold:
 | optional, defaults to 0.1. A threshold value used in the gauss distribution.
@@ -285,7 +285,7 @@ GA
     ga_support_sigmas = (1.1, 1.0)
 
 - ga_low_resolution_sigmas:
-| optional, a list of sigmas that will be used in subsequent generations to calculate Gauss distribution in the space defined by the size of the data and apply it to the data This determines low resolution generations number
+| optional, a list of sigmas that will be used in subsequent generations to calculate Gauss distribution in the space defined by the size of the data and apply it to the data. In the example given below this feature will be used in first two generations.
 | example:
 ::
 

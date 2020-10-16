@@ -1,7 +1,7 @@
 ===========
 config_disp
 ===========
-| The "config_disp" file defines parameters needed to process visualization of the reconstructed image. 
+| The "config_disp" file defines parameters needed to process visualization of the reconstructed image.  
 
 Parameters
 ==========
@@ -43,15 +43,9 @@ Parameters
     sampleaxes = ('y+', 'z-', 'x-')
     detectoraxes = ('y+','z-')
 
-- detector:
-| optional, typically it is read from spec file, but if not there, must be configured.
-| Warning: Dont forget the : on the end of the detector name (34idcTIM2:)
-| example:
-::
-
-    detector = "34idcTIM2:"
-
-| The following parameters are typically parsed from spec file. The parsed parameters will be overridden if they are configured.
+Parsed parameters
+=================
+| In a typical scenario at APS 34-idc beamline a spec file is generated during experiment and the parameters listed below are parsed from this file, so the user do not configure them. User may configure the following parameters if spec file is not configured in the main configuration or user wants to override the parsed parameters.
 - energy
 | example:
 ::
@@ -86,15 +80,41 @@ Parameters
 
     theta = 0.1999946
 
-- pixel:
-| detector pixel
+- chi:
 | example:
 ::
 
-    pixel = (55.0e-6, 55.0e-6)
+    chi = 90.0
+
+- phi:
+| example:
+::
+
+    phi = -5.0
 
 - scanmot:
 | example:
 ::
 
     scanmot = "th"
+
+- scanmot_del:
+| example:
+::
+
+    scanmot_del = 0.005
+
+- detector:
+| Warning: Don't forget the : on the end of the detector name (34idcTIM2:)
+| example:
+::
+
+    detector = "34idcTIM2:"
+
+| The following parameters are set in the detector class, but can be set from config if no class has been written yet.  These will override anything set internally. This functionality is supported only by command line scripts, not GUI.
+| example:
+::
+
+    pixel = (55.0e-6, 55.0e-6)
+    pixelorientation = ('x+', 'y-')
+

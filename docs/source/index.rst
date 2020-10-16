@@ -7,9 +7,9 @@ Welcome to reccdi's documentation!
 
    about
    installation
+   how_to_use   
    configuration
-   experiment_space
-   how_to_use
+   experiment_space  
    for_developers
 
 Indices and tables
