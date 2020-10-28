@@ -1,6 +1,6 @@
 package:
   name: reccdi
-  version: "1.31"
+  version: "1.4"
 
 source:
   path: .
@@ -25,7 +25,7 @@ requirements:
     - pylibconfig2
     - gputil
     - xrayutilities
-    - parse
+    - pyparsing
     - mayavi
     - psutil
 

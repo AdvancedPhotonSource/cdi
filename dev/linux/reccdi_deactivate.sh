@@ -1,0 +1,2 @@
+export LD_PRELOAD="$PREV_LD_PRELOAD"
+export PREV_LD_PRELOAD=
