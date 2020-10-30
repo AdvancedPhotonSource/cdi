@@ -348,9 +348,15 @@ class cdi_gui(QWidget):
             return
 
         try:
-            self.working_dir = conf_map.working_dir
-            self.set_work_dir_button.setStyleSheet("Text-align:left")
-            self.set_work_dir_button.setText(self.working_dir)
+            working_dir = conf_map.working_dir
+            if not os.path.isdir(working_dir):
+                self.working_dir = None
+                self.set_work_dir_button.setText('')
+                msg_window('The working directory ' + working_dir + ' from config file does not exist. Select valid working directory and set experiment')
+            else:
+                self.working_dir = conf_map.working_dir
+                self.set_work_dir_button.setStyleSheet("Text-align:left")
+                self.set_work_dir_button.setText(self.working_dir)
         except:
             pass
 
@@ -372,10 +378,14 @@ class cdi_gui(QWidget):
             pass
 
         try:
-            self.specfile = conf_map.specfile
-            self.spec_file_button.setStyleSheet("Text-align:left")
-            self.spec_file_button.setText(self.specfile)
-            self.t.parse_spec()
+            specfile = conf_map.specfile
+            if os.isfile(specfile):
+                self.specfile = conf_map.specfile
+                self.spec_file_button.setStyleSheet("Text-align:left")
+                self.spec_file_button.setText(self.specfile)
+                self.t.parse_spec()
+            else:
+                msg_window('The specfile file ' + specfile + ' in config file does not exist')
         except:
             self.specfile = None
             self.spec_file_button.setText('')
@@ -965,23 +975,35 @@ class cdi_conf_tab(QTabWidget):
         except:
             pass
         try:
-            self.data_dir = conf_map.data_dir
-            self.data_dir_button.setStyleSheet("Text-align:left")
-            self.data_dir_button.setText(self.data_dir)
+            data_dir = conf_map.data_dir
+            if os.path.isdir(data_dir):
+                self.data_dir = conf_map.data_dir
+                self.data_dir_button.setStyleSheet("Text-align:left")
+                self.data_dir_button.setText(self.data_dir)
+            else:
+                msg_window('The data_dir directory in config_prep file  ' + data_dir + ' does not exist')
         except:
             self.data_dir = None
             self.data_dir_button.setText('')
         try:
-            self.darkfield_filename = conf_map.darkfield_filename
-            self.dark_file_button.setStyleSheet("Text-align:left")
-            self.dark_file_button.setText(self.darkfield_filename)
+            darkfield_filename = conf_map.darkfield_filename
+            if os.isfile(darkfield_filename):
+                self.darkfield_filename = conf_map.darkfield_filename
+                self.dark_file_button.setStyleSheet("Text-align:left")
+                self.dark_file_button.setText(self.darkfield_filename)
+            else:
+                msg_window('The darkfield file ' + darkfield_filename + ' in config_prep file does not exist')
         except:
             self.darkfield_filename = None
             self.dark_file_button.setText('')
         try:
-            self.whitefield_filename = conf_map.whitefield_filename
-            self.white_file_button.setStyleSheet("Text-align:left")
-            self.white_file_button.setText(self.whitefield_filename)
+            whitefield_filename = conf_map.whitefield_filename
+            if os.isfile(whitefield_filename):
+                self.whitefield_filename = conf_map.whitefield_filename
+                self.white_file_button.setStyleSheet("Text-align:left")
+                self.white_file_button.setText(self.whitefield_filename)
+            else:
+                msg_window('The whitefield file ' + whitefield_filename + ' in config_prep file does not exist')
         except:
             self.whitefield_filename = None
             self.white_file_button.setText('')
@@ -1101,7 +1123,8 @@ class cdi_conf_tab(QTabWidget):
             self.features.feature_dir[feat_id].init_config(conf_map)
 
         # set the results_dir in display tab
-        self.init_results_dir()
+        if self.main_win.is_exp_exists() and self.main_win.is_exp_set() :
+            self.init_results_dir()
 
 
     def load_disp_tab(self, conf):
