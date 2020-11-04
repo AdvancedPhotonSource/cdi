@@ -379,7 +379,7 @@ class cdi_gui(QWidget):
 
         try:
             specfile = conf_map.specfile
-            if os.isfile(specfile):
+            if os.path.isfile(specfile):
                 self.specfile = conf_map.specfile
                 self.spec_file_button.setStyleSheet("Text-align:left")
                 self.spec_file_button.setText(self.specfile)
@@ -987,7 +987,7 @@ class cdi_conf_tab(QTabWidget):
             self.data_dir_button.setText('')
         try:
             darkfield_filename = conf_map.darkfield_filename
-            if os.isfile(darkfield_filename):
+            if os.path.isfile(darkfield_filename):
                 self.darkfield_filename = conf_map.darkfield_filename
                 self.dark_file_button.setStyleSheet("Text-align:left")
                 self.dark_file_button.setText(self.darkfield_filename)
@@ -998,7 +998,7 @@ class cdi_conf_tab(QTabWidget):
             self.dark_file_button.setText('')
         try:
             whitefield_filename = conf_map.whitefield_filename
-            if os.isfile(whitefield_filename):
+            if os.path.isfile(whitefield_filename):
                 self.whitefield_filename = conf_map.whitefield_filename
                 self.white_file_button.setStyleSheet("Text-align:left")
                 self.white_file_button.setText(self.whitefield_filename)
