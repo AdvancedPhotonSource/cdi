@@ -317,10 +317,9 @@ class Generation:
             return dirs
             
         print ('breeding generation ', (self.current_gen + 1))
-        
-        if self.worst_remove_no is not None:
-            del dirs[-self.worst_remove_no[self.current_gen]:]
 
+        if (self.worst_remove_no is not None) and (self.worst_remove_no[self.current_gen] != 0):
+            del dirs[-self.worst_remove_no[self.current_gen]:]
         alpha = np.load(os.path.join(dirs[0], 'image.npy'))
         alpha = gut.zero_phase(alpha, 0)
         # assign breed directory for each bred child
@@ -419,7 +418,6 @@ def reconstruction(proc, conf_file, datafile, dir, devices):
             # results are saved in a list of directories - save_dir
             # it will be ranked, and moved to temporary ranked directories
             gen_obj.order(save_dirs, evals)
-
             if g < generations - 1 and len(save_dirs) > 1:
                temp_dirs = gen_obj.breed(temp_dir, save_dirs)
                 
