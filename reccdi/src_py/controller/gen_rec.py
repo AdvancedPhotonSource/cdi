@@ -54,7 +54,7 @@ class Generation:
             self.metrics = ('chi',) * self.generations
 
         try:
-            self.worst_remove_no = tuple(config_map.ga_removes)
+            self.worst_remove_no = tuple(config_map.ga_cullings)
             if len(self.worst_remove_no) < self.generations:
                 self.worst_remove_no = self.worst_remove_no + (0,) * (self.generations - len(self.worst_remove_no))
         except AttributeError:
@@ -319,7 +319,7 @@ class Generation:
         print ('breeding generation ', (self.current_gen + 1))
         
         if self.worst_remove_no is not None:
-            dirs = dirs[0:len(dirs)-self.worst_remove_no[self.current_gen]]
+            del dirs[-self.worst_remove_no[self.current_gen]:]
 
         alpha = np.load(os.path.join(dirs[0], 'image.npy'))
         alpha = gut.zero_phase(alpha, 0)

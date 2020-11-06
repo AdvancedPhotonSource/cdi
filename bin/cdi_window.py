@@ -1906,7 +1906,7 @@ class cdi_conf_tab(QTabWidget):
             generations = int(ga_feat.generations.text())
             # if only one reconstruction, it will be saved in gen dir, otherwise,
             # the directories will be enumerated
-            if int(self.reconstructions.text()) > 1:
+            if len(self.reconstructions.text()) > 0 and int(self.reconstructions.text()) > 1:
                 self.results_dir = os.path.join(self.main_win.experiment_dir, res_file,
                                                 'g_' + str(generations-1), '0')
             else:

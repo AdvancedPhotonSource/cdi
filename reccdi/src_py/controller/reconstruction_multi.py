@@ -132,7 +132,7 @@ def multi_rec(save_dir, proc, data, conf, config_map, devices, prev_dirs, metric
 
     iterable = []
     save_dirs = []
-    reconstructions = config_map.reconstructions
+    reconstructions = len(prev_dirs)
     for i in range(reconstructions):
         save_sub = os.path.join(save_dir, str(i))
         save_dirs.append(save_sub)	
