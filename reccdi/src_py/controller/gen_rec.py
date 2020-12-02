@@ -47,55 +47,63 @@ class Generation:
             self.generations = 1
 
         try:
-            self.metrics = tuple(config_map.ga_metrics)
-            if len(self.metrics) < self.generations:
-                self.metrics = self.metrics + ('chi',) * (self.generations - len(self.metrics))
+            self.metrics = list(config_map.ga_metrics)
+            if len(self.metrics) == 1:
+                self.metrics = self.metrics * self.generations
+            elif len(self.metrics) < self.generations:
+                self.metrics = self.metrics + ['chi',] * (self.generations - len(self.metrics))
         except AttributeError:
-            self.metrics = ('chi',) * self.generations
+            self.metrics = ['chi',] * self.generations
 
         try:
-            self.worst_remove_no = tuple(config_map.ga_cullings)
+            self.worst_remove_no = list(config_map.ga_cullings)
             if len(self.worst_remove_no) < self.generations:
-                self.worst_remove_no = self.worst_remove_no + (0,) * (self.generations - len(self.worst_remove_no))
+                self.worst_remove_no = self.worst_remove_no + [0,] * (self.generations - len(self.worst_remove_no))
         except AttributeError:
             self.worst_remove_no = None
 
         try:
-            self.ga_support_thresholds = tuple(config_map.ga_support_thresholds)
-            if len(self.ga_support_thresholds) < self.generations:
+            self.ga_support_thresholds = list(config_map.ga_support_thresholds)
+            if len(self.ga_support_thresholds) == 1:
+                self.ga_support_thresholds = self.ga_support_thresholds * self.generations
+            elif len(self.ga_support_thresholds) < self.generations:
                 try:
                     support_threshold = config_map.support_threshold
                 except:
                     support_threshold = .1
-                self.ga_support_thresholds = self.ga_support_thresholds + (support_threshold,) * (self.generations - len(self.ga_support_thresholds))
+                self.ga_support_thresholds = self.ga_support_thresholds + [support_threshold,] * (self.generations - len(self.ga_support_thresholds))
         except AttributeError:
             try:
                 support_threshold = config_map.support_threshold
             except:
                 support_threshold = .1
-            self.ga_support_thresholds = (support_threshold,) * (self.generations)
+            self.ga_support_thresholds = [support_threshold,] * (self.generations)
 
         try:
-            self.ga_support_sigmas = tuple(config_map.ga_support_sigmas)
-            if len(self.ga_support_sigmas) < self.generations:
+            self.ga_support_sigmas = list(config_map.ga_support_sigmas)
+            if len(self.ga_support_sigmas) == 1:
+                self.ga_support_sigmas = self.ga_support_sigmas * self.generations
+            elif len(self.ga_support_sigmas) < self.generations:
                 try:
                     support_sigma = config_map.support_sigma
                 except:
                     support_sigma = 1.0
-                self.ga_support_sigmas = self.ga_support_sigmas + (support_sigma,) * (self.generations - len(self.ga_support_sigmas))
+                self.ga_support_sigmas = self.ga_support_sigmas + [support_sigma,] * (self.generations - len(self.ga_support_sigmas))
         except AttributeError:
             try:
                 support_sigma = config_map.support_sigma
             except:
                 support_sigma = 1.0
-            self.ga_support_sigmas = (support_sigma,) * (self.generations)
+            self.ga_support_sigmas = [support_sigma,] * (self.generations)
 
         try:
-            self.breed_modes = tuple(config_map.ga_breed_modes)
-            if len(self.breed_modes) < self.generations:
-                self.breed_modes = self.breed_modes + ('none',) * (self.generations - len(self.breed_modes))
+            self.breed_modes = list(config_map.ga_breed_modes)
+            if len(self.breed_modes) == 1:
+                self.breed_modes = self.breed_modes * self.generations
+            elif len(self.breed_modes) < self.generations:
+                self.breed_modes = self.breed_modes + ['sqrt_ab',] * (self.generations - len(self.breed_modes))
         except AttributeError:
-            self.breed_modes = ('none',) * self.generations
+            self.breed_modes = ['none',] * self.generations
 
         try:
             self.sigmas = config_map.ga_low_resolution_sigmas
@@ -109,7 +117,7 @@ class Generation:
             except AttributeError:
                 self.low_resolution_alg = 'GAUSS'
 
-
+        
     def next_gen(self):
         """
         Advances to the next generation.
