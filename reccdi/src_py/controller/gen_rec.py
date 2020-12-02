@@ -441,12 +441,12 @@ def reconstruction(proc, conf_file, datafile, dir, devices):
 
         for g in range(generations):
             gen_data = gen_obj.get_data(data)
-            image, support, coh, err, recip, flows, iter_arrs = rec.single_rec(proc, gen_data, conf_file, config_map, devices[0], image, support, coh)
+            image, support, coh, err, flows, iter_arrs = rec.single_rec(proc, gen_data, conf_file, config_map, devices[0], image, support, coh)
             if image is None:
                 return
             # save the generation results
             gen_save_dir = os.path.join(save_dir, 'g_' + str(g))
-            ut.save_results(image, support, coh, err, recip, flows, iter_arrs, gen_save_dir)
+            ut.save_results(image, support, coh, err, flows, iter_arrs, gen_save_dir)
             gen_obj.next_gen()
 
     print ('done gen')

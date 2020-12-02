@@ -243,8 +243,8 @@ class CXDViz:
         """
         p = self.params
         # DisplayParams is not expected to do any modifications of params (units, etc)
-        px = p.pixel[0] * p.binning[0]
-        py = p.pixel[1] * p.binning[1]
+        px = p.pixel[0] * p.binning[0]/p.binning[2]
+        py = p.pixel[1] * p.binning[1]/p.binning[2]
         detdist = p.detdist / 1000.0  # convert to meters
         scanmot = p.scanmot.strip()
         enfix = 1
