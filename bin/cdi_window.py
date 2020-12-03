@@ -629,6 +629,8 @@ class cdi_conf_tab(QTabWidget):
         self.white_file_button = QPushButton()
         layout.addRow("whitefield file", self.white_file_button)
         self.roi = QLineEdit()
+        self.Imult = QLineEdit()
+        layout.addRow("Imult", self.Imult)
         layout.addRow("detector area (roi)", self.roi)
         self.min_files = QLineEdit()
         layout.addRow("min files in scan", self.min_files)
@@ -1011,6 +1013,10 @@ class cdi_conf_tab(QTabWidget):
             self.whitefield_filename = None
             self.white_file_button.setText('')
         try:
+            self.Imult.setText(str(conf_map.Imult).replace(" ", ""))
+        except:
+            pass
+        try:
             self.min_files.setText(str(conf_map.min_files).replace(" ", ""))
         except:
             pass
@@ -1241,6 +1247,8 @@ class cdi_conf_tab(QTabWidget):
             conf_map['darkfield_filename'] = '"' + str(self.darkfield_filename).strip() + '"'
         if self.whitefield_filename is not None:
             conf_map['whitefield_filename'] = '"' + str(self.whitefield_filename).strip() + '"'
+        if len(self.Imult.text()) > 0:
+            conf_map['Imult'] = str(self.Imult.text()).replace('\n','')
         if self.separate_scans.isChecked():
             conf_map['separate_scans'] = 'true'
         if len(self.min_files.text()) > 0:

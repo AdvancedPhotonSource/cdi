@@ -98,7 +98,7 @@ def get_dir_dict2(scans, main_map, prep_map):
 
 
 ###################################################################################
-def read_scan(dir, detector, det_area):
+def read_scan(dir, detector, det_area, imult):
     """
     Reads raw data files from scan directory, applies correction, and returns 3D corrected data for a single scan directory.
     
@@ -142,19 +142,19 @@ def read_scan(dir, detector, det_area):
     # look at slice0 to find out shape
     n = 0
     if det_area is None:
-        slice0 = detector.get_frame(files[n])
+        slice0 = detector.get_frame(files[n], roi=None, Imult=imult)
     else:
-        slice0 = detector.get_frame(files[n], roi=det_area)
-    shape = (slice0.shape[0], slice0.shape[1], len(files))
+        slice0 = detector.get_frame(files[n], roi=det_area, Imult=imult)
+        shape = (slice0.shape[0], slice0.shape[1], len(files))
     arr = np.zeros(shape, dtype=slice0.dtype)
     arr[:, :, 0] = slice0
 
     for file in files[1:]:
         n = n + 1
         if det_area is None:
-            slice = detector.get_frame(file)
+            slice = detector.get_frame(file, roi=None, Imult=imult)
         else:
-            slice = detector.get_frame(file, roi=det_area)
+            slice = detector.get_frame(file, roi=det_area, Imult=imult)
         arr[:, :, n] = slice
     return arr
 
@@ -366,9 +366,9 @@ class PrepData:
             self.separate_scans = False
 
         try:
-            self.config_Imult = prep_conf_map.Imult
+            self.Imult = prep_conf_map.Imult
         except:
-            self.config_Imult = 1.0
+            self.Imult = 1.0
 
             # build sub-directories map
         if len(scans) == 1:
@@ -388,7 +388,7 @@ class PrepData:
         Not used
         """
         # handle the easy case of a single scan
-        arr = read_scan(self.dirs[scan], self.detector, self.roi)
+        arr = read_scan(self.dirs[scan], self.detector, self.roi, self.Imult)
         prep_data_dir = os.path.join(self.experiment_dir, 'prep')
         data_file = os.path.join(prep_data_dir, 'prep_data.tif')
         if not os.path.exists(prep_data_dir):
@@ -476,7 +476,7 @@ class PrepData:
         aligned_array : array
             aligned array
         """
-        scan_arr = read_scan(scan[1], self.detector, self.roi)
+        scan_arr = read_scan(scan[1], self.detector, self.roi, self.Imult)
         shifted_arr = shift_to_ref_array(self.fft_refarr, scan_arr)
         aligned_arr = np.abs(shifted_arr)
         del shifted_arr
@@ -529,7 +529,7 @@ class PrepData:
         # scan_list is used for writing arrays if separate scans
         # because dirs.keys gets the arrays popped out.
         firstscan = list(self.dirs)[0]
-        refarr = read_scan(self.dirs.pop(firstscan), self.detector, self.roi)
+        refarr = read_scan(self.dirs.pop(firstscan), self.detector, self.roi, self.Imult)
 
         # write the first scan to temp or if only scan, we are done here.
         if self.separate_scans:

@@ -50,7 +50,7 @@ class Detector(object):
     def __init__(self):
         pass
 
-    def get_frame(self, filename, roi=None):
+    def get_frame(self, filename, roi=None, Imult=1.0):
         """
         Reads raw frame from a file, and applies correction for concrete detector.
 
@@ -249,6 +249,7 @@ class Detector_34idcTIM2(Detector):
         """
         try:
             self.whitefield = ut.read_tif(self.whitefield_filename)
+            self.whitefield = np.where(self.whitefield < 100, 1e20, self.whitefield) #Some large value
         except:
             print("Whitefield filename not set for TIM2")
             raise
@@ -318,8 +319,9 @@ class Detector_34idcTIM2(Detector):
         normframe = np.where(self.darkfield[roislice1, roislice2] > 1, 0.0, normframe)
         normframe = np.where(np.isfinite(normframe), normframe, 0)
         frame = self.insert_seam(normframe, roi)
-
+        frame = np.where(np.isnan(frame),0,frame)
         return frame
+        
 
     # frame here can also be a 3D array.
     def insert_seam(self, arr, roi):

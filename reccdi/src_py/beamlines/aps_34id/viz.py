@@ -276,7 +276,7 @@ class CXDViz:
             for n in range(len(p.sampleaxes_name)):
                 if n == axisindex:
                     scanstart = p.__dict__[scanmot]
-                    args.append(np.array((scanstart, scanstart + p.scanmot_del * binning[2])))
+                    args.append(np.array((scanstart, scanstart + p.scanmot_del * p.binning[2])))
                 else:
                     args.append(p.__dict__[p.sampleaxes_name[n]])
             for axis in p.detectoraxes_name:
