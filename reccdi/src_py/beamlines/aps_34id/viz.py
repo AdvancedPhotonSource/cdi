@@ -243,8 +243,8 @@ class CXDViz:
         """
         p = self.params
         # DisplayParams is not expected to do any modifications of params (units, etc)
-        px = p.pixel[0] * p.binning[0]/p.binning[2]
-        py = p.pixel[1] * p.binning[1]/p.binning[2]
+        px = p.pixel[0] * p.binning[0]
+        py = p.pixel[1] * p.binning[1]
         detdist = p.detdist / 1000.0  # convert to meters
         scanmot = p.scanmot.strip()
         enfix = 1
@@ -276,7 +276,7 @@ class CXDViz:
             for n in range(len(p.sampleaxes_name)):
                 if n == axisindex:
                     scanstart = p.__dict__[scanmot]
-                    args.append(np.array((scanstart, scanstart + p.scanmot_del)))
+                    args.append(np.array((scanstart, scanstart + p.scanmot_del * binning[2])))
                 else:
                     args.append(p.__dict__[p.sampleaxes_name[n]])
             for axis in p.detectoraxes_name:

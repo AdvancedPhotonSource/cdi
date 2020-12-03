@@ -754,7 +754,7 @@ class cdi_conf_tab(QTabWidget):
         ulayout.addWidget(self.rec_id)
         self.rec_id.hide()
         self.proc = QComboBox()
-        if sys.platform is not 'Darwin':
+        if sys.platform != 'darwin':
             self.proc.addItem("cuda")
         self.proc.addItem("opencl")
         self.proc.addItem("cpu")
