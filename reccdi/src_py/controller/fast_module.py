@@ -11,9 +11,6 @@ The processor specifies which library will be used by FM (Fast Module) that perf
 """
 
 import numpy as np
-# import reccdi.src_py.cyth.bridge_cpu as bridge_cpu
-# import reccdi.src_py.cyth.bridge_opencl as bridge_opencl
-# import reccdi.src_py.cyth.bridge_cuda as bridge_cuda
 import copy
 
 
@@ -70,13 +67,15 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
         elif proc == 'opencl':
             import reccdi.src_py.cyth.bridge_opencl as bridge_opencl
             fast_module = bridge_opencl.PyBridge()
-        elif proc == 'cuda':
-            import reccdi.src_py.cyth.bridge_cuda as bridge_cuda
-            fast_module = bridge_cuda.PyBridge()
+#        elif proc == 'cuda':
+#            import reccdi.src_py.cyth.bridge_cuda as bridge_cuda
+#            fast_module = bridge_cuda.PyBridge()
     except Exception as ex:
         print(str(ex))
         print ('could not import library')
         return None, None, None, None, None, None
+        
+    conf = conf + '_tmp'
 
     # shift data
     data = np.fft.fftshift(data)

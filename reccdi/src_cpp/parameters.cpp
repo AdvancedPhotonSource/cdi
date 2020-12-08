@@ -11,86 +11,149 @@ See LICENSE file.
 #include "parameters.hpp"
 #include "common.h"
 #include "util.hpp"
-#include "libconfig.h++"
 #include "math.h"
-#include "iostream"
-
-using namespace libconfig;
-
+#include "fstream"
+#include "map"
+#include "vector"
+#include "string"
+#include "sstream"
+#include "mutex"
 
 Params::Params(std::string const & config_file, std::vector<int> data_dim, bool first)
 {
-    algorithm_id_map.clear();
-    alg_switches.clear();
+    is_resolution = false;
+    is_pcdi = false;
+    pcdi_normalize = false;
+    plot_errors = false;
     beta = 0.9;
-    support_area.clear();
-    support_threshold = 0.1; 
+    support_threshold = 0.1;
     support_sigma = 1.0;
-    support_alg = -1;
+    support_alg = ALGORITHM_GAUSS;
     phase_min = -atan(1)*2.0;
     phase_max = atan(1)*2.0;
-    is_pcdi = false;
-    pcdi_alg = 0;
-    pcdi_roi.clear();
-    pcdi_normalize = false;
+    pcdi_alg = ALGORITHM_LUCY;
     pcdi_iter = 20;
-    twin_halves.clear();
     number_iterations = 0;
-    plot_errors = false;
-    is_resolution = false;
     low_res_iterations = 0;
     iter_res_det_first = 1;
+    algorithm_id_map.clear();
+    alg_switches.clear();
+    pcdi_roi.clear();
+    support_area.clear();
+    parms.clear();
+    twin_halves.clear();
+    pcdi_tr_iter.clear();
     nD = data_dim.size();
-
-    BuildAlgorithmMap();
-
-    Config cfg;
     
-    // Read the file. If there is an error, report.
-    try
+    std::mutex mtx;
+    std::ifstream cFile(config_file);
+    
+    BuildAlgorithmMap();
+    mtx.lock();
+    if (cFile.is_open())
     {
-        cfg.readFile(config_file.c_str());
-    }
-    catch(const FileIOException &fioex)
-    {
-        std::cout << "config file I/O exception" << std::endl;
-    }
-    catch(const ParseException &pex)
-    {
-        std::cout << "config file parsing exception" << std::endl;
-    }
+        std::string line;
+        while(getline(cFile, line)){
+            line.erase(std::remove_if(line.begin(), line.end(), isspace),
+                                 line.end());
 
-    const Setting& root = cfg.getRoot();
-
-    try {
-        const Setting &tmp = root["algorithm_sequence"];
-        int count = tmp.getLength();
-        
-        int switch_iter = 0;
-        number_iterations = 0;
-        int iter = 0;
-        for (int i = 0; i < count; ++i)
-        {   
-            int repeat = tmp[i][0];
-            for (int k = 0; k < repeat; k++)
-            { 
-                for (int j = 1; j < tmp[i].getLength(); ++j)
-                {
-                    iter = tmp[i][j][1];
-                    switch_iter = switch_iter + iter;
-                    alg_switches.push_back(Alg_switch(algorithm_id_map[tmp[i][j][0]], iter));
-                    number_iterations += iter;
-                }
-            }
+            if(line.empty() || ((line.length() > 2) && (line[0] == '/' && line[1] == '/')))
+                continue;
+            size_t delimiterPos = line.find("=");
+            std::string name = line.substr(0, delimiterPos);
+            std::string value = line.substr(delimiterPos + 1);
+            parms[name] = value;
         }
     }
-    catch ( const SettingNotFoundException &nfex)
-    {
-        std::cout << "No 'algorithm_sequence' parameter in configuration file" << std::endl;
+    else {
+        printf("Couldn't open config file for reading.\n");
     }
-    // process triggers
-    // find which triggers are configured, add the index of the flow_seq item to used_flow_seq vwctor if this item
-    // is used
+    cFile.close();
+    mtx.unlock();
+    
+    number_iterations = std::stoi(parms["num_iter"]);
+
+    // parse algorithm sequence
+    if (parms.count("algs"))
+    {
+        std::vector<std::string> algs = ParseList(parms["algs"]);
+        std::vector<std::string> algs_repeats = ParseList(parms["algs_repeats"]);
+        for (int i = 0; i < int(algs.size()); i++)
+        {
+            int alg_id = algorithm_id_map[algs[i]];
+            alg_switches.push_back(Alg_switch(alg_id, std::stoi(algs_repeats[i])));
+        }
+        algs.clear();
+        algs_repeats.clear();
+    }
+    // parse general parameters
+    if (parms.count("beta"))
+    {
+        beta = std::stof(parms["beta"]);
+    }
+    else
+    {
+        printf( "No 'beta' parameter in configuration file. Setting to 0.9\n" );
+    }
+    if (parms.count("support_sigma"))
+    {
+        support_sigma = std::stof(parms["support_sigma"]);
+    }
+    else
+    {
+        printf("No 'support_sigma' parameter in configuration file. Setting to 1.0\n");
+    }
+    if (parms.count("support_threshold"))
+    {
+        support_threshold = std::stof(parms["support_threshold"]);
+    }
+    else
+    {
+        printf("No 'support_threshold' parameter in configuration file. Setting to 0.1\n");
+    }
+    if (parms.count("support_area"))
+    {
+        std::vector<std::string> tmp = ParseList(parms["support_area"]);
+        for (int i = 0; i < int(tmp.size()); i++)
+        {
+            if (int(tmp[i].find('.')) < 0)  // area given in fractions
+            {
+                support_area.push_back(std::stoi(tmp[i]));
+            }
+            else  // area given in float numbers
+            {
+                support_area.push_back(int(std::stof(tmp[i]) * data_dim[i]) );
+            }
+        }
+        tmp.clear();
+    }
+    else
+    {
+        printf("No 'support_area' parameter in configuration file. setting to half array\n");
+        for (int i = 0; i < int(nD); i++)
+        {
+            support_area.push_back(int(.5 * data_dim[i]));
+        }
+    }
+
+    // build flow
+    if (parms.count("resolution_trigger") && (parms.count("iter_res_det_range") || parms.count("iter_res_sigma_range")))
+    {
+        is_resolution = true;
+    }
+    // std::vector<int> pcdi_tr_iter;
+    if (parms.count("pcdi_trigger"))
+    {
+        std::vector<std::string> tmp = ParseList(parms["pcdi_trigger"]);
+        for (int i = 0; i < int(tmp.size()); i++)
+        {
+            pcdi_tr_iter.push_back(std::stoi(tmp[i]));
+        }
+        if (pcdi_tr_iter[0] < number_iterations)
+        is_pcdi = true;
+        tmp.clear();
+    }
+    // find the functions that will be used and add it to used_flow_seq vector
     for (int i = 0; i < flow_seq_len; i++)
     {
         const char *flow_item = flow_def[i].item_name;
@@ -100,19 +163,6 @@ Params::Params(std::string const & config_file, std::vector<int> data_dim, bool 
         if (type == NOT_TRIGGER)
         {
             used_flow_seq.push_back(i);
-        }
-        else if (strcmp(flow_item, "pcdi_trigger") == 0)
-        {
-            if (root.exists(flow_item))
-            {
-                const Setting &tmp = root[flow_item];
-                int first_pcdi = tmp[0];
-                if (first_pcdi < number_iterations)
-                {
-                    is_pcdi = true;
-                    used_flow_seq.push_back(i);
-                }
-            }
         }
         else
         {
@@ -136,33 +186,31 @@ Params::Params(std::string const & config_file, std::vector<int> data_dim, bool 
             }
             else if (first)
             {
-                if (type && root.exists(flow_item))
+                if (type && parms.count(flow_item))
                 {
                    used_flow_seq.push_back(i);
                 }
             }
             else
             {
-                if ((type > FIRST_RUN_ONLY) && root.exists(flow_item))
+                if ((type > FIRST_RUN_ONLY) && parms.count(flow_item))
                 {
                     used_flow_seq.push_back(i);
                 }
             }
         }
     }
-    
+        
     // parse triggers and flow items into flow array; 0 if not executed, 1 if executed
     int used_flow_seq_len = used_flow_seq.size();
     int flow[number_iterations * used_flow_seq_len];
     memset(flow, 0, sizeof(flow));
-    std::vector<int> pcdi_tr_iter;
 
     for (int f = 0; f < used_flow_seq_len; f++)
     {
         int offset = f * number_iterations;
         int type = flow_def[used_flow_seq[f]].type;
         const char *flow_item = flow_def[used_flow_seq[f]].item_name;
-
         if (type == NOT_TRIGGER)
         {
             std::fill_n(flow + offset, number_iterations, 1);
@@ -202,14 +250,17 @@ Params::Params(std::string const & config_file, std::vector<int> data_dim, bool 
                 }
             }
         }
-        else
+        else  // trigger
         {
-            const Setting &tmp = root[flow_item];
-            if (tmp[0].isNumber())
+            std::vector<std::string> tmp = ParseList(parms[flow_item]);
+            std::vector<int> trig;
+            for (int i = 0; i < int(tmp.size()) ; i++)
             {
-                if (tmp.getLength() == 1)
+                  trig.push_back(std::stoi(tmp[i]));
+            }
+                if (trig.size() == 1)
                 {
-                    int ind = tmp[0];
+                    int ind = trig[0];
                     if (ind < number_iterations)
                     {
                         // the line below handler negative number
@@ -223,8 +274,8 @@ Params::Params(std::string const & config_file, std::vector<int> data_dim, bool 
                 }
                 else
                 {
-                    int step = tmp[1];
-                    int start_iter = tmp[0];
+                    int step = trig[1];
+                    int start_iter = trig[0];
                     if (start_iter < number_iterations)
                     {
                         start_iter = (start_iter + number_iterations) % number_iterations;
@@ -235,9 +286,9 @@ Params::Params(std::string const & config_file, std::vector<int> data_dim, bool 
                         start_iter = step;
                     }
                     int stop_iter = number_iterations;
-                    if (tmp.getLength() == 3)
+                    if (trig.size() == 3)
                     {
-                        int conf_stop_iter = tmp[2];
+                        int conf_stop_iter = trig[2];
                         if (conf_stop_iter < number_iterations)
                         {
                             conf_stop_iter = (conf_stop_iter + number_iterations) % number_iterations;
@@ -253,14 +304,13 @@ Params::Params(std::string const & config_file, std::vector<int> data_dim, bool 
                         }
                     }
                 }
-            }
-            else
+/*            else
             {
-                for (int j = 0; j < tmp.getLength(); j++)
+                for (int j = 0; j < trig.size(); j++)
                 {
-                    if (tmp[j].getLength() == 1)
+                    if (trig[j].size() == 1)
                     {
-                        int ind = tmp[j][0];
+                        int ind = trig[j][0];
                         if (ind < number_iterations)
                         {
                             // the line below handler negative number
@@ -274,8 +324,8 @@ Params::Params(std::string const & config_file, std::vector<int> data_dim, bool 
                     }
                     else
                     {
-                        int step = tmp[j][1];
-                        int start_iter = tmp[j][0];
+                        int step = trig[j][1];
+                        int start_iter = trig[j][0];
                         if (start_iter < number_iterations)
                         {
                             start_iter = (start_iter + number_iterations) % number_iterations;
@@ -285,9 +335,9 @@ Params::Params(std::string const & config_file, std::vector<int> data_dim, bool 
                             start_iter = step;
                         }
                         int stop_iter = number_iterations;
-                        if (tmp[j].getLength() == 3)
+                        if (trig[j].getLength() == 3)
                         {
-                            int conf_stop_iter = tmp[j][2];
+                            int conf_stop_iter = trig[j][2];
                             if (conf_stop_iter < number_iterations)
                             {
                                 conf_stop_iter = (conf_stop_iter + number_iterations) % number_iterations;
@@ -304,199 +354,148 @@ Params::Params(std::string const & config_file, std::vector<int> data_dim, bool 
                         }
                     }
                 }
-            }
-
+            }  */
+            tmp.clear();
+            trig.clear();
         }
 //    for (int i=0; i < number_iterations; i++)
 //        printf("  %i", flow[offset+i]);
 //    printf("\n");
     }
+
     std::vector<int> vec(flow, flow + number_iterations * used_flow_seq.size());
     flow_vec = vec;
 
-    if (root.exists("shrink_wrap_trigger"))
+    // parse parameters for active features
+    //resolution
+    if (is_resolution)
     {
-        try {
-            const Setting &tmp = root["support_area"];
-            if (tmp[0].getType() == Setting::TypeInt or tmp[0].getType() == Setting::TypeInt64)
-            {
-                int item = tmp[0];
-                for (int i = 0; i < tmp.getLength(); ++i)
-                {
-                    item = tmp[i];
-                    support_area.push_back(item);
-                }
-            }
-            else
-            {
-                float ftmp = 0.0;
-                for (int i = 0; i < tmp.getLength(); ++i)
-                {
-                    ftmp = tmp[i];
-                    support_area.push_back(int(ftmp * data_dim[i]));
-                }
-            }
-        }
-        catch ( const SettingNotFoundException &nfex)
+        std::vector<std::string> res_trigger = ParseList(parms["resolution_trigger"]);
+        if (res_trigger.size() == 3)
         {
-            std::cout << "No 'support_area' parameter in configuration file. setting to half array" << std::endl;
-        }
-    try {
-            support_threshold = cfg.lookup("support_threshold");
-        }
-        catch ( const SettingNotFoundException &nfex)
-        { }
-        try {
-            support_sigma = cfg.lookup("support_sigma");
-        }
-        catch ( const SettingNotFoundException &nfex)
-        { }
-        try {
-            support_alg = algorithm_id_map[cfg.lookup("shrink_wrap_type")];
-        }
-        catch ( const SettingNotFoundException &nfex)
-        { }
-    }
-    if (support_area.size() < nD)
-    {
-        support_area.clear();
-        // even if the support trigger is not defined, the area must be set initially, but won't be updated
-        for (uint i = 0; i < nD; i++)
-        {
-            support_area.push_back(int(0.5 * data_dim[i]));
-        }
-    }
-    if ((first) && root.exists("phase_support_trigger"))
-    {
-        try {
-            phase_min = cfg.lookup("phase_min");
-        }
-        catch (const SettingNotFoundException &nfex)
-        {
-            std::cout << "No 'phase_min' parameter in configuration file. Set to pi/2" << std::endl;
-        }
-        try {
-            phase_max = cfg.lookup("phase_max");
-        }
-        catch (const SettingNotFoundException &nfex)
-        {
-            std::cout << "No 'phase_max' parameter in configuration file. Set to pi/2" << std::endl;
-        }
-    }
-
-    if (root.exists("pcdi_trigger"))
-    {
-        try {
-            pcdi_alg = algorithm_id_map[cfg.lookup("partial_coherence_type")];
-        }
-        catch ( const SettingNotFoundException &nfex)
-        {  }
-        try {
-            const Setting &tmp = root["partial_coherence_roi"];
-            for (int i = 0; i < tmp.getLength(); ++i)
-            {
-                pcdi_roi.push_back(Utils::GetDimension(tmp[i]));
-            }
-        }
-        catch ( const SettingNotFoundException &nfex)
-        {
-            std::cout << "No 'partial_coherence_roi' parameter in configuration file" << std::endl;
-        }
-        try {
-            pcdi_normalize = cfg.lookup("partial_coherence_normalize");
-        }
-        catch ( const SettingNotFoundException &nfex)
-        { }
-        try {
-            pcdi_iter = cfg.lookup("partial_coherence_iteration_num");
-        }
-        catch ( const SettingNotFoundException &nfex)
-        {
-            std::cout << "No 'partial_coherence_iteration_num' parameter in configuration file. Setting to 20" << std::endl;
-        }
-    }
-
-    try {
-        const Setting &tmp = root["twin_halves"];
-        for (int i = 0; i < tmp.getLength(); ++i)
-        {
-            twin_halves.push_back(tmp[i]);
-        }
-    }
-    catch ( const SettingNotFoundException &nfex)
-    {
-        twin_halves.push_back(0);
-        twin_halves.push_back(0);
-    }
-
-    if ((first) && root.exists("resolution_trigger"))
-    {
-        is_resolution = true;
-        const Setting &tmp = root["resolution_trigger"];
-        try
-        {
-            low_res_iterations = tmp[2];
+            low_res_iterations = std::stoi(res_trigger[2]);
             if (low_res_iterations < 0)
             {
                 low_res_iterations = low_res_iterations + number_iterations;
             }
         }
-        catch ( const SettingNotFoundException &nfex)
+        else if (res_trigger.size() == 2)
         {
             low_res_iterations = number_iterations;
-            std::cout << "No 'resolution_trigger' upper bound in configuration file. Setting it to iteration number" << std::endl;
+            printf( "No 'resolution_trigger' upper bound in configuration file. Setting it to iteration number\n" );
         }
-        try
+        res_trigger.clear();
+        if (parms.count("iter_res_sigma_range"))
         {
-            const Setting &tmp = root["iter_res_sigma_range"];
-            int size = tmp.getLength();
-            if (size > 1)
+            std::vector<std::string> tmp = ParseList(parms["iter_res_sigma_range"]);
+            if (tmp.size() > 1)
             {
-                iter_res_sigma_first = tmp[0];
-                iter_res_sigma_last = tmp[1];
+                iter_res_sigma_first = std::stof(tmp[0]);
+                iter_res_sigma_last = std::stof(tmp[1]);
             }
             else
             {
-                iter_res_sigma_first = tmp[0];
+                iter_res_sigma_first = std::stof(tmp[0]);
                 iter_res_sigma_last = support_sigma;
             }
+            tmp.clear();
         }
-        catch(const SettingNotFoundException &nfex)
+        else
         {
-            iter_res_sigma_first = 2.0;
-            iter_res_sigma_last = support_sigma;
-            std::cout << "No 'iter_res_sigma_range' parameter in configuration file.Default to 2.0, sigma" << std::endl;
+            //iter_res_sigma_first = 2.0;
+            //iter_res_sigma_last = support_sigma;
+            printf( "No 'iter_res_sigma_range' parameter in configuration file.\n" );
         }
-        try
+        if (parms.count("iter_res_det_range"))
         {
-            const Setting &tmp = root["iter_res_det_range"];
-            int size = tmp.getLength();
-            if (size > 1)
+            std::vector<std::string> tmp = ParseList(parms["iter_res_det_range"]);
+            if (tmp.size() > 1)
             {
-                iter_res_det_first = tmp[0];
-                iter_res_det_last = tmp[1];
+                 iter_res_det_first = std::stof(tmp[0]);
+                 iter_res_det_last = std::stof(tmp[1]);
             }
             else
             {
-                iter_res_det_first = tmp[0];
-                iter_res_det_last = 1.0;
+                 iter_res_det_first = std::stof(tmp[0]);
+                 iter_res_det_last = 1.0;
+            }
+            tmp.clear();
+        }
+        else
+        {
+            //iter_res_det_first = .7;
+            //iter_res_det_last = 1.0;
+            printf("No 'iter_res_det_range' parameter in configuration file\n");
+        }
+    }
+
+    // shrink wrap
+    if (parms.count("shrink_wrap_trigger"))
+    {
+        if (parms.count("shrink_wrap_type"))
+        {
+            std::string tmp_s = parms["shrink_wrap_type"];
+            support_alg = algorithm_id_map[tmp_s];
+        }
+        else
+        {
+            support_alg = algorithm_id_map["GAUSS"];
+        }
+    }
+
+    // pcdi
+    if (is_pcdi)
+    {
+        if (parms.count("partial_coherence_type"))
+        {
+            std::string tmp_s = parms["partial_coherence_type"];
+            pcdi_alg = algorithm_id_map[tmp_s];
+        }
+        if ( parms.count("partial_coherence_roi") )
+        {
+            std::vector<std::string> tmp = ParseList(parms["partial_coherence_roi"]);
+            for (int i = 0; i < int(tmp.size()); i++)
+            {
+                pcdi_roi.push_back(std::stof(tmp[i]));
+            }
+            tmp.clear();
+        }
+        else
+        {
+            printf("No 'partial_coherence_roi' parameter in configuration file. setting to 16 in each dim.\n");
+            for (int i = 0; i < int(nD); i++)
+            {
+                  pcdi_roi.push_back(16);
             }
         }
-        catch(const SettingNotFoundException &nfex)
+        pcdi_normalize = parms.count("partial_coherence_normalize") && ((strcmp(parms["partial_coherence_normalize"].c_str(), "true") == 0) || (strcmp(parms["partial_coherence_normalize"].c_str(), "True") == 0));
+
+        if (parms.count("partial_coherence_iteration_num"))
         {
-            iter_res_det_first = .7;
-            iter_res_det_last = 1.0;
-            std::cout << "No 'iter_res_det_range' parameter in configuration file" << std::endl;
+            pcdi_iter = std::stoi(parms["partial_coherence_iteration_num"]);
+        }
+        else
+        {
+            printf("No 'partial_coherence_iteration_num' parameter in configuration file. Setting to 20\n");
         }
     }
-    try
+
+    // twin
+    if (parms.count("twin_halves"))
     {
-        beta = cfg.lookup("beta");
-    }
-    catch (const SettingNotFoundException &nfex)
-    {
-        std::cout << "No 'beta' parameter in configuration file. Setting to .9" << std::endl;
-    }
+          std::vector<std::string> tmp = ParseList(parms["twin_halves"]);
+          for (int i = 0; i < int(tmp.size()); ++i)
+          {
+              twin_halves.push_back(std::stoi(tmp[i]));
+          }
+          tmp.clear();
+     }
+     else
+     {
+        twin_halves.push_back(0);
+        twin_halves.push_back(0);
+     }
+
 }
 
 Params::~Params()
@@ -522,6 +521,21 @@ void Params::BuildAlgorithmMap()
     algorithm_id_map.insert(std::pair<std::string,int>("LUCY", ALGORITHM_LUCY));
     algorithm_id_map.insert(std::pair<std::string,int>("LUCY_PREV", ALGORITHM_LUCY_PREV));
     algorithm_id_map.insert(std::pair<std::string,int>("GAUSS", ALGORITHM_GAUSS));
+}
+
+std::vector<std::string> Params::ParseList(std::string s)
+{
+    // remove the parenthesis
+    std::string line = s.substr(1, s.length()-2);
+    std::vector<std::string> tokens;
+    std::stringstream ss(line);
+    std::string intermediate;
+    
+    while(getline(ss, intermediate, ','))
+    {
+           tokens.push_back(intermediate);
+    }
+    return tokens;
 }
 
 int Params::GetNumberIterations()

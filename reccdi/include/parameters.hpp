@@ -65,9 +65,15 @@ private:
     std::vector<int> used_flow_seq;
 
     std::vector<int> flow_vec;
-
+    
+    std::map<std::string, std::string> parms;
+    
+    std::vector<int> pcdi_tr_iter;
+    
     void BuildAlgorithmMap();
-
+    
+    std::vector<std::string> ParseList(std::string s);
+    
 public:
     // Constructor. Takes in configuration file, parses the configuration and sets the parameters accordingly.
     Params(std::string const & config_file, std::vector<int> data_dim, bool first);

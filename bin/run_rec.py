@@ -191,7 +191,7 @@ def manage_reconstruction(proc, experiment_dir, rec_id=None):
             print("can't read configuration file " + conf_file)
             return
     except Exception as e:
-        print('Cannot parse configuration file ' + conf_file + ' , check for matching parenthesis and quotations')
+        print('run_rec: Cannot parse configuration file ' + conf_file + ' , check for matching parenthesis and quotations')
         print (str(e))
         return
 

@@ -23,4 +23,3 @@ Copyright (c) UChicago Argonne, LLC. All rights reserved. See LICENSE file.
 C++ Libraries
 
     ArrayFire open source
-    Libconfig open source

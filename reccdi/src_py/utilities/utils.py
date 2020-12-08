@@ -23,6 +23,7 @@ __all__ = ['get_logger',
            'read_tif',
            'save_tif',
            'read_config',
+           'prepare_config',
            'get_good_dim',
            'binning',
            'get_centered',
@@ -133,6 +134,69 @@ def read_config(config):
             return config_map;
     else:
         return None
+
+
+def prepare_config(file):
+    algs = []
+    algs_repeats = []
+    def parse_alg_token(s):
+        items = s.replace('(','').replace(')','').split(',')
+        repeat = int(items[0])
+        items = items[1:]
+        for j in range(repeat):
+            for i in range(len(items)):
+                if (i + 1) % 2 == 0:
+                    algs_repeats.append(int(items[i]))
+                else:
+                    algs.append(items[i][1:-1])
+    with open(file, 'r') as f:
+        lines = f.readlines()
+        f.close()
+
+    lines_c = []
+    starts = []
+    ends = []
+    for i in range(len(lines)):
+        if  '=' in lines[i]:
+            starts.append(i)
+            if i != 0:
+                ends.append(i-1)
+    ends.append(len(lines)-1)
+
+    for i in range(len(starts)):
+        line_c = ''
+        for j in range(starts[i],ends[i]+1):
+            line_c += lines[j]
+        lines_c.append(line_c.replace(" ", ""))
+
+    # prepare algorithm sequence, triggers, and remove " around strings
+    for i in range(len(lines_c)):
+        tokens = []
+        if lines_c[i].startswith('algorithm_sequence'):
+            line = lines_c[i][20 : -2]    # remove 'algorithm_sequence=' and outer ()
+            if line.startswith('('):
+                while (line.find('))') > 0):
+                    ind = line.find('))')
+                    token = line[1 : ind + 1]
+                    tokens.append(token)
+                    line = line[ind + 2 :]
+                    if line.startswith(','):
+                        line = line[1 :]
+            else:
+                tokens.append(line)
+        for t in tokens:
+            parse_alg_token(t)
+
+    lines_c.append('algs=' + str(tuple(algs)) + '\n')
+    lines_c.append('algs_repeats=' + str(tuple(algs_repeats)) + '\n')
+    lines_c.append('num_iter=' + str(sum(algs_repeats)))
+
+    tmp_file = file + '_tmp'
+    open(tmp_file, 'w').close()
+    with open(tmp_file, 'w') as tf:
+        for line in lines_c:
+            tf.write(line.replace('"','').replace("'",""))
+        tf.close()
 
 
 def get_good_dim(dim):

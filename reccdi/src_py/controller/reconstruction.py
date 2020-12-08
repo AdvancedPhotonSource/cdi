@@ -117,8 +117,9 @@ def reconstruction(proc, conf_file, datafile, dir, dev):
         if config_map is None:
             print("can't read configuration file " + conf_file)
             return
+        ut.prepare_config(conf_file)
     except:
-        print('Cannot parse configuration file ' + conf_file + ' , check for matching parenthesis and quotations')
+        print('reconstruction: Cannot parse configuration file ' + conf_file + ' , check for matching parenthesis and quotations')
         return
 
     cont = False

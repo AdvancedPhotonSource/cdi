@@ -1,6 +1,6 @@
 package:
   name: reccdi
-  version: "1.4"
+  version: "1.4.5"
 
 source:
   path: .
@@ -14,13 +14,16 @@ requirements:
     - {{ compiler('cxx') }}
 
   host:
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
     - python=3.7.6
     - cython
-    - numpy=1.19.2
+    - numpy
 
   run:
-    - numpy=1.19.2
+    - numpy
     - python=3.7.6
+    - pyqt
     - tifffile
     - pylibconfig2
     - xrayutilities

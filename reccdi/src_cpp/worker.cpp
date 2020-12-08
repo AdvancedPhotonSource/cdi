@@ -162,7 +162,7 @@ void Reconstruction::Init(bool first)
         // ds_image  = complex(temp.as((af_dtype) dtype_traits<d_type>::ctype), 0.0).as(c64);
 
         ds_image *= support->GetSupportArray();
-        //printf("initial image norm %f\n", GetNorm(ds_image));
+     //   printf("initial image norm %f\n", GetNorm(ds_image));
     }
 
 }
@@ -213,40 +213,41 @@ void Reconstruction::NextIter()
 {
     iter_data = data;
     sig = params->GetSupportSigma();
-//    printf("NextIter %d\n", (uint)(getpid()));
+  //   printf("NextIter %d\n", (uint)(getpid()));
 }
 
 void Reconstruction::ResolutionTrigger()
 {
     iter_data = resolution->GetIterData(current_iteration, data.copy());
     sig = resolution->GetIterSigma(current_iteration);
-//    printf("ResolutionTrigger %d\n", (uint)(getpid()));
+   //  printf("ResolutionTrigger %d\n", (uint)(getpid()));
 }
 
 void Reconstruction::ShrinkWrapTrigger()
 {
     support->UpdateAmp(ds_image.copy(), sig, current_iteration);
-//    printf("SupportTrigger %d\n", (uint)(getpid()));
+   //  printf("SupportTrigger %d\n", (uint)(getpid()));
 }
 
 void Reconstruction::PhaseTrigger()
 {
     support->UpdatePhase(ds_image.copy(), current_iteration);
-//    printf("PhaseTrigger %d\n", (uint)(getpid()));
+   //  printf("PhaseTrigger %d\n", (uint)(getpid()));
 }
 
 void Reconstruction::ToReciprocal()
 {
     rs_amplitudes = Utils::ifft(ds_image, params->GetNdim())*num_points;
-//    printf("data norm, ampl norm before ratio %fl %fl\n", GetNorm(iter_data), GetNorm(rs_amplitudes));
-//    printf("ToReciprocal %d\n", (uint)(getpid()));
+ //   printf("data norm, ampl norm before ratio %fl %fl\n", GetNorm(iter_data), GetNorm(rs_amplitudes));
+ //    printf("ToReciprocal %d\n", (uint)(getpid()));
 }
 
 void Reconstruction::PcdiTrigger()
 {
+
     af::array abs_amplitudes = abs(rs_amplitudes).copy();
     partialCoherence->UpdatePartialCoherence(abs_amplitudes);
-//    printf("PcdiTrigger %d\n", (uint)(getpid()));
+ //    printf("PcdiTrigger %d\n", (uint)(getpid()));
 }
 
 void Reconstruction::Pcdi()
@@ -258,7 +259,7 @@ void Reconstruction::Pcdi()
     current_error =  GetNorm(abs(converged)(converged > 0)-iter_data(converged > 0))/GetNorm(iter_data);
     state->RecordError(current_error);
     rs_amplitudes *= ratio;
-//    printf("Pcdi %d\n", (uint)(getpid()));
+ //    printf("Pcdi %d\n", (uint)(getpid()));
 }
 
 void Reconstruction::NoPcdi()
@@ -267,7 +268,7 @@ void Reconstruction::NoPcdi()
     current_error = GetNorm(abs(rs_amplitudes)(rs_amplitudes > 0)-iter_data(rs_amplitudes > 0))/GetNorm(iter_data);
     state->RecordError(current_error);
     rs_amplitudes *= ratio;
-//    printf("NoPcdi %d\n", (uint)(getpid()));
+  //   printf("NoPcdi %d\n", (uint)(getpid()));
 }
 
 void Reconstruction::Gc()
@@ -278,13 +279,13 @@ void Reconstruction::Gc()
 void Reconstruction::SetPcdiPrevious()
 {
     partialCoherence->SetPrevious(abs(rs_amplitudes));
-//    printf("SetPcdiPrevious\n");
+  //   printf("SetPcdiPrevious\n");
 }
 
 void Reconstruction::ToDirect()
 {
     ds_image_raw = Utils::fft(rs_amplitudes, params->GetNdim())/num_points;
-//    printf("ToDirect\n");
+  //   printf("ToDirect\n");
 }
 
 void Reconstruction::Twin()
@@ -298,7 +299,7 @@ void Reconstruction::Twin()
     int y_end = (twin_halves[1] == 0) ? dims[1]/2 -1 : dims[1]-1;
     temp( af::seq(x_start, x_end), af::seq(y_start, y_end), span, span) = 1;
     ds_image = ds_image * temp;
-//    printf("Twin\n");
+ //    printf("Twin\n");
 }
 
 void Reconstruction::Average()
@@ -322,7 +323,7 @@ void Reconstruction::Average()
         }
     }
     delete [] image_v;
-//    printf("Average\n");
+ //   printf("Average\n");
 }
 
 void Reconstruction::Progress()
@@ -336,7 +337,7 @@ void Reconstruction::ModulusConstrainEr()
 //    printf("image norm before support %fl\n", GetNorm(ds_image_raw));
     af::array support_array = support->GetSupportArray();
     ds_image = ds_image_raw * support_array;
-//    printf("er, image norm after support %fl %d\n", GetNorm(ds_image), (uint)(getpid()));
+  //  printf("er, image norm after support %fl %d\n", GetNorm(ds_image), (uint)(getpid()));
 }
 
 void Reconstruction::ModulusConstrainHio()
@@ -349,7 +350,7 @@ void Reconstruction::ModulusConstrainHio()
     af::array combined_image = ds_image - adjusted_calc_image;
     ds_image = ds_image_raw;
     ds_image(support_array == 0) = combined_image(support_array == 0);
-//    printf("hio, image norm after support %fl %d\n",GetNorm(ds_image), (uint)(getpid()));
+ //   printf("hio, image norm after support %fl %d\n",GetNorm(ds_image), (uint)(getpid()));
 }
 
 double Reconstruction::GetNorm(af::array arr)
