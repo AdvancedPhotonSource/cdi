@@ -50,7 +50,7 @@ class Detector(object):
     def __init__(self):
         pass
 
-    def get_frame(self, filename, roi=None, Imult=1.0):
+    def get_frame(self, filename, roi, Imult):
         """
         Reads raw frame from a file, and applies correction for concrete detector.
 
@@ -166,7 +166,7 @@ class Detector_34idcTIM1(Detector):
             raise
 
     # TIM1 only needs bad pixels deleted.  Even that is optional.
-    def get_frame(self, filename, roi=(0, 256, 0, 256), Imult=1.0):
+    def get_frame(self, filename, roi, Imult):
         """
         Reads raw frame from a file, and applies correction for 34idcTIM1 detector, i.e. darkfield.
 
@@ -186,6 +186,10 @@ class Detector_34idcTIM1(Detector):
         frame : ndarray
             frame after correction
         """
+        if roi is None:
+            roi = (0, 256, 0, 256)
+        if Imult is None:
+            Imult = 1.0
         if not type(self.darkfield) == np.ndarray:
             self.load_darkfield()
 
@@ -280,7 +284,7 @@ class Detector_34idcTIM2(Detector):
             print("problem reading raw file ", filename)
             raise
 
-    def get_frame(self, filename, roi=(0, 512, 0, 512), Imult=1e5):
+    def get_frame(self, filename, roi, Imult):
         """
         Reads raw frame from a file, and applies correction for 34idcTIM2 detector, i.e. darkfield, whitefield, and seam.
 
@@ -305,6 +309,10 @@ class Detector_34idcTIM2(Detector):
         # divide whitefield
         # blank out pixels identified in darkfield
         # insert 4 cols 5 rows if roi crosses asic boundary
+        if roi is None:
+            roi = (0, 512, 0, 512)
+        if Imult is None:
+            Imult = 1e5
         if not type(self.whitefield) == np.ndarray:
             self.load_whitefield()
         if not type(self.darkfield) == np.ndarray:

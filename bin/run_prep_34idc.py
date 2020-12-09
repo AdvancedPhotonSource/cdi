@@ -98,7 +98,7 @@ def get_dir_dict2(scans, main_map, prep_map):
 
 
 ###################################################################################
-def read_scan(dir, detector, det_area, imult):
+def read_scan(dir, detector, det_area, Imult):
     """
     Reads raw data files from scan directory, applies correction, and returns 3D corrected data for a single scan directory.
     
@@ -141,20 +141,14 @@ def read_scan(dir, detector, det_area, imult):
 
     # look at slice0 to find out shape
     n = 0
-    if det_area is None:
-        slice0 = detector.get_frame(files[n], roi=None, Imult=imult)
-    else:
-        slice0 = detector.get_frame(files[n], roi=det_area, Imult=imult)
-        shape = (slice0.shape[0], slice0.shape[1], len(files))
+    slice0 = detector.get_frame(files[n], det_area, Imult)
+    shape = (slice0.shape[0], slice0.shape[1], len(files))
     arr = np.zeros(shape, dtype=slice0.dtype)
     arr[:, :, 0] = slice0
 
     for file in files[1:]:
         n = n + 1
-        if det_area is None:
-            slice = detector.get_frame(file, roi=None, Imult=imult)
-        else:
-            slice = detector.get_frame(file, roi=det_area, Imult=imult)
+        slice = detector.get_frame(file, det_area, Imult)
         arr[:, :, n] = slice
     return arr
 
@@ -368,7 +362,7 @@ class PrepData:
         try:
             self.Imult = prep_conf_map.Imult
         except:
-            self.Imult = 1.0
+            self.Imult = None
 
             # build sub-directories map
         if len(scans) == 1:
