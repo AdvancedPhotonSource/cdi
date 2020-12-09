@@ -14,13 +14,13 @@ requirements:
     - {{ compiler('cxx') }}
 
   host:
-    - python
+    - python=3.7.6
     - cython
     - numpy
 
   run:
     - numpy
-    - python
+    - python=3.7.6
     - tifffile
     - pylibconfig2
     - gputil
