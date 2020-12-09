@@ -4,7 +4,7 @@ from Cython.Build import cythonize
 
 
 setup(ext_modules=cythonize(
-    ["reccdi/src_py/cyth/bridge_cpu.pyx", "reccdi/src_py/cyth/bridge_opencl.pyx", "reccdi/src_py/cyth/bridge_cuda.pyx", ],),
+    ["reccdi/src_py/cyth/bridge_cpu.pyx", "reccdi/src_py/cyth/bridge_opencl.pyx", ],),
       name='reccdi',
       author = 'Barbara Frosik, Ross Harder',
       author_email = 'bfrosik@anl.gov',
