@@ -16,10 +16,10 @@ requirements:
   host:
     - python=3.7.6
     - cython
-    - numpy=1.19.2
+    - numpy
 
   run:
-    - numpy=1.19.2
+    - numpy
     - python=3.7.6
     - tifffile
     - pylibconfig2
