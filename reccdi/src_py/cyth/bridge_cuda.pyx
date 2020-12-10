@@ -8,7 +8,7 @@
 # distutils: language = c++
 # distutils: include_dirs = ['reccdi/include', 'include',]
 # distutils: sources = ['reccdi/src_cpp/bridge.cpp', 'reccdi/src_cpp/manager.cpp', 'reccdi/src_cpp/parameters.cpp', 'reccdi/src_cpp/pcdi.cpp', 'reccdi/src_cpp/resolution.cpp', 'reccdi/src_cpp/state.cpp', 'reccdi/src_cpp/support.cpp', 'reccdi/src_cpp/util.cpp', 'reccdi/src_cpp/worker.cpp']
-# distutils: libraries = ['afcuda',  'config++',]
+# distutils: libraries = ['afcuda',]
 # distutils: library_dirs = ['lib',]
 
 from libcpp.vector cimport vector

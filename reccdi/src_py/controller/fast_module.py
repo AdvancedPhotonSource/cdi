@@ -67,9 +67,9 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
         elif proc == 'opencl':
             import reccdi.src_py.cyth.bridge_opencl as bridge_opencl
             fast_module = bridge_opencl.PyBridge()
-#        elif proc == 'cuda':
-#            import reccdi.src_py.cyth.bridge_cuda as bridge_cuda
-#            fast_module = bridge_cuda.PyBridge()
+        elif proc == 'cuda':
+            import reccdi.src_py.cyth.bridge_cuda as bridge_cuda
+            fast_module = bridge_cuda.PyBridge()
     except Exception as ex:
         print(str(ex))
         print ('could not import library')
