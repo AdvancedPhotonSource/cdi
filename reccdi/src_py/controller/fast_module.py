@@ -12,6 +12,7 @@ The processor specifies which library will be used by FM (Fast Module) that perf
 
 import numpy as np
 import copy
+import reccdi.src_py.utilities.utils as ut
 
 
 __author__ = "Barbara Frosik"
@@ -68,13 +69,17 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
             import reccdi.src_py.cyth.bridge_opencl as bridge_opencl
             fast_module = bridge_opencl.PyBridge()
         elif proc == 'cuda':
-            import reccdi.src_py.cyth.bridge_cuda as bridge_cuda
-            fast_module = bridge_cuda.PyBridge()
+            if sys.platform == 'darwin':
+                print ('cuda library is not supported on mac platform')
+            else:
+                import reccdi.src_py.cyth.bridge_cuda as bridge_cuda
+                fast_module = bridge_cuda.PyBridge()
     except Exception as ex:
         print(str(ex))
         print ('could not import library')
         return None, None, None, None, None, None
-        
+    
+    ut.prepare_config(conf)
     conf = conf + '_tmp'
 
     # shift data
