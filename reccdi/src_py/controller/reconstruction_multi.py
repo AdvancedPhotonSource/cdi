@@ -61,7 +61,7 @@ def single_rec_process(proc, conf, data, coh_dims, req_metric, dirs):
         prev_coh = None
     else:
         prev_image, prev_support, prev_coh = ut.read_results(prev)
-    
+
     image, support, coh, errs, flow, iter_array = calc.fast_module_reconstruction(proc, gpu, conf, data, coh_dims, prev_image, prev_support, prev_coh)
  
     metric = ut.get_metric(image, errs)
@@ -189,6 +189,7 @@ def reconstruction(proc, conf_file, datafile, dir, devices):
         if config_map is None:
             print("can't read configuration file " + conf_file)
             return
+        ut.prepare_config(conf_file)
     except:
         print('Cannot parse configuration file ' + conf_file + ' , check for matching parenthesis and quotations')
         return

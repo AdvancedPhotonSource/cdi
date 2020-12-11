@@ -84,12 +84,13 @@ const flow_item_def flow_def[] = {
   flow_item_def("garbage_trigger",       NOT_TRIGGER,          "Gc"),
   flow_item_def("set_prev_pcdi_trigger", CUSTOM,               "SetPcdiPrevious"),
   flow_item_def("to_direct_space",       NOT_TRIGGER,          "ToDirect"),
-  flow_item_def("algorithm",             CUSTOM,               "RunAlg"),
+  flow_item_def("er",                    CUSTOM,               "Er"),
+  flow_item_def("hio",                   CUSTOM,               "Hio"),
   flow_item_def("twin_trigger",          FIRST_RUN_ONLY,       "Twin"),
   flow_item_def("average_trigger",       FOR_ALL_RUNS,         "Average"),
   flow_item_def("progress_trigger",      FOR_ALL_RUNS,         "Prog")
 };
 
-const int flow_seq_len = 15;
+const int flow_seq_len = 16;
 
 #endif /* common_h */

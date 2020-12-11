@@ -95,9 +95,6 @@ Reconstruction::~Reconstruction()
 
 void Reconstruction::Init(bool first)
 {
-    // create map of algorithms ids to the algorithm functions
-    CreateAlgorithmMap();
-
     std::map<const char*, fp> flow_ptr_map;
     flow_ptr_map["NextIter"] = &Reconstruction::NextIter;
     flow_ptr_map["ResolutionTrigger"] =  &Reconstruction::ResolutionTrigger;
@@ -110,7 +107,8 @@ void Reconstruction::Init(bool first)
     flow_ptr_map["Gc"] = &Reconstruction::Gc;
     flow_ptr_map["SetPcdiPrevious"] = &Reconstruction::SetPcdiPrevious;
     flow_ptr_map["ToDirect"] = &Reconstruction::ToDirect;
-    flow_ptr_map["RunAlg"] = &Reconstruction::ModulusConstrainEr;  //This will be replaced by configured algorithm method
+    flow_ptr_map["Er"] = &Reconstruction::ModulusConstrainEr;
+    flow_ptr_map["Hio"] = &Reconstruction::ModulusConstrainHio;
     flow_ptr_map["Twin"] = &Reconstruction::Twin;
     flow_ptr_map["Average"] = &Reconstruction::Average;
     flow_ptr_map["Prog"] = &Reconstruction::Progress;
@@ -128,16 +126,8 @@ void Reconstruction::Init(bool first)
         {
             if (flow_array[offset + j])
             {
-                if (flow_array[offset + j] > 1)
-                {
-                    fp func_ptr = algorithm_map[flow_array[offset + j]];
-                    iter_flow[j].push_back(func_ptr);
-                }
-                else
-                {
-                    fp func_ptr = flow_ptr_map[flow_def[func_order].func_name];
-                    iter_flow[j].push_back(func_ptr);
-                }
+                fp func_ptr = flow_ptr_map[flow_def[func_order].func_name];
+                iter_flow[j].push_back(func_ptr);
             }
         }
     }
@@ -165,12 +155,6 @@ void Reconstruction::Init(bool first)
      //   printf("initial image norm %f\n", GetNorm(ds_image));
     }
 
-}
-
-void Reconstruction::CreateAlgorithmMap()
-{
-    algorithm_map[ALGORITHM_ER] = &Reconstruction::ModulusConstrainEr;
-    algorithm_map[ALGORITHM_HIO] = &Reconstruction::ModulusConstrainHio;
 }
 
 int Reconstruction::Iterate()
@@ -213,7 +197,7 @@ void Reconstruction::NextIter()
 {
     iter_data = data;
     sig = params->GetSupportSigma();
-  //   printf("NextIter %d\n", (uint)(getpid()));
+//     printf("NextIter %d\n", (uint)(getpid()));
 }
 
 void Reconstruction::ResolutionTrigger()
@@ -226,7 +210,7 @@ void Reconstruction::ResolutionTrigger()
 void Reconstruction::ShrinkWrapTrigger()
 {
     support->UpdateAmp(ds_image.copy(), sig, current_iteration);
-   //  printf("SupportTrigger %d\n", (uint)(getpid()));
+  //   printf("SupportTrigger, support norm %fl\n", GetNorm(support->GetSupportArray()));
 }
 
 void Reconstruction::PhaseTrigger()
@@ -238,8 +222,7 @@ void Reconstruction::PhaseTrigger()
 void Reconstruction::ToReciprocal()
 {
     rs_amplitudes = Utils::ifft(ds_image, params->GetNdim())*num_points;
- //   printf("data norm, ampl norm before ratio %fl %fl\n", GetNorm(iter_data), GetNorm(rs_amplitudes));
- //    printf("ToReciprocal %d\n", (uint)(getpid()));
+ //   printf("ToReciprocal, rs_amplitudes norm %fl\n", GetNorm(rs_amplitudes));
 }
 
 void Reconstruction::PcdiTrigger()
@@ -255,7 +238,6 @@ void Reconstruction::Pcdi()
     af::array abs_amplitudes = abs(rs_amplitudes).copy();
     af::array converged = partialCoherence->ApplyPartialCoherence(abs_amplitudes);
     af::array ratio = Utils::GetRatio(iter_data, abs(converged));
-//    printf("ratio norm %f\n", GetNorm(ratio));
     current_error =  GetNorm(abs(converged)(converged > 0)-iter_data(converged > 0))/GetNorm(iter_data);
     state->RecordError(current_error);
     rs_amplitudes *= ratio;
@@ -268,7 +250,7 @@ void Reconstruction::NoPcdi()
     current_error = GetNorm(abs(rs_amplitudes)(rs_amplitudes > 0)-iter_data(rs_amplitudes > 0))/GetNorm(iter_data);
     state->RecordError(current_error);
     rs_amplitudes *= ratio;
-  //   printf("NoPcdi %d\n", (uint)(getpid()));
+//     printf("NoPcdi, rs_amplitudes after correction %fl \n", GetNorm(rs_amplitudes));
 }
 
 void Reconstruction::Gc()
@@ -285,7 +267,7 @@ void Reconstruction::SetPcdiPrevious()
 void Reconstruction::ToDirect()
 {
     ds_image_raw = Utils::fft(rs_amplitudes, params->GetNdim())/num_points;
-  //   printf("ToDirect\n");
+//     printf("ToDirect, ds_image_raw norm %fl\n", GetNorm(ds_image_raw));
 }
 
 void Reconstruction::Twin()
@@ -299,7 +281,7 @@ void Reconstruction::Twin()
     int y_end = (twin_halves[1] == 0) ? dims[1]/2 -1 : dims[1]-1;
     temp( af::seq(x_start, x_end), af::seq(y_start, y_end), span, span) = 1;
     ds_image = ds_image * temp;
- //    printf("Twin\n");
+//     printf("Twin\n");
 }
 
 void Reconstruction::Average()
@@ -334,23 +316,19 @@ void Reconstruction::Progress()
 void Reconstruction::ModulusConstrainEr()
 {
 //    printf("er\n");
-//    printf("image norm before support %fl\n", GetNorm(ds_image_raw));
     af::array support_array = support->GetSupportArray();
     ds_image = ds_image_raw * support_array;
-  //  printf("er, image norm after support %fl %d\n", GetNorm(ds_image), (uint)(getpid()));
+//    printf("er, image norm after support %fl %d\n", GetNorm(ds_image), (uint)(getpid()));
 }
 
 void Reconstruction::ModulusConstrainHio()
 {
 //    printf("hio\n");
-//    printf("image norm before support %fl\n",GetNorm(ds_image_raw));
-    //ds_image(support->GetSupportArray(state->IsApplyTwin()) == 0) = (ds_image - ds_image_raw * params->GetBeta())(support->GetSupportArray(state->IsApplyTwin()) == 0);
     af::array support_array = support->GetSupportArray();
     af::array adjusted_calc_image = ds_image_raw * params->GetBeta();
     af::array combined_image = ds_image - adjusted_calc_image;
-    ds_image = ds_image_raw;
-    ds_image(support_array == 0) = combined_image(support_array == 0);
- //   printf("hio, image norm after support %fl %d\n",GetNorm(ds_image), (uint)(getpid()));
+    ds_image = ds_image_raw * support_array + combined_image * !support_array;
+//  printf("hio, image norm after support %fl\n",GetNorm(ds_image));
 }
 
 double Reconstruction::GetNorm(af::array arr)

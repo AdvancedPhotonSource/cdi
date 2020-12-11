@@ -64,9 +64,6 @@ private:
     // mapping of algorithm id to an Algorithm method pointer
     std::map<int, fp> algorithm_map;
 
-    // Creates map <algorithm_id, algorithm_method_pointer>
-    void CreateAlgorithmMap();
-
     // This method returns sum of squares of all elements in the array
     double GetNorm(af::array arr);
     

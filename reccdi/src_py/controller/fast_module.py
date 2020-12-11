@@ -12,7 +12,6 @@ The processor specifies which library will be used by FM (Fast Module) that perf
 
 import numpy as np
 import copy
-import reccdi.src_py.utilities.utils as ut
 
 
 __author__ = "Barbara Frosik"
@@ -79,7 +78,6 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
         print ('could not import library')
         return None, None, None, None, None, None
     
-    ut.prepare_config(conf)
     conf = conf + '_tmp'
 
     # shift data

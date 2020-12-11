@@ -17,7 +17,6 @@ See LICENSE file.
 #include "vector"
 #include "string"
 #include "sstream"
-#include "mutex"
 
 Params::Params(std::string const & config_file, std::vector<int> data_dim, bool first)
 {
@@ -45,11 +44,11 @@ Params::Params(std::string const & config_file, std::vector<int> data_dim, bool 
     pcdi_tr_iter.clear();
     nD = data_dim.size();
     
-    std::mutex mtx;
+// std::mutex mtx;
     std::ifstream cFile(config_file);
     
     BuildAlgorithmMap();
-    mtx.lock();
+//    mtx.lock();
     if (cFile.is_open())
     {
         std::string line;
@@ -69,7 +68,7 @@ Params::Params(std::string const & config_file, std::vector<int> data_dim, bool 
         printf("Couldn't open config file for reading.\n");
     }
     cFile.close();
-    mtx.unlock();
+//    mtx.unlock();
     
     number_iterations = std::stoi(parms["num_iter"]);
 
@@ -168,7 +167,11 @@ Params::Params(std::string const & config_file, std::vector<int> data_dim, bool 
         {
             if (type == CUSTOM)
             {
-                if (strcmp(flow_item, "algorithm") == 0)
+                if (strcmp(flow_item, "er") == 0)
+                {
+                    used_flow_seq.push_back(i);
+                }
+                else if (strcmp(flow_item, "hio") == 0)
                 {
                     used_flow_seq.push_back(i);
                 }
@@ -217,12 +220,27 @@ Params::Params(std::string const & config_file, std::vector<int> data_dim, bool 
         }
         else if (type == CUSTOM)
         {
-            if (strcmp(flow_item, "algorithm") == 0)
+            if (strcmp(flow_item, "er") == 0)
             {
                 int alg_start = 0;
                 for (uint k=0; k < alg_switches.size(); k++)
                 {
-                    std::fill_n(flow + offset + alg_start, alg_switches[k].iterations, alg_switches[k].algorithm_id);
+                    if (alg_switches[k].algorithm_id == ALGORITHM_ER)
+                    {
+                        std::fill_n(flow + offset + alg_start, alg_switches[k].iterations, 1);
+                    }
+                        alg_start += alg_switches[k].iterations;
+                }
+            }
+            else if (strcmp(flow_item, "hio") == 0)
+            {
+                int alg_start = 0;
+                for (uint k=0; k < alg_switches.size(); k++)
+                {
+                    if (alg_switches[k].algorithm_id == ALGORITHM_HIO)
+                    {
+                        std::fill_n(flow + offset + alg_start, alg_switches[k].iterations, 1);
+                    }
                     alg_start += alg_switches[k].iterations;
                 }
             }
