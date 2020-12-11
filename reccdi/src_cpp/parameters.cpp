@@ -17,6 +17,7 @@ See LICENSE file.
 #include "vector"
 #include "string"
 #include "sstream"
+#include "mutex"
 
 Params::Params(std::string const & config_file, std::vector<int> data_dim, bool first)
 {
@@ -44,11 +45,11 @@ Params::Params(std::string const & config_file, std::vector<int> data_dim, bool 
     pcdi_tr_iter.clear();
     nD = data_dim.size();
     
-// std::mutex mtx;
+    std::mutex mtx;
     std::ifstream cFile(config_file);
     
     BuildAlgorithmMap();
-//    mtx.lock();
+    mtx.lock();
     if (cFile.is_open())
     {
         std::string line;
@@ -68,7 +69,7 @@ Params::Params(std::string const & config_file, std::vector<int> data_dim, bool 
         printf("Couldn't open config file for reading.\n");
     }
     cFile.close();
-//    mtx.unlock();
+    mtx.unlock();
     
     number_iterations = std::stoi(parms["num_iter"]);
 
