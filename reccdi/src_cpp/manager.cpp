@@ -29,9 +29,15 @@ Manager::~Manager()
 
 void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vector<int> dim, std::string const & config)
 {
-    bool first = true;
-    Params * params = new Params(config, dim, first);
-    
+    if(!( access( config.c_str(), F_OK ) == 0) )
+    {
+            printf("Configuration file %s not found\n", config.c_str());
+            error_code = -3;
+            return;
+    }
+
+    info();
+
     if (device >= 0)
     {
         try{
@@ -43,8 +49,11 @@ void Manager::StartCalc(int device, std::vector<d_type> data_buffer_r, std::vect
             error_code = -2;
             return;
         }
-        info();
+        printf("Set deviceId %d\n", getDevice());
     }
+
+    bool first = true;
+    Params * params = new Params(config, dim, first);
     
     dim4 af_dims = Utils::Int2Dim4(dim);
     af::array real_d(af_dims, &data_buffer_r[0]);
