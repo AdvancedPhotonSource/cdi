@@ -106,7 +106,7 @@ def fast_module_reconstruction(proc, device, conf, data, coh_dims, image=None, s
 
     if ec < 0:
         print ('the reconstruction in c++ module encountered problems')
-        # -1 error code is returned when ctl-c, -2 when device can't be set, -2 when NAN is found in image array
+        # -1 error code is returned when ctl-c, -2 when device can't be set, -2 when NAN is found in image array, -3 if no config file found
         fast_module.cleanup()
         return None, None, None, None, None, None
 
