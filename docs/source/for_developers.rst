@@ -47,7 +47,7 @@ Initialization
 - compiles 
 - installs in conda environment
 - sets the LD_LIBRARY_PATH/DYLD_LIBRARY_PATH in this session
-- sets the LD_LIBRARY_PATH/DYLD_LIBRARY_PATH in the bin/setenv.sh script 
+- sets the LD_LIBRARY_PATH/DYLD_LIBRARY_PATH in the setenv.sh script 
 
 | If the libraries are at different location than the installation (for example moved to lib directory), then the init script will not work. In this case edit the following files:
 - reccdi/src_py/cyth/bridge_cpu.pyx
@@ -71,7 +71,7 @@ Running environment
 | Run the following command to set the environment variable when opening a new terminal:
 ::
 
-    source bin/setenv.sh
+    source setenv.sh
 
 Adding new trigger
 ==================
