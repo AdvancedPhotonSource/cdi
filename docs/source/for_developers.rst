@@ -67,7 +67,7 @@ compile and install
 
 Running environment
 ===================
-| When running in development environment the libraries are not loaded into conda location. Therefore the LD_LIBRARY_PATH/DYLD_LIBRARY_PATH must include path to arrayfire libraries and libconfig libraries.
+| When running in development environment the libraries are not loaded into conda location. Therefore the LD_LIBRARY_PATH/DYLD_LIBRARY_PATH must include path to arrayfire libraries.
 | Run the following command to set the environment variable when opening a new terminal:
 ::
 
