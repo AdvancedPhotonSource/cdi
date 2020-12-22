@@ -15,9 +15,10 @@ Pre-requisites
    - pip install tifffile
    - pip install pylibconfig2
    - pip install GPUtil
-   - pip install parse
+   - pip install pyparsing
    - pip install mayavi
    - pip install xrayutilities
+   - psutil
 
 Initialization
 ++++++++++++++
@@ -27,11 +28,18 @@ Initialization
     git clone https://github.com/advancedPhotonSource/cdi
     cd cdi
 
+| Copy development scripts
+::
+
+    cp dev/linux/* .     // for linux
+    cp dev/mac/* .       //for mac
+
+
 | Initialize with interactive script. 
 ::
 
-    source dev/init.sh       // for linux
-    source dev/init_mac.sh   //for mac
+    source init.sh       // for linux
+    source init_mac.sh   //for mac
 
 | The script prompts for path to ArrayFire and libconfig installation directories. 
 | The script does the following:
