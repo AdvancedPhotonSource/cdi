@@ -13,9 +13,9 @@ from tvtk.api import tvtk
 import xrayutilities.experiment as xuexp
 import reccdi.src_py.utilities.utils as ut
 # from reccdi.src_py.utilities.utils import measure
-import reccdi.src_py.beamlines.aps_34id.spec as sput
-import reccdi.src_py.beamlines.aps_34id.detectors as det
-import reccdi.src_py.beamlines.aps_34id.diffractometer as diff
+import reccdi.src_py.beamlines.spec as sput
+import reccdi.src_py.beamlines.detector as det
+import reccdi.src_py.beamlines.diffractometer as diff
 
 __author__ = "Ross Harder"
 __copyright__ = "Copyright (c) 2016, UChicago Argonne, LLC."
@@ -59,10 +59,14 @@ class DispalyParams:
             specfile = config['specfile']
             last_scan = config['last_scan']
             # get stuff from the spec file.
-            self.delta, self.gamma, self.th, self.phi, self.chi, self.scanmot, self.scanmot_del, self.detdist, self.detector, self.energy = sput.parse_spec(
-                specfile, last_scan)
+            self.delta, self.gamma, self.th, self.phi, self.chi, self.scanmot, self.scanmot_del, self.detdist, self.detector, self.energy = sput.parse_spec(specfile, last_scan)
         except:
             pass
+
+        # drop the ':' from detector name
+        if self.detector is not None and self.detector.endswith(':'):
+            self.detector = self.detector[:-1]
+
         # override the parsed parameters with entries in config file
         try:
             self.energy = config['energy']
@@ -110,83 +114,6 @@ class DispalyParams:
             if self.scanmot_del is None:
                 print('scanmot_del not in spec, please configure')
 
-        try:
-            self.diffractometer = config['diffractometer']
-            self.diffractometer_obj = diff.getdiffclass(self.diffractometer)  # will return None if not defined
-        except KeyError:
-            self.diffractometer_obj = None
-            print('diffractometer not configured')
-        if self.diffractometer_obj is not None:
-            # this may not need to be in a try block
-            # get attributes out of the diffractometer class and instance
-            for attr in self.diffractometer_obj.__class__.__dict__.keys():
-                if not attr.startswith('__'):
-                    self.__dict__[attr] = self.diffractometer_obj.__class__.__dict__[attr]
-            for attr in self.diffractometer_obj.__dict__.keys():
-                if not attr.startswith('__'):
-                    self.__dict__[attr] = self.diffractometer_obj.__dict__[attr]
-        # get attribures out of config, overwriting things from diff object
-        try:
-            self.sampleaxes = tuple(config['sampleaxes'])
-        except KeyError:
-            pass
-        try:
-            self.detectoraxes = tuple(config['detectoraxes'])
-        except KeyError:
-            pass
-        try:
-            self.sampleaxes_name = tuple(config['sampleaxes_name'])
-        except KeyError:
-            pass
-        try:
-            self.detectoraxes_name = tuple(config['detectoraxes_name'])
-        except KeyError:
-            pass
-        try:
-            self.incidentaxis = tuple(config['incidentaxis'])
-        except KeyError:
-            pass
-
-        # axes values are set from the spec file, but if they are specified in the config file
-        # the vals from config take precedence.
-        for axis in self.detectoraxes_name:
-            if axis in config:
-                self.__dict__[axis] = config[axis]
-        for axis in self.sampleaxes_name:
-            if axis in config:
-                self.__dict__[axis] = config[axis]
-
-        try:
-            self.detector = config['detector']
-        except KeyError:
-            if self.detector is None:
-                print('detector name not in spec, please configure')
-        try:
-            self.detector_obj = det.getdetclass(self.detector)
-        except:
-            self.detector_obj = None
-
-        try:
-            # this may not need to be in a try block
-            for attr in self.detector_obj.__class__.__dict__.keys():
-                if not attr.startswith('__'):
-                    self.__dict__[attr] = self.detector_obj.__class__.__dict__[attr]
-            for attr in self.detector_obj.__dict__.keys():
-                if not attr.startswith('__'):
-                    self.__dict__[attr] = self.detector_obj.__dict__[attr]
-        except:
-            pass
-
-        try:
-            self.pixelorientation = tuple(config['pixelorientation'])
-        except KeyError:
-            pass
-
-        try:
-            self.pixel = tuple(config['pixel'])
-        except KeyError:
-            pass
-
         # binning is used, but crop is currently not used.
         try:
             self.binning = []
@@ -209,6 +136,22 @@ class DispalyParams:
             crop[0], crop[1] = crop[1], crop[0]
         except KeyError:
             self.crop = (1.0, 1.0, 1.0)
+
+
+    def set_instruments(self, detector, diffractometer):
+        for attr in diffractometer.__class__.__dict__.keys():
+            if not attr.startswith('__'):
+                self.__dict__[attr] = diffractometer.__class__.__dict__[attr]
+        for attr in diffractometer.__dict__.keys():
+            if not attr.startswith('__'):
+                self.__dict__[attr] = diffractometer.__dict__[attr]
+
+        for attr in detector.__class__.__dict__.keys():
+            if not attr.startswith('__'):
+                self.__dict__[attr] = detector.__class__.__dict__[attr]
+        for attr in detector.__dict__.keys():
+            if not attr.startswith('__'):
+                self.__dict__[attr] = detector.__dict__[attr]
 
 
 class CXDViz:
